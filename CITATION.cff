@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the associated paper."
+type: software
+title: "learning-to-read-out (W_U trajectory crosscoders)"
+authors:
+  - given-names: Matteo
+    family-names: He
+    email: mh2274@cam.ac.uk
+    affiliation: University of Cambridge
+  - given-names: William F.
+    family-names: Shen
+    affiliation: University of Cambridge
+  - given-names: Alex
+    family-names: Iacob
+    affiliation: "University of Cambridge & Flower Labs"
+  - given-names: Andrej
+    family-names: Jovanovic
+    affiliation: University of Cambridge
+  - given-names: Xinchi
+    family-names: Qiu
+    affiliation: University of Cambridge
+  - given-names: Nicholas D.
+    family-names: Lane
+    affiliation: "University of Cambridge & Flower Labs"
+license: MIT
+version: "0.1.0"
+date-released: "2026-06-12"
+repository-code: "https://github.com/hematteo/learning-to-read-out"
+preferred-citation:
+  type: unpublished
+  title: "Learning to Read Out: Unembedding Dynamics in Language Model Pretraining"
+  authors:
+    - given-names: Matteo
+      family-names: He
+      email: mh2274@cam.ac.uk
+      affiliation: University of Cambridge
+    - given-names: William F.
+      family-names: Shen
+      affiliation: University of Cambridge
+    - given-names: Alex
+      family-names: Iacob
+      affiliation: "University of Cambridge & Flower Labs"
+    - given-names: Andrej
+      family-names: Jovanovic
+      affiliation: University of Cambridge
+    - given-names: Xinchi
+      family-names: Qiu
+      affiliation: University of Cambridge
+    - given-names: Nicholas D.
+      family-names: Lane
+      affiliation: "University of Cambridge & Flower Labs"
+  notes: "Under review; preprint forthcoming — see the repository for the up-to-date reference."
+  year: 2026

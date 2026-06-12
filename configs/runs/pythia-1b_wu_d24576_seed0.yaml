@@ -1,0 +1,43 @@
+# Settings-of-record for the main Pythia-1B W_U trajectory crosscoder.
+# Field names mirror the scripts/train/train_crosscoder.py CLI flags.
+# Documentation/record only; not auto-loaded. See configs/README.md.
+name: pythia-1b_wu_d24576_seed0
+model: EleutherAI/pythia-1b
+matrix: W_U
+
+# Dictionary geometry
+d_sae: 24576              # expansion_factor 12.0 at d_model=2048 (24576 / 2048)
+expansion_factor: 12.0
+n_snapshots: 32           # cross-snapshot-32 (src.core.model_specs.DEFAULT_STEPS_32)
+
+# Optimizer / schedule (shared Pythia W_U recipe, per-model lr)
+lr: 2.0e-5                # NB: NOT the 5e-5 160M recipe; from the .config.json sidecar
+batch_size: 1024          # JSON sidecar training_batch_size=1024
+n_epochs: 300
+seed: 0
+input_preprocess: center_scale
+amp_dtype: fp32
+
+# JumpReLU dictionary hyperparameters
+l1_coefficient: 0.3       # 'lambda' column in full_inventory.csv
+tanh_stretch: 1.0
+init_threshold: 0.1
+
+# Reported instrument quality (full_inventory.csv, for cross-checking a retrain)
+reported:
+  EV: 0.8614
+  mean_L0: 516.6
+  dead_rate: 0.0
+  n_params: 3222102016
+
+source: >
+  released-checkpoint .config.json sidecar (pythia-1b W_U cross-snap-32 d24576
+  seed0: lr=2e-5);
+  experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv
+  (pythia-1b W_U cross-snap-32 d24576 seed0 row: lambda=0.3, tanh_stretch=1.0,
+  init_threshold=0.1, epochs=300);
+  experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals JSON
+  sidecars (training_batch_size=1024);
+  scripts/train/train_crosscoder.py docstring (shared Pythia recipe:
+  input_preprocess=center_scale, amp_dtype=fp32, seed=0);
+  experiments.yaml: crosscoder_main inputs (pythia-1b W_U cross-snapshot-32 d24576 seed0).

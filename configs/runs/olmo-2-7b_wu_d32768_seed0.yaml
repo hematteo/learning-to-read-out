@@ -1,0 +1,50 @@
+# Settings-of-record for the cross-family OLMo-2-7B W_U trajectory crosscoder
+# (production run; 4x A100-80GB head-parallel). Field names mirror the
+# scripts/train/train_crosscoder.py / train_distributed.py CLI flags.
+# Documentation/record only; not auto-loaded. See configs/README.md.
+name: olmo-2-7b_wu_d32768_seed0
+model: allenai/OLMo-2-1124-7B
+matrix: W_U
+
+# Dictionary geometry
+d_sae: 32768              # expansion_factor 8.0 at d_model=4096 (32768 / 4096)
+expansion_factor: 8.0
+n_snapshots: 32           # OLMo-2-7B 32-snapshot schedule (src.core.model_specs.OLMO_STEPS_32)
+
+# Optimizer / schedule (verbatim from run_olmo_production.sh)
+batch_size: 2048
+lr: 1.0e-5
+n_epochs: 250
+seed: 0
+input_preprocess: center_scale
+amp_dtype: fp32
+optimizer: sparse_adam
+
+# JumpReLU dictionary hyperparameters
+l1_coefficient: 0.3
+tanh_stretch: 1.0
+init_threshold: 0.1
+jumprelu_lr_factor: 0.3
+decoder_transpose_init: 1.0
+
+# LR / L1 warmup-decay schedule (Ge §A.4)
+l1_warmup_fraction: 0.1
+lr_warmup_fraction: 0.10
+lr_decay_fraction: 0.20
+
+# Reported instrument quality (full_inventory.csv OLMo-2-7B row + sidecar 'canon')
+reported:
+  EV: 0.8526
+  mean_L0: 557.7
+  dead_rate: 0.0
+  n_params: 8591147008
+
+source: >
+  experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh
+  (verbatim flag-set: batch_size 2048, lr 1e-5, jumprelu_lr_factor 0.3,
+  l1_coefficient 0.3, tanh_stretch 1.0, init_threshold 0.1,
+  decoder_transpose_init 1.0, input_preprocess center_scale,
+  l1_warmup_fraction 0.1, lr_warmup_fraction 0.10, lr_decay_fraction 0.20,
+  optimizer sparse_adam, amp_dtype fp32, n_epochs 250, d_sae 32768);
+  experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.json
+  (canon EV/L0); experiments.yaml: crosscoder_olmo.

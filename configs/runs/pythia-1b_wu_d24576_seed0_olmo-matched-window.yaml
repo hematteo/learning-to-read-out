@@ -1,0 +1,79 @@
+# Settings-of-record for the OLMo-matched checkpoint-window ablation: a
+# Pythia-1B W_U crosscoder trained on a 32-snapshot schedule that starts at
+# step 256 (no sub-step-150 checkpoints), matching the OLMo availability
+# constraint (paper appendix checkpoint-window control). Field names mirror the
+# train_late_start.py / train_crosscoder.py CLI flags.
+# Documentation/record only; not auto-loaded. See configs/README.md.
+name: pythia-1b_wu_d24576_seed0_olmo-matched-window
+model: EleutherAI/pythia-1b
+matrix: W_U
+
+# Dictionary geometry
+d_sae: 24576              # expansion_factor 12.0 at d_model=2048 (24576 / 2048)
+expansion_factor: 12.0
+n_snapshots: 32           # late-start schedule (NOT DEFAULT_STEPS_32)
+
+# Late-start 32-snapshot schedule (README; starts at step 256, not 0)
+steps:
+  - 256
+  - 512
+  - 1000
+  - 2000
+  - 3000
+  - 4000
+  - 5000
+  - 6000
+  - 7000
+  - 8000
+  - 9000
+  - 10000
+  - 13000
+  - 14000
+  - 21000
+  - 23000
+  - 27000
+  - 33000
+  - 34000
+  - 43000
+  - 47000
+  - 53000
+  - 61000
+  - 73000
+  - 83000
+  - 89000
+  - 93000
+  - 102000
+  - 113000
+  - 123000
+  - 130000
+  - 143000
+
+# Optimizer / schedule (shared Pythia W_U recipe; NB this run used bf16 amp,
+# unlike the fp32 main runs — the train_late_start.py default matches)
+lr: 5.0e-5
+batch_size: 1024
+n_epochs: 300
+seed: 0
+input_preprocess: center_scale
+amp_dtype: bf16
+
+# JumpReLU dictionary hyperparameters (shared Pythia W_U recipe)
+l1_coefficient: 0.3
+tanh_stretch: 1.0
+init_threshold: 0.1
+
+# Reported instrument quality (checkpoint-embedded quality dict; an independent
+# recompute on 2026-06-12 reproduced the EV to 4e-4)
+reported:
+  EV: 0.8844
+  mean_L0: 263.9
+
+source: >
+  checkpoint-embedded `training`/`quality` dicts of the run of record,
+  pythia1b_wu_late_start32_dsae24576_seed0.pt (lr=5e-5, batch_size=1024,
+  n_epochs=300, amp_dtype=bf16, lambda=0.3, tanh_stretch=1.0,
+  init_threshold=0.1);
+  experiments/ablations/olmo_matched_checkpoint_window/README.md
+  (late-start 32-step schedule, d_sae 24576);
+  experiments.yaml: olmo_matched_checkpoint_window;
+  paper appendix checkpoint-window control (late-start Pythia-1B).

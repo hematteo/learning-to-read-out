@@ -1,0 +1,51 @@
+# Settings-of-record for the SELECTED sparse/high-sparsity Pythia-6.9B W_U
+# trajectory crosscoder (paper-facing 6.9B run; sidecar p69b_sparse_*).
+# Field names mirror the scripts/train/train_crosscoder.py CLI flags.
+# Documentation/record only; not auto-loaded. See configs/README.md.
+name: pythia-6.9b_wu_d32768_seed0_sparse
+model: EleutherAI/pythia-6.9b
+matrix: W_U
+variant: sparse           # selected sparse run (lower L0); cf. *_dense comparison
+
+# Dictionary geometry
+d_sae: 32768              # expansion_factor 8.0 at d_model=4096 (32768 / 4096)
+expansion_factor: 8.0
+n_snapshots: 32           # cross-snapshot-32 (src.core.model_specs.DEFAULT_STEPS_32)
+
+# Optimizer / schedule (shared Pythia W_U recipe, per-model lr)
+lr: 1.0e-5                # NB: NOT the 5e-5 160M recipe; from the checkpoint-embedded training dict
+batch_size: 1024          # JSON sidecar training_batch_size=1024
+n_epochs: 300
+seed: 0
+input_preprocess: center_scale
+amp_dtype: fp32
+
+# JumpReLU dictionary hyperparameters (checkpoint-embedded training dict; this
+# selected run uses a higher sparsity penalty and threshold than the lambda-0.3
+# dense comparison)
+l1_coefficient: 0.6
+tanh_stretch: 1.0
+init_threshold: 0.15
+jumprelu_lr_factor: 0.4
+l1_warmup_fraction: 0.05
+
+# Reported instrument quality (sidecar p69b_sparse_d32768_seed0.json 'canon').
+# NB: the checkpoint-internal quick_quality dict reads EV 0.779 / L0 921.8 for
+# the same weights — an eval-protocol difference, not a different run; the
+# hyperparameters above are from the checkpoint and are authoritative.
+reported:
+  EV: 0.8081
+  mean_L0: 741.8
+  dead_rate: 0.0
+  n_params: 8591147008
+
+source: >
+  checkpoint-embedded training dict of
+  wu_cc_p69b_dsae32768_seed0.pt (lr=1e-5, lambda=0.6, jumprelu_lr_factor=0.4,
+  init_threshold=0.15, l1_warmup_fraction=0.05);
+  experiments.yaml: crosscoder_main inputs (selected sparse 6.9B run,
+  hf_release/wu-crosscoder-trained/t2_1/v6_sparsity_.../wu_cc_p69b_dsae32768_seed0.pt);
+  experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/p69b_sparse_d32768_seed0.json
+  (model, d_sae=32768, training_batch_size=1024, canon EV/L0);
+  scripts/train/train_crosscoder.py docstring (shared Pythia recipe:
+  input_preprocess=center_scale, amp_dtype=fp32, seed=0).

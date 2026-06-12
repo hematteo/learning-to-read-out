@@ -1,0 +1,45 @@
+# Settings-of-record for the DENSE / default-lambda Pythia-6.9B W_U trajectory
+# crosscoder (comparison-only run; sidecar p69b_normal_*). Used for the
+# fig:app-p69b-dense-vs-sparse contrast, not the headline 6.9B result.
+# Field names mirror the scripts/train/train_crosscoder.py CLI flags.
+# Documentation/record only; not auto-loaded. See configs/README.md.
+name: pythia-6.9b_wu_d32768_seed0_dense
+model: EleutherAI/pythia-6.9b
+matrix: W_U
+variant: dense            # default-lambda comparison (higher L0); cf. *_sparse selected
+
+# Dictionary geometry
+d_sae: 32768              # expansion_factor 8.0 at d_model=4096 (32768 / 4096)
+expansion_factor: 8.0
+n_snapshots: 32           # cross-snapshot-32 (src.core.model_specs.DEFAULT_STEPS_32)
+
+# Optimizer / schedule (shared Pythia W_U recipe, per-model lr)
+lr: 1.0e-5                # NB: NOT the 5e-5 160M recipe; from the checkpoint-embedded training dict
+batch_size: 1024          # JSON sidecar training_batch_size=1024
+n_epochs: 300
+seed: 0
+input_preprocess: center_scale
+amp_dtype: fp32
+
+# JumpReLU dictionary hyperparameters
+l1_coefficient: 0.3       # default-lambda comparison row in full_inventory.csv
+tanh_stretch: 1.0
+init_threshold: 0.1
+
+# Reported instrument quality (sidecar p69b_normal_d32768_seed0.json 'canon')
+reported:
+  EV: 0.8332
+  mean_L0: 1956.6
+  dead_rate: 0.0
+  n_params: 8591147008
+
+source: >
+  checkpoint-embedded training dict of the released dense 6.9B run (lr=1e-5);
+  experiments.yaml: crosscoder_main inputs ("denser/default-lambda comparison only"
+  pythia-6.9b W_U cross-snapshot-32 d32768 seed0);
+  experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/p69b_normal_d32768_seed0.json
+  (model, d_sae=32768, training_batch_size=1024, canon EV/L0);
+  full_inventory.csv (pythia-6.9b W_U row lambda=0.3, tanh_stretch=1.0,
+  init_threshold=0.1, epochs=300);
+  scripts/train/train_crosscoder.py docstring (shared Pythia recipe:
+  input_preprocess=center_scale, amp_dtype=fp32, seed=0).
