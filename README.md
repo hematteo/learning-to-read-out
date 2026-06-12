@@ -124,6 +124,13 @@ Shorthand recurring in module, experiment, and figure names:
 | `persnap` | Per-snapshot SAE (one SAE per checkpoint, a baseline) |
 | `cc` | Crosscoder |
 
+## Related repository
+
+[`sparse-readout-prism`](https://github.com/hematteo/sparse-readout-prism) is the
+companion release: it factorizes a model's *final* `W_U` into a sparse feature
+basis for logit-lens readout analysis, where this repo studies how that readout
+*forms over pretraining* (parameter-trajectory crosscoders across checkpoints).
+
 ## Citation
 
 If you use this code, please cite the paper (machine-readable metadata in
