@@ -7,7 +7,7 @@ the figure-by-figure reproduction map is [`../docs/REPRODUCE.md`](../docs/REPROD
 
 | Topic | What its experiments establish |
 |---|---|
-| `crosscoders/` | The instrument itself: training and validating the trajectory crosscoders (Pythia W_U `crosscoder_main`, OLMo-2 `crosscoder_olmo`, input-embedding `crosscoder_we`). `crosscoder_main/dynamics/` is also the shared analysis library imported outside `crosscoder_main` (by `crosscoder_we` and the test suite). |
+| `crosscoders/` | The instrument itself: training and validating the trajectory crosscoders (Pythia W_U `crosscoder_main`, OLMo-2 `crosscoder_olmo`, input-embedding `crosscoder_we`). The shared analysis library they import lives in `src/dynamics/`. |
 | `lifecycle/` | How individual sparse features form, reorganize, and persist across pretraining (trajectory/profile/wishbone metrics). |
 | `causal/` | Whether the readout structure is load-bearing: activation patching, sparse-feature interventions, contrastive-task feature rescue. |
 | `probes/` | Correlational evidence: concept probes over checkpoints and the contrastive readout-swap screen (whose causal companion lives under `causal/`). |
@@ -20,3 +20,8 @@ produced" ledger, and a Reproduce section. Bucket membership describes the
 method class (probing vs. intervention), not the paper section: e.g.
 `probes/contrastive_readout_swap` is the screening probe whose intervention
 follow-up is `causal/contrastive_task_feature_rescue`.
+
+Naming note: scripts named `plot_*` / `build_*_plots` / `build_*_figures`
+compute and persist the *metrics behind* the figure they are named after
+(CSV/JSON/`.pt` sidecars); no figure-rendering code ships in this repo — the
+thesis LaTeX tree renders figures from those metrics.

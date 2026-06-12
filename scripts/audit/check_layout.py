@@ -92,7 +92,6 @@ ALLOWED_TOP_LEVEL = {
     "experiments",
     "examples",  # CPU-only runnable library-reuse demos
     "notebooks",  # Colab-ready guided tours of the paper's core analyses
-    "infra",
     "data",  # committed small derived inputs (data/derived/**) that drive figures
     "figures",
     "results",
@@ -104,7 +103,7 @@ ALLOWED_TOP_LEVEL = {
     "configs",
     "tests",
     "lib",
-    "_archive",
+    # underscore-prefix dirs (e.g. _archive/) are always allowed by check 5
 }
 # Files allowed at top level (REPRODUCE.md / DATA.md / THIRD_PARTY.md now live under docs/)
 ALLOWED_TOP_FILES = {

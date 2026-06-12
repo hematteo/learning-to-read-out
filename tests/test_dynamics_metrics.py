@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from experiments.crosscoders.crosscoder_main.dynamics.metrics import (
+from src.dynamics.metrics import (
     adjacent_rotation,
     lifecycle,
     terminal_direction_distance,

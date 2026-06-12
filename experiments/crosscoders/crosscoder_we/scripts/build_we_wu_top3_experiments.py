@@ -24,28 +24,26 @@ import torch
 REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO))
 
-from experiments.crosscoders.crosscoder_main.dynamics.metrics import lifecycle
-from experiments.crosscoders.crosscoder_we.scripts.build_we_appendix_extended_plots import (
+from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
     MODEL_NAME,
     MODEL_SHORT,
+    STEPS_32,
     TOKENIZER_VOCAB,
     _decoded_token_texts,
     _family_selected_features,
     _feature_family_fraction,
     _figure_bases,
+    _load_we_rates_and_norms,
+    _load_wu_rates_and_norms,
     _terminal_decoder,
     _token_family_masks,
     _top_tokens_per_feature,
     _write_csv_flexible,
     _write_rows_and_cache,
 )
-from experiments.crosscoders.crosscoder_we.scripts.build_we_appendix_plots import (
-    STEPS_32,
-    _load_we_rates_and_norms,
-    _load_wu_rates_and_norms,
-)
 from src.core.paths import release_path, repo_root, ssd_root
 from src.crosscoder.snapshots import load_snapshot
+from src.dynamics.metrics import lifecycle
 
 
 def _load_we_d24576_rates_and_norms(

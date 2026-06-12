@@ -60,4 +60,4 @@ code-only release).
 ## Layout
 | path | role |
 |---|---|
-| `scripts/` | lifecycle metric computation (no figure rendering): `plot_normalized_trajectories.py` (decoder-norm trajectories), `plot_lifecycle_profile_composition.py` (profile composition), `plot_selected_wishbone.py` (wishbone scores/clusters), `find_reorganization_steps.py` (reorganization-step peaks/windows). The shared `dynamics` core library is imported from `experiments/crosscoders/crosscoder_main/dynamics/`. |
+| `scripts/` | lifecycle metric computation (no figure rendering): `plot_normalized_trajectories.py` (decoder-norm trajectories), `plot_lifecycle_profile_composition.py` (profile composition), `plot_selected_wishbone.py` (wishbone scores/clusters), `find_reorganization_steps.py` (reorganization-step peaks/windows). The shared `dynamics` core library is imported from `src/dynamics/`. |

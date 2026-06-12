@@ -71,3 +71,4 @@ Bases are written under `figures/crosscoder_we/` and
 | `scripts/build_we_appendix_extended_plots.py` | extended W_E appendix audit metrics |
 | `scripts/build_we_wu_top3_experiments.py` | top follow-up W_E/W_U metrics |
 | `scripts/build_we_feature_cards.py` | W_E feature-card metric payloads |
+| `scripts/we_common.py` | shared loaders / token-family helpers / CSV+cache writers imported by the four entry scripts (not an entry point) |

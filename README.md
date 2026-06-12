@@ -74,7 +74,7 @@ vocabulary families. See [`notebooks/README.md`](notebooks/README.md).
 
 | Tier | What it holds |
 |---|---|
-| `src/` | Importable library: `core/` (paths, model specs, data), `crosscoder/` (trajectory training), `probes/`, `baselines/`. |
+| `src/` | Importable library: `core/` (paths, model specs, data), `crosscoder/` (trajectory training), `dynamics/` (run discovery + lifecycle metrics), `probes/`, `baselines/`. |
 | `experiments/` | Research code grouped by theme (`crosscoders/`, `lifecycle/`, `causal/`, `probes/`, `baselines/`, `ablations/`, `capacity/`); each experiment is `<topic>/<id>/{README,scripts}`, mapped to the thesis figures it backs in [`experiments.yaml`](experiments.yaml). |
 | `scripts/` | Command-line entry points grouped by verb: `extract/`, `train/`, `eval/`, `audit/`. |
 | `examples/` | Small, CPU-only runnable demos of the library — no data, GPU, or downloads. |

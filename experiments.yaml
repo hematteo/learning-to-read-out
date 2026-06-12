@@ -5,7 +5,6 @@
 #
 # Maintained / checked by:
 #   uv run python scripts/audit/check_layout.py    # validates schema + paper-label coverage
-#   uv run python scripts/audit/validate_experiments.py --check
 #
 # Schema (per entry):
 #   id:               str   matches experiments/<topic>/<id>/ and figures/<id>/; results_dir is

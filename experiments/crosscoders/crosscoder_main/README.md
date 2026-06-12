@@ -73,11 +73,11 @@ live in their own claim-anchored experiments:
 
 ## Layout
 
-This experiment follows the `{scripts/, derived/}` container layout, with one
-deliberate exception: `dynamics/` stays at the package root because it is an
-importable subpackage consumed by dotted imports from sibling experiments
-(`crosscoder_we`) and from `tests/test_dynamics_metrics.py`, so it must remain at
-`experiments.crosscoders.crosscoder_main.dynamics`. All other analysis code lives
+This experiment follows the `{scripts/, derived/}` container layout. The core
+analysis library it builds on (`derive`, `discovery`, `metrics`, `provenance`)
+lives in `src/dynamics/` — it is shared with sibling experiments
+(`crosscoder_we`) and the test suite, so per the repo's tier rule it sits in
+`src/`, not here. All analysis code lives
 under `scripts/` and the `*.csv` / `*.json` / `*.pt` sidecars the scripts write
 under `derived/` are the evidence the thesis tree renders figures from (the repo
 ships no figure-rendering code). They are gitignored and regenerated on run —
@@ -86,7 +86,6 @@ API and are kept stable.
 
 | path | role |
 |---|---|
-| `dynamics/`        | core analysis library (`derive`, `discovery`, `metrics`, `provenance`); imported by sibling scripts and by `tests/test_dynamics_metrics.py` (kept at the package root as the importable exception) |
 | `scripts/aggregates/`          | build the canonical per-(run_id, seed) analysis table |
 | `scripts/appendix_validation/` | appendix instrument-validation code: per-snapshot fidelity / quality evals and `baselines/` (PCA / concat-PCA / endpoint-linear) |
 | `scripts/main_1b/`             | 1B per-snapshot eval script |

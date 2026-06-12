@@ -119,10 +119,10 @@ driven by CLI.
 
 1. **CPU sanity check** (no GPU, no data — validates the GPTNeoX API, init,
    param groups, forward/backward against the installed transformers):
-   `uv run python experiments/ablations/pretraining_recipe_control/trainer/selfcheck.py`
+   `uv run python experiments/ablations/pretraining_recipe_control/scripts/selfcheck.py`
 
 2. **Tokenize a slice** (faithful order):
-   `uv run python experiments/ablations/pretraining_recipe_control/trainer/tokenize_slice.py --out ${UM_SSD_ROOT}/pile_slice/pile_neox20b.bin --target-tokens 10e9`
+   `uv run python experiments/ablations/pretraining_recipe_control/scripts/tokenize_slice.py --out ${UM_SSD_ROOT}/pile_slice/pile_neox20b.bin --target-tokens 10e9`
    — or fetch the exact Pythia preshuffled prefix:
    `uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_pythia_preshuffled.py --out ${UM_SSD_ROOT}/pile_slice/pythia_preshuffled.bin --target-tokens 10e9`
    (pass `--sequential-data` to the trainer for the preshuffled slice to preserve
@@ -136,7 +136,7 @@ driven by CLI.
    - `wu_lr_0p25`:  `--readout-lr-mult 0.25 --warmup-steps 1430`
    - `wu_lr_4x`:    `--readout-lr-mult 4.0  --warmup-steps 1430`
 
-   e.g. `uv run python experiments/ablations/pretraining_recipe_control/trainer/train_control.py --data ${UM_SSD_ROOT}/pile_slice/pile_neox20b.bin --out-dir ${UM_SSD_ROOT}/runs/baseline --model-size 31M --global-batch 1024 --max-tokens 10e9 --readout-lr-mult 1.0 --warmup-steps 1430`
+   e.g. `uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control.py --data ${UM_SSD_ROOT}/pile_slice/pile_neox20b.bin --out-dir ${UM_SSD_ROOT}/runs/baseline --model-size 31M --global-batch 1024 --max-tokens 10e9 --readout-lr-mult 1.0 --warmup-steps 1430`
    (resumable from `latest.pt`; writes a `COMPLETE` sentinel at the budget;
    `--max-hours` gives a per-slot wall guard for self-chaining around job limits.)
 
@@ -146,9 +146,9 @@ driven by CLI.
 ## Layout
 | path | role |
 |---|---|
-| `trainer/train_control.py`         | self-contained Pythia-style trainer; 3 optimizer groups (decay / no-decay / readout-$W_U$ with own LR mult), token-budget stopping, token-milestone checkpointing, held-out val loss + $W_U$ geometry, resumable |
-| `trainer/tokenize_slice.py`        | stream + tokenize the Pile (GPT-NeoX-20B tokenizer) into a flat `uint16` `.bin`; deterministic, retry-hardened, resumable |
-| `trainer/selfcheck.py`             | CPU sanity check of the model API / init / param groups / forward |
+| `scripts/train_control.py`         | self-contained Pythia-style trainer; 3 optimizer groups (decay / no-decay / readout-$W_U$ with own LR mult), token-budget stopping, token-milestone checkpointing, held-out val loss + $W_U$ geometry, resumable |
+| `scripts/tokenize_slice.py`        | stream + tokenize the Pile (GPT-NeoX-20B tokenizer) into a flat `uint16` `.bin`; deterministic, retry-hardened, resumable |
+| `scripts/selfcheck.py`             | CPU sanity check of the model API / init / param groups / forward |
 | `scripts/fetch_pythia_preshuffled.py` | byte-range fetch of the exact Pythia preshuffled Pile prefix (no `.idx`, no 602 GB download); drop-in `.bin` for the trainer |
 | `scripts/analyze_readout_geometry.py` | per-checkpoint $W_U$ geometry (row-norm stats, SVD spectrum, eff/stable rank) vs. $W_E$ and the final-LN gain → tidy CSV |
 | `results/experiments/ablations/pretraining_recipe_control/readout_geometry_pythia.csv` | the geometry analysis output for the four trained conditions (generated on run; not shipped) |

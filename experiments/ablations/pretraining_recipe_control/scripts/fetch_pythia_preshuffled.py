@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Extract the first N tokens of the *exact* Pythia preshuffled Pile as a flat
-uint16 .bin, drop-in compatible with trainer/train_control.py.
+uint16 .bin, drop-in compatible with train_control.py.
 
 Why this works without the .idx:
   The Pythia preshuffled dataset is a GPT-NeoX MMapIndexedDataset whose `.bin`

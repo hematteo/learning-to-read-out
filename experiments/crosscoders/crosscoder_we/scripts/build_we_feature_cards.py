@@ -28,7 +28,7 @@ import torch  # noqa: E402
 from safetensors import safe_open  # noqa: E402
 from transformers import AutoTokenizer  # noqa: E402
 
-from experiments.crosscoders.crosscoder_we.scripts.build_we_appendix_plots import (  # noqa: E402
+from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
     MODEL_SHORT,
     STEPS_32,
     _load_we_rates_and_norms,

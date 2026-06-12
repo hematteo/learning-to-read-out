@@ -61,5 +61,5 @@ metrics.
 | `scripts/run_null_control.sh`            | random-init null control |
 | `scripts/eval_decision_rules.py`         | gating decision: is OLMO replicating Pythia? |
 | `scripts/train_distributed.py`           | distributed crosscoder training entry point |
-| `scripts/SCHEDULE.md`                    | run schedule + decision-rule gates |
+| `SCHEDULE.md`                    | run schedule + decision-rule gates |
 | `scripts/README.md`                      | scripts-level overview |

@@ -18,65 +18,36 @@ from __future__ import annotations
 import argparse
 import csv
 import math
-import string
 import sys
-import unicodedata
 from pathlib import Path
 
 import numpy as np
 import torch
 from safetensors import safe_open
-from safetensors.torch import load_file as load_safetensors
 from scipy.optimize import linear_sum_assignment
 
 REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO))
 
-from experiments.crosscoders.crosscoder_main.dynamics.metrics import lifecycle
-from experiments.crosscoders.crosscoder_we.scripts.build_we_appendix_plots import (
+from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
+    MODEL_NAME,
     MODEL_SHORT,
     STEPS_32,
+    _family_selected_features,
+    _feature_family_fraction,
+    _figure_bases,
     _load_we_rates_and_norms,
     _load_wu_rates_and_norms,
     _quality_rows,
+    _terminal_decoder,
+    _token_family_masks,
+    _top_tokens_per_feature,
     _write_csv,
+    _write_rows_and_cache,
 )
 from src.core.paths import release_path, repo_root, ssd_root
 from src.crosscoder.snapshots import load_snapshot
-
-MODEL_NAME = "EleutherAI/pythia-160m"
-TOKENIZER_VOCAB = 50254
-
-
-def _figure_bases(name: str, fig_dir: Path) -> list[Path]:
-    return [fig_dir / name]
-
-
-def _write_csv_flexible(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not rows:
-        raise ValueError(f"no rows for {path}")
-    fieldnames: list[str] = []
-    seen = set()
-    for row in rows:
-        for key in row:
-            if key not in seen:
-                seen.add(key)
-                fieldnames.append(key)
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def _write_rows_and_cache(
-    bases: list[Path],
-    rows: list[dict],
-    payload: dict | list | tuple,
-) -> None:
-    for base in bases:
-        _write_csv_flexible(base.with_suffix(".csv"), rows)
-        torch.save(payload, base.with_suffix(".pt"))
+from src.dynamics.metrics import lifecycle
 
 
 def _norm_rows_from_safetensors(path: Path) -> np.ndarray:
@@ -89,127 +60,14 @@ def _norm_rows_from_safetensors(path: Path) -> np.ndarray:
     return np.stack(norms, axis=0)
 
 
-def _terminal_decoder(path: Path) -> torch.Tensor:
-    return load_safetensors(str(path), device="cpu")["W_D"][-1].float()
-
-
 def _terminal_decoder_norms(path: Path) -> np.ndarray:
     return torch.linalg.vector_norm(_terminal_decoder(path), dim=1).numpy()
-
-
-def _top_tokens_per_feature(
-    decoder: torch.Tensor,
-    terminal_wu: torch.Tensor,
-    *,
-    top_k: int,
-    chunk: int = 512,
-) -> np.ndarray:
-    """Return top-k token ids per feature via terminal W_U projection."""
-    decoder = decoder.float()
-    terminal_wu = terminal_wu.float()
-    out = []
-    for start in range(0, decoder.shape[0], chunk):
-        end = min(decoder.shape[0], start + chunk)
-        logits = terminal_wu @ decoder[start:end].T
-        idx = torch.topk(logits, k=top_k, dim=0).indices.T.contiguous()
-        out.append(idx.cpu())
-        del logits, idx
-    return torch.cat(out, dim=0).numpy().astype(np.int32)
 
 
 def _decoder_cosine(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     a = torch.nn.functional.normalize(a.float(), dim=1)
     b = torch.nn.functional.normalize(b.float(), dim=1)
     return a @ b.T
-
-
-def _decoded_token_texts() -> list[str]:
-    from transformers import AutoTokenizer
-
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, local_files_only=True)
-    texts = []
-    for token_id in range(tokenizer.vocab_size):
-        texts.append(tokenizer.decode([token_id], clean_up_tokenization_spaces=False))
-    return texts
-
-
-def _contains_range(text: str, ranges: list[tuple[int, int]]) -> bool:
-    return any(lo <= ord(ch) <= hi for ch in text for lo, hi in ranges)
-
-
-def _is_punctuationish(text: str) -> bool:
-    stripped = text.strip()
-    if not stripped:
-        return False
-    return all(unicodedata.category(ch)[0] in {"P", "S"} for ch in stripped)
-
-
-def _is_latin_alpha(text: str) -> bool:
-    stripped = text.strip()
-    return len(stripped) >= 2 and all(ch in string.ascii_letters for ch in stripped)
-
-
-def _token_family_masks(vocab_rows: int) -> tuple[dict[str, np.ndarray], list[dict]]:
-    """Build decoded-token masks, padded to the snapshot row count."""
-    texts = _decoded_token_texts()
-    family_defs = {
-        "latin alpha": lambda t, i: _is_latin_alpha(t),
-        "space-prefixed": lambda t, i: t.startswith(" "),
-        "digit-bearing": lambda t, i: any(ch.isdigit() for ch in t),
-        "punctuation": lambda t, i: _is_punctuationish(t),
-        "Cyrillic": lambda t, i: _contains_range(t, [(0x0400, 0x04FF)]),
-        "Greek": lambda t, i: _contains_range(t, [(0x0370, 0x03FF)]),
-        "CJK": lambda t, i: _contains_range(
-            t,
-            [
-                (0x3400, 0x4DBF),
-                (0x4E00, 0x9FFF),
-                (0x3040, 0x30FF),
-                (0xAC00, 0xD7AF),
-            ],
-        ),
-        "Arabic": lambda t, i: _contains_range(t, [(0x0600, 0x06FF)]),
-        "Devanagari": lambda t, i: _contains_range(t, [(0x0900, 0x097F)]),
-    }
-    masks: dict[str, np.ndarray] = {}
-    rows: list[dict] = []
-    for name, pred in family_defs.items():
-        mask = np.zeros(vocab_rows, dtype=bool)
-        for token_id, text in enumerate(texts):
-            if pred(text, token_id):
-                mask[token_id] = True
-        masks[name] = mask
-        rows.append(
-            {
-                "family": name,
-                "n_tokenizer_tokens": int(mask[: len(texts)].sum()),
-                "n_snapshot_rows": int(mask.sum()),
-                "definition": "decoded tokenizer string predicate",
-            }
-        )
-    return masks, rows
-
-
-def _feature_family_fraction(top_tokens: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    valid = top_tokens < mask.shape[0]
-    return (mask[top_tokens] & valid).mean(axis=1)
-
-
-def _family_selected_features(
-    top_tokens: np.ndarray,
-    masks: dict[str, np.ndarray],
-    *,
-    threshold: float,
-    min_features: int = 24,
-) -> dict[str, np.ndarray]:
-    selected: dict[str, np.ndarray] = {}
-    for family, mask in masks.items():
-        frac = _feature_family_fraction(top_tokens, mask)
-        idx = np.flatnonzero(frac >= threshold)
-        if idx.size < min_features:
-            idx = np.argsort(frac)[-min_features:]
-        selected[family] = idx.astype(np.int64)
-    return selected
 
 
 def _lifecycle_step_tables(rates: np.ndarray, norms: np.ndarray) -> dict[str, np.ndarray]:

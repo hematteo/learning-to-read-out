@@ -33,25 +33,18 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(REPO))
-sys.path.insert(0, str(REPO / "src"))
 
-from experiments.crosscoders.crosscoder_main.dynamics import derive as derive_mod  # noqa: E402
-from experiments.crosscoders.crosscoder_main.dynamics.discovery import RunRow, list_runs  # noqa: E402
-from experiments.crosscoders.crosscoder_main.dynamics.provenance import (  # noqa: E402
+from src.crosscoder.checkpoint_loaders import _load_npy_or_pt, load_run  # noqa: E402
+from src.dynamics import derive as derive_mod  # noqa: E402
+from src.dynamics.discovery import RunRow, list_runs  # noqa: E402
+from src.dynamics.provenance import (  # noqa: E402
     METRIC_VERSION,
     file_sha256,
     git_sha,
 )
-from src.crosscoder.checkpoint_loaders import _load_npy_or_pt, load_run  # noqa: E402
 
-OUTPUT_PARQUET = (
-    REPO
-    / "experiments/crosscoders/crosscoder_main/derived/aggregates/analysis_table.parquet"
-)
-OUTPUT_JSON = (
-    REPO
-    / "experiments/crosscoders/crosscoder_main/derived/aggregates/analysis_table.manifest.json"
-)
+OUTPUT_PARQUET = REPO / "experiments/crosscoders/crosscoder_main/derived/aggregates/analysis_table.parquet"
+OUTPUT_JSON = REPO / "experiments/crosscoders/crosscoder_main/derived/aggregates/analysis_table.manifest.json"
 
 
 def _scalars_from_run(row: RunRow, derive_if_missing: bool) -> dict:
@@ -67,9 +60,7 @@ def _scalars_from_run(row: RunRow, derive_if_missing: bool) -> dict:
                 elif obj.ndim == 2:
                     rates = obj
         except Exception as e:
-            print(
-                f"  [warn] failed to load rates for {row.run_id} seed {row.seed}: {e}"
-            )
+            print(f"  [warn] failed to load rates for {row.run_id} seed {row.seed}: {e}")
 
     if rates is None and derive_if_missing and row.ckpt_path is not None:
         try:

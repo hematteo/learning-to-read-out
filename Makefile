@@ -1,4 +1,4 @@
-# Front door for the readout-development code (thesis Chapter 4).
+# Front door for the learning-to-read-out code release (thesis Chapter 4).
 # Targets are ordered to mirror the reproduction pipeline:
 #   install -> test -> audit -> extract -> train -> analyze
 # `make help` lists them. This is a code-only release (no data, no metrics shipped):

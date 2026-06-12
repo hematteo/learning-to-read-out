@@ -8,7 +8,7 @@ Chapter 4: confirms the discrete event reproduces in a non-Pythia LM family
 
 | File | What it does | When to read |
 |---|---|---|
-| [SCHEDULE.md](SCHEDULE.md) | Pre-registered snapshot schedule + decision-rule thresholds. Committed 2026-04-27 before any training. | First — the pre-registered plan |
+| [../SCHEDULE.md](../SCHEDULE.md) | Pre-registered snapshot schedule + decision-rule thresholds (at the experiment root). Committed 2026-04-27 before any training. | First — the pre-registered plan |
 | [extract_wu_olmo.py](extract_wu_olmo.py) | Downloads OLMo-2-7B checkpoints, extracts `lm_head.weight` (W_U) at the 32 pre-registered steps, writes fp32 .pt files compatible with `wu_adapter.load_snapshots`. Cleans HF cache between checkpoints. | Prereq for both stages |
 | [run_olmo_pilot.sh](run_olmo_pilot.sh) | Stage 1: single A100-80GB, d_SAE=16384, 100 epochs, 1 seed. Wall ~3 h. Goal: pass 4 pilot gates. | Always run first |
 | [eval_decision_rules.py](eval_decision_rules.py) | Computes the 4 pilot / 5 production gates from a trained crosscoder. JSON verdict, exit code = pass/fail. | After each training run |

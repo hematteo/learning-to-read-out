@@ -65,6 +65,11 @@ extend-exclude = ["lib"]
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 
+[tool.ruff.lint.isort]
+# experiments/ is a namespace package (no __init__.py); pin it (and src) as
+# first-party so import sorting doesn't depend on package-marker files.
+known-first-party = ["src", "experiments"]
+
 [tool.ruff.lint.per-file-ignores]
 # Standalone experiment/CLI scripts do sys.path setup (and the example sets
 # warning filters) before src imports.

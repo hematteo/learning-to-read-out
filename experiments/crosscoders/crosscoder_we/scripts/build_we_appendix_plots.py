@@ -14,8 +14,6 @@ Outputs:
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import sys
 from pathlib import Path
 
@@ -25,39 +23,14 @@ import torch
 REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO))
 
-from src.core.model_specs import DEFAULT_STEPS_32 as STEPS_32  # noqa: E402
-from src.core.paths import release_path, repo_root, ssd_root
-
-MODEL_SHORT = "pythia-160m"
-
-
-def _load_we_rates_and_norms(cache_root: Path) -> tuple[np.ndarray, np.ndarray]:
-    we_dir = cache_root / "derived" / "rates" / "we-d8192-multiseed"
-    rates = []
-    norms = []
-    for seed in range(5):
-        rate_path = we_dir / f"we_rates_dsae8192_seed{seed}.pt"
-        norm_path = we_dir / f"we_cc_dsae8192_seed{seed}_norms.npy"
-        payload = torch.load(rate_path, map_location="cpu", weights_only=False)
-        if payload.get("steps") != STEPS_32:
-            raise ValueError(f"unexpected W_E steps in {rate_path}")
-        per_seed = payload["rates_per_seed"]
-        if len(per_seed) != 1:
-            raise ValueError(f"expected one rate tensor in {rate_path}, got {per_seed.keys()}")
-        rates.append(next(iter(per_seed.values())).float().numpy())
-        norms.append(np.load(norm_path).astype(np.float32))
-    return np.stack(rates, axis=0), np.stack(norms, axis=0)
-
-
-def _load_wu_rates_and_norms(cache_root: Path) -> tuple[np.ndarray, np.ndarray]:
-    run3 = cache_root / "derived" / "rates" / "wu-d8192-multiseed"
-    rates = np.load(run3 / "firing_rates_all_seeds.npy").astype(np.float32)
-    norms = np.load(run3 / "decoder_norms_all_seeds.npy").astype(np.float32)
-    if rates.shape != (5, 32, 8192):
-        raise ValueError(f"unexpected W_U rates shape {rates.shape}")
-    if norms.shape != (5, 32, 8192):
-        raise ValueError(f"unexpected W_U norms shape {norms.shape}")
-    return rates, norms
+from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
+    STEPS_32,
+    _load_we_rates_and_norms,
+    _load_wu_rates_and_norms,
+    _quality_rows,
+    _write_csv,
+)
+from src.core.paths import repo_root, ssd_root
 
 
 def _trajectory_rows(label: str, rates: np.ndarray, norms: np.ndarray) -> list[dict]:
@@ -75,46 +48,6 @@ def _trajectory_rows(label: str, rates: np.ndarray, norms: np.ndarray) -> list[d
                     "mean_feature_rate": float(mean_rate[seed, i]),
                     "mean_l0": float(l0[seed, i]),
                     "mean_decoder_norm": float(mean_norm[seed, i]),
-                }
-            )
-    return rows
-
-
-def _write_csv(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not rows:
-        raise ValueError(f"no rows for {path}")
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def _quality_rows() -> list[dict]:
-    rows: list[dict] = []
-    specs = [
-        ("W_E", 8192, range(5), "W_E d8192"),
-        ("W_E", 24576, range(1), "W_E d24576"),
-        ("W_U", 8192, range(5), "W_U d8192"),
-        ("W_U", 24576, range(3), "W_U d24576"),
-    ]
-    for kind, dim, seeds, label in specs:
-        for seed in seeds:
-            path = release_path(MODEL_SHORT, kind, dim=dim, seed=seed)
-            cfg_path = path.with_suffix(".config.json")
-            if not cfg_path.exists():
-                continue
-            cfg = json.loads(cfg_path.read_text())
-            q = cfg["quality"]
-            rows.append(
-                {
-                    "matrix": kind,
-                    "d_sae": dim,
-                    "seed": seed,
-                    "label": label,
-                    "explained_variance": float(q["explained_variance"]),
-                    "mean_l0": float(q["mean_l0"]),
-                    "pct_active": float(100.0 * q["mean_l0"] / dim),
                 }
             )
     return rows
