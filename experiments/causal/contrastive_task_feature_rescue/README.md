@@ -46,7 +46,7 @@ For each example with answers `(y+, y-)`:
    log firing-rate) plane.
 4. Paired interventions: ablate top-k vs preserve top-k vs matched controls.
 
-The reconstruction matches `causal/temporal_localization_patching/scripts/run_step1000_feature_rescue.py`
+The reconstruction matches `experiments/causal/temporal_localization_patching/scripts/run_step1000_feature_rescue.py`
 (same `encode_at_step`, `feature_contribution`, and preprocessing-aware
 decode), so feature indices are directly comparable across the two
 experiments.

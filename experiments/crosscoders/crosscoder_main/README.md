@@ -62,7 +62,7 @@ These all compute and persist metrics; none render figures:
 - Quality recompute: `uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py`
 - Baselines (PCA / concat-PCA / endpoint-linear): `eval_pca_static.py`, `eval_concat_pca.py`, `eval_endpoint_linear.py` under `scripts/appendix_validation/baselines/`
 - 1B per-snapshot eval: `uv run python experiments/crosscoders/crosscoder_main/scripts/main_1b/eval_persnap_1b.py`
-- Per-model aggregate tensors will be distributed as released artifacts (see [`DATA.md`](../../../docs/DATA.md)); they are read from `${UM_SSD_ROOT}/derived/aggregates/`.
+- Per-model aggregate tensors ship with the released artifacts (see [`DATA.md`](../../../docs/DATA.md)); they are read from `${UM_SSD_ROOT}/derived/aggregates/`.
 
 The lifecycle, temporal-patching, EV/L0-pareto, and per-snapshot baseline analyses
 live in their own claim-anchored experiments:

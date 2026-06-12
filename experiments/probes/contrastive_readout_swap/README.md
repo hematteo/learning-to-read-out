@@ -192,7 +192,7 @@ uv run python experiments/probes/contrastive_readout_swap/scripts/run_step6_repo
 4. **Label-permutation control** — `--use-label-permutation` swaps the
    MCQ-letter shuffle control for the benchmark-derived families.
 5. **Gauge-alignment ladder** — `--alignments scale row_norm procrustes`
-   matches the alignment ladder of `temporal_localization_patching/run_aligned_swap_grid.py`.
+   matches the alignment ladder of `experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py`.
    The rescue is real-not-gauge if it survives Procrustes.
 6. **Prompt-corruption pairs** — `build_task_datasets.py` writes
    `<family>_corrupt.jsonl` for SVA (label flip) and IOI (entity-name swap).
