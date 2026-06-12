@@ -71,7 +71,7 @@ experiments:
     inputs:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors
-      - ${UM_SSD_ROOT}/hf_release/wu-crosscoder-trained/t2_1/v6_sparsity_20260502T084542Z/wu_cc_p69b_dsae32768_seed0.pt
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0.safetensors  # denser/default-lambda comparison only
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - ${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-*_d*_seed*.pt
@@ -295,7 +295,7 @@ experiments:
     results_dir: results/experiments/crosscoder_we/
     inputs:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-*/W_E/cross-snapshot-32/d*/seed*.safetensors
-      - ${UM_SSD_ROOT}/archive/cluster_results/t3_2_we_dsae24576/we_rates_dsae24576_seed0.pt
+      - ${UM_SSD_ROOT}/derived/rates/we-d24576/we_rates_dsae24576_seed0.pt
     paper_labels:
       - fig:app-we-read-write-asymmetry
       - fig:app-we-quality-pareto

@@ -15,12 +15,12 @@ crosscoder is directly comparable to the production 160M W_U run
 Usage:
   uv run python scripts/extract/extract_we_pythia.py \
       --model EleutherAI/pythia-160m \
-      --cache-dir ${UM_SSD_ROOT}/wu_crosscoder/we_snapshots
+      --cache-dir ${UM_SSD_ROOT}/we_snapshots
 
 Then point the trainer at the same cache (scripts/train/train_crosscoder.py
 wraps wu_adapter.main; the library module has no __main__ block):
   uv run python scripts/train/train_crosscoder.py \
-      --cache-dir ${UM_SSD_ROOT}/wu_crosscoder/we_snapshots \
+      --cache-dir ${UM_SSD_ROOT}/we_snapshots \
       --output /workspace/results/we_multiseed/we_cc_dsae8192_seed${SEED}.pt \
       ...
 """
@@ -99,7 +99,7 @@ def main() -> int:
     ap.add_argument(
         "--cache-dir",
         type=Path,
-        default=ssd_path("wu_crosscoder", "we_snapshots"),
+        default=ssd_path("we_snapshots"),
         help="W_E snapshot cache; must NOT overlap the W_U cache (different W tensor).",
     )
     ap.add_argument(

@@ -44,7 +44,7 @@ source: >
   wu_cc_p69b_dsae32768_seed0.pt (lr=1e-5, lambda=0.6, jumprelu_lr_factor=0.4,
   init_threshold=0.15, l1_warmup_fraction=0.05);
   experiments.yaml: crosscoder_main inputs (selected sparse 6.9B run,
-  hf_release/wu-crosscoder-trained/t2_1/v6_sparsity_.../wu_cc_p69b_dsae32768_seed0.pt);
+  hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/p69b_sparse_d32768_seed0.json
   (model, d_sae=32768, training_batch_size=1024, canon EV/L0);
   scripts/train/train_crosscoder.py docstring (shared Pythia recipe:

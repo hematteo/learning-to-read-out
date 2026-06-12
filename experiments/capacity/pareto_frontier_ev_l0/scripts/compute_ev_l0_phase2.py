@@ -58,7 +58,7 @@ ARMS: list[Arm] = [
     Arm(
         "run3_s0",
         "Run 3 seed 0 (160M W_U d=8192, JumpReLU)",
-        SSD / "run3_ge_exact_results/wu_cc_ge_exact_seed0.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed0.safetensors",
         WU_CACHE,
         "WU8192",
         is_new=False,
@@ -66,7 +66,7 @@ ARMS: list[Arm] = [
     Arm(
         "t4_6_s0",
         "T4.6 seed 0 (160M W_U d=24576, JumpReLU)",
-        SSD / "cluster_results/t4_6_wu_d24576/wu_cc_dsae24576_seed0.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors",
         WU_CACHE,
         "WU24576",
         is_new=False,
@@ -74,7 +74,7 @@ ARMS: list[Arm] = [
     Arm(
         "we_pilot",
         "we_pilot (160M W_E d=8192, JumpReLU)",
-        SSD / "we_pilot/results_we/we_cc_dsae8192_seed0.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_E/cross-snapshot-32/d8192/seed0.safetensors",
         WE_CACHE,
         "WE8192",
         is_new=False,
@@ -83,15 +83,15 @@ ARMS: list[Arm] = [
     Arm(
         "t4_4_16snap",
         "T4.4 16-snap (160M W_U d=8192, JumpReLU, K=16)",
-        SSD / "cluster_results/t4_4_16snap/wu_cc_dsae8192_seed0.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-16/d8192/seed0.safetensors",
         WU_CACHE,
         "WU8192",
         is_new=True,
     ),
     Arm(
         "t1_5_bt",
-        "T1.5 BatchTopK (160M W_U d=8192, BatchTopK k=64)",
-        SSD / "cluster_results/t1_5_arch_sweep/20260428T230005Z_job28571219/batchtopk_dsae8192_seed0.pt",
+        "T1.5 BatchTopK (160M W_U d=8192, BatchTopK k=203)",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/architecture-comparison/d8192/batchtopk/seed0.safetensors",
         WU_CACHE,
         "WU8192",
         is_new=True,
@@ -99,7 +99,7 @@ ARMS: list[Arm] = [
     Arm(
         "t1_5_gt",
         "T1.5 Gated retune (160M W_U d=8192, Gated lambda=0.05)",
-        SSD / "cluster_results/t1_5_gated_retune/gated_dsae8192_seed0_l10.05.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/architecture-comparison/d8192/gated-retuned/seed0.safetensors",
         WU_CACHE,
         "WU8192",
         is_new=True,
@@ -107,7 +107,7 @@ ARMS: list[Arm] = [
     Arm(
         "run4_d16384",
         "run4 (160M W_U d=16384, JumpReLU)",
-        SSD / "run4_dsae16384/wu_cc_dsae16384_seed0.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d16384/seed0.safetensors",
         WU_CACHE,
         "WU16384",
         is_new=True,
@@ -115,7 +115,7 @@ ARMS: list[Arm] = [
     Arm(
         "t3_2_we_d24576",
         "T3.2 W_E (160M W_E d=24576, JumpReLU)",
-        SSD / "cluster_results/t3_2_we_dsae24576/we_cc_dsae24576_seed0.pt",
+        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_E/cross-snapshot-32/d24576/seed0.safetensors",
         WE_CACHE,
         "WE24576",
         is_new=True,

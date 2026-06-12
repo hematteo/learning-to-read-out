@@ -228,9 +228,9 @@ class ModelCfg:
 
 CFG_PYTHIA_160M = ModelCfg(
     model_name="EleutherAI/pythia-160m",
-    ckpt_template=str(SSD / "run3_ge_exact_results/wu_cc_ge_exact_seed{seed}.pt"),
+    ckpt_template=str(SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed{seed}.safetensors"),
     aggregates_template=None,
-    npy_dir=SSD / "run3_ge_exact_results",
+    npy_dir=SSD / "derived/rates/wu-d8192-multiseed",
     hLN_cache_dir=SSD / "readout_edit_timing",
     steps_canonical=[
         0,

@@ -32,7 +32,7 @@ MODEL_SHORT = "pythia-160m"
 
 
 def _load_we_rates_and_norms(cache_root: Path) -> tuple[np.ndarray, np.ndarray]:
-    we_dir = cache_root / "wu_crosscoder" / "cluster_results" / "we_multiseed"
+    we_dir = cache_root / "derived" / "rates" / "we-d8192-multiseed"
     rates = []
     norms = []
     for seed in range(5):
@@ -50,7 +50,7 @@ def _load_we_rates_and_norms(cache_root: Path) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _load_wu_rates_and_norms(cache_root: Path) -> tuple[np.ndarray, np.ndarray]:
-    run3 = cache_root / "archive" / "run3_ge_exact_results"
+    run3 = cache_root / "derived" / "rates" / "wu-d8192-multiseed"
     rates = np.load(run3 / "firing_rates_all_seeds.npy").astype(np.float32)
     norms = np.load(run3 / "decoder_norms_all_seeds.npy").astype(np.float32)
     if rates.shape != (5, 32, 8192):

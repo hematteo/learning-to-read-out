@@ -51,8 +51,8 @@ from src.crosscoder.snapshots import load_snapshot
 def _load_we_d24576_rates_and_norms(
     ssd_root: Path,
 ) -> tuple[np.ndarray, np.ndarray, Path, Path]:
-    rate_path = ssd_root / "archive" / "cluster_results" / "t3_2_we_dsae24576" / "we_rates_dsae24576_seed0.pt"
-    norm_path = ssd_root / "archive" / "cluster_results" / "t3_2_we_dsae24576" / "we_cc_dsae24576_seed0_norms.npy"
+    rate_path = ssd_root / "derived" / "rates" / "we-d24576" / "we_rates_dsae24576_seed0.pt"
+    norm_path = ssd_root / "derived" / "rates" / "we-d24576" / "we_cc_dsae24576_seed0_norms.npy"
     payload = torch.load(rate_path, map_location="cpu", weights_only=False)
     if payload.get("steps") != STEPS_32:
         raise ValueError(f"unexpected d24576 W_E steps in {rate_path}")

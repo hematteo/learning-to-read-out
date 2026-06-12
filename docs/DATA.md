@@ -23,14 +23,13 @@ $UM_SSD_ROOT/
   derived/aggregates/aggregates_<model>_d<N>_seed<S>.pt
 ```
 
-One artifact predates the canonical layout: the selected **sparse 6.9B**
-dictionary is referenced (in `experiments.yaml` and the lifecycle/rescue
-READMEs) at the legacy run path
-`hf_release/wu-crosscoder-trained/t2_1/v6_sparsity_20260502T084542Z/wu_cc_p69b_dsae32768_seed0.pt`.
-If you retrain it (settings of record:
-`configs/runs/pythia-6.9b_wu_d32768_seed0_sparse.yaml`), place your checkpoint
-at that literal path (the lifecycle plot script hardcodes it; the rescue
-scripts also accept an explicit checkpoint flag).
+The selected **sparse 6.9B** dictionary (λ=0.6) lives in the canonical layout
+as `pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors` — the
+`-sparse` suffix distinguishes it from the default-λ comparison run
+`seed0.safetensors` in the same directory. If you retrain it (settings of
+record: `configs/runs/pythia-6.9b_wu_d32768_seed0_sparse.yaml`), place your
+checkpoint at that path; the rescue scripts also accept an explicit
+checkpoint flag.
 
 ## Released artifacts (Hugging Face)
 

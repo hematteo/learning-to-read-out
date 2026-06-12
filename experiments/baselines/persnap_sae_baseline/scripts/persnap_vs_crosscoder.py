@@ -44,7 +44,7 @@ DEV = torch.device(
 )
 
 R3_CKPT = Path(
-    str(ssd_path("wu_crosscoder", "run3_ge_exact_results", "wu_cc_ge_exact_seed0.pt"))
+    str(ssd_path("hf_release", "parameter-trajectory-crosscoders", "pythia-160m", "W_U", "cross-snapshot-32", "d8192", "seed0.safetensors"))
 )
 PERSNAP_DIR = ssd_path("wu_crosscoder", "per_snap_sae")
 

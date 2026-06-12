@@ -95,10 +95,12 @@ SELECTED_RUNS: tuple[SelectedRun, ...] = (
             str(
                 ssd_path(
                     "hf_release",
-                    "wu-crosscoder-trained",
-                    "t2_1",
-                    "v6_sparsity_20260502T084542Z",
-                    "wu_cc_p69b_dsae32768_seed0.pt",
+                    "parameter-trajectory-crosscoders",
+                    "pythia-6.9b",
+                    "W_U",
+                    "cross-snapshot-32",
+                    "d32768",
+                    "seed0-sparse.safetensors",
                 )
             )
         ),
@@ -111,10 +113,12 @@ SELECTED_RUNS: tuple[SelectedRun, ...] = (
             str(
                 ssd_path(
                     "hf_release",
-                    "wu-crosscoder-trained",
-                    "t2_2",
-                    "20260502T052841Z",
-                    "cc_olmo27b_dsae32768_seed0.pt",
+                    "parameter-trajectory-crosscoders",
+                    "olmo-2-7b",
+                    "W_U",
+                    "cross-snapshot-32",
+                    "d32768",
+                    "seed0.safetensors",
                 )
             )
         ),
@@ -138,14 +142,13 @@ def _load_norms_from_selected_run(run: SelectedRun) -> np.ndarray:
         blob = torch.load(run.aggregate_path, map_location="cpu", weights_only=False)
         norms = blob["decoder_norms"].float().numpy().astype(np.float32)
     elif run.checkpoint_path is not None:
-        import torch
+        from src.crosscoder.checkpoints import load_checkpoint
 
         print(f"deriving decoder norms from {run.checkpoint_path}")
-        ckpt = torch.load(run.checkpoint_path, map_location="cpu", weights_only=False)
-        state = ckpt.get("state_dict", ckpt)
-        W_D = state[run.checkpoint_wd_key].float()
+        cp = load_checkpoint(run.checkpoint_path)
+        W_D = cp.state_dict[run.checkpoint_wd_key].float()
         norms = W_D.norm(dim=-1).numpy().astype(np.float32)
-        del W_D, state, ckpt
+        del W_D, cp
         gc.collect()
     else:
         raise ValueError(f"no source for {run.key}")
@@ -280,7 +283,7 @@ def stratified_sample(norms: np.ndarray, n: int, rng: np.random.Generator) -> np
 
 
 def main() -> None:
-    norms_160 = np.load(SSD / "run3_ge_exact_results/decoder_norms_all_seeds.npy")[0].astype(np.float32)
+    norms_160 = np.load(SSD / "derived/rates/wu-d8192-multiseed/decoder_norms_all_seeds.npy")[0].astype(np.float32)
     norms_1b = np.load(SSD / "run5_pythia1b_capsweep/decoder_norms_dsae24576_seed0.npy").astype(np.float32)
 
     # CSV cache (mode-independent, long-form). Writes one row per

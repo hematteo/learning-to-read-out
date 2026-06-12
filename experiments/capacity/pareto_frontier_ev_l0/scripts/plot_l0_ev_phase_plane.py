@@ -123,10 +123,10 @@ def main() -> int:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     snap_dir = args.release_root / "snapshots"
-    R3 = args.release_root / "run3_ge_exact_results"
+    R3 = args.release_root / "derived" / "rates" / "wu-d8192-multiseed"
     R4 = args.release_root / "run4_dsae16384"
-    T46 = args.release_root / "cluster_results" / "t4_6_wu_d24576"
-    T44 = args.release_root / "cluster_results" / "t4_4_16snap"
+    T46 = args.release_root / "derived" / "rates" / "wu-d24576-multiseed"
+    T44 = args.release_root / "derived" / "rates" / "wu-d8192-cs16"
 
     families: list[tuple[str, Path, str, str]] = []
     for s in range(5):

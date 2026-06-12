@@ -42,7 +42,7 @@ cross-family checks.
 ## Inputs (SSD canonical paths)
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors`
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors`
-- `${UM_SSD_ROOT}/hf_release/wu-crosscoder-trained/t2_1/v6_sparsity_20260502T084542Z/wu_cc_p69b_dsae32768_seed0.pt`
+- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors`
 - `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.{json,csv}`
 - `${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-{1b_d24576,160m_d24576}_seed0.pt`
 

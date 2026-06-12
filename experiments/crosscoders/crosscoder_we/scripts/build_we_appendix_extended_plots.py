@@ -617,6 +617,7 @@ def build_hungarian_plot(
 
 def _rate_sidecar_candidates(ssd_root: Path) -> list[str]:
     names = [
+        ssd_root / "derived" / "rates" / "we-d24576" / "we_rates_dsae24576_seed0.pt",
         ssd_root / "wu_crosscoder" / "cluster_results" / "we_multiseed" / "we_rates_dsae24576_seed0.pt",
         ssd_root / "wu_crosscoder" / "cluster_results" / "we_multiseed" / "we_rates_d24576_seed0.pt",
         ssd_root / "archive" / "cluster_results" / "t3_2_we_dsae24576" / "rates.pt",

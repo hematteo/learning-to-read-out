@@ -121,7 +121,7 @@ Library helpers: [src/probes/contrastive_tasks.py](../../../src/probes/contrasti
 - The crosscoder gauge is fixed by Exp 1's snapshot step. Use the published
   `d24576/seed0` for Pythia-1B and `d8192/seed0` for Pythia-160M.
 - For Pythia-6.9B the only paper-faithful instrument is the sparse / high-λ
-  run at `${UM_SSD_ROOT}/hf_release/wu-crosscoder-trained/.../wu_cc_p69b_dsae32768_seed0.pt`;
+  run at `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors`;
   pass it explicitly via `--ckpt`.
 - This experiment is *secondary* to Exp 1: only run on families that show a
   positive readout-rescue in the heatmap, otherwise the attribution is being
