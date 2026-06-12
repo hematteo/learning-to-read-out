@@ -135,7 +135,6 @@ import json
 # the end-to-end recompute paths that need encode()/get_pieces()/script_of()
 # raise a clear, actionable error only when actually invoked.
 # ---------------------------------------------------------------------------
-import os
 import string
 import time
 from dataclasses import dataclass, field
@@ -200,7 +199,7 @@ except FileNotFoundError:
 # Per-model configurations (resolve at run start).
 # SSD root is env-driven so the same code works on local SSD + cluster nfs.
 # ---------------------------------------------------------------------------
-SSD = Path(os.environ.get("UM_SSD_ROOT", str(ssd_path("wu_crosscoder"))))
+SSD = ssd_path()
 # Canonical (Pythia-tokenized) eval corpus — lives in the non-shipped _archive/ tree;
 # override with --eval-tokens (see docs/DATA.md).
 CORPUS_TOKENS_PYTHIA = _REPO / "_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt"
@@ -270,8 +269,8 @@ CFG_PYTHIA_160M = ModelCfg(
 
 CFG_PYTHIA_1B = ModelCfg(
     model_name="EleutherAI/pythia-1b",
-    ckpt_template=str(SSD / "run5_pythia1b_capsweep/wu_cc_1b_dsae{d_sae}_seed{seed}.pt"),
-    aggregates_template=str(SSD / "run5_pythia1b_capsweep/aggregates_dsae{d_sae}_seed{seed}.pt"),
+    ckpt_template=str(SSD / "hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d{d_sae}/seed{seed}.safetensors"),
+    aggregates_template=str(SSD / "derived/aggregates/aggregates_dsae{d_sae}_seed{seed}.pt"),
     npy_dir=None,
     hLN_cache_dir=SSD / "readout_edit_timing_pythia1b",
     steps_canonical=[
@@ -310,14 +309,15 @@ CFG_PYTHIA_1B = ModelCfg(
     ],
 )
 
-# Pythia-6.9B and OLMo-2-7B: no crosscoder checkpoints exist yet, so
-# ckpt/aggregates templates are placeholders. The temporal_patch_grid pipeline
+# Pythia-6.9B and OLMo-2-7B configs resolve the released artifacts where they
+# exist (the 6.9B template matches the default-lambda run; the selected sparse
+# run is seed0-sparse.safetensors in the same directory). The temporal_patch_grid pipeline
 # only needs steps_canonical, model_name, and hLN_cache_dir; subset / aggregate
 # helpers will fail loudly if invoked on these configs without ckpts in place.
 CFG_PYTHIA_6_9B = ModelCfg(
     model_name="EleutherAI/pythia-6.9b",
-    ckpt_template=str(SSD / "pythia6_9b/wu_cc_6_9b_dsae{d_sae}_seed{seed}.pt"),
-    aggregates_template=str(SSD / "pythia6_9b/aggregates_dsae{d_sae}_seed{seed}.pt"),
+    ckpt_template=str(SSD / "hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d{d_sae}/seed{seed}.safetensors"),
+    aggregates_template=str(SSD / "derived/aggregates/aggregates_pythia-6.9b_d{d_sae}_seed{seed}.pt"),
     npy_dir=None,
     hLN_cache_dir=SSD / "hln_cache/temporal_patch_grid/pythia-6.9b",
     steps_canonical=[

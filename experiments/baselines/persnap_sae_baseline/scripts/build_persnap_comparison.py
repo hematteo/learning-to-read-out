@@ -18,14 +18,14 @@ from src.crosscoder.wu_adapter import (  # noqa: E402
     load_snapshots,
 )
 
-ROOT = ssd_path("archive", "cluster_results")
-WU_CACHE = ssd_path("wu_crosscoder", "snapshots")
+ROOT = ssd_path()
+WU_CACHE = ssd_path("snapshots")
 OUT = REPO / "figures/persnap_sae_baseline"
 
-# Hardcoded cluster artifact paths (default CLI values). These point at job
-# outputs on the external SSD archive; override via --sae-log / --cc-ckpt.
-DEFAULT_SAE_LOG = ROOT / "t1_3_per_snap_sae/20260428T230005Z_job28571218/logs/train.log"
-DEFAULT_CC_CKPT = ROOT / "t4_6_wu_d24576/20260429T032304Z_job28579000/wu_cc_dsae24576_seed0.pt"
+# Default CLI values resolve the released artifacts under UM_SSD_ROOT
+# (per-snap training log ships under derived/rates/); override via --sae-log / --cc-ckpt.
+DEFAULT_SAE_LOG = ROOT / "derived/rates/wu-d8192-persnap/train.log"
+DEFAULT_CC_CKPT = ROOT / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors"
 
 from src.core.model_specs import DEFAULT_STEPS_32  # noqa: E402
 

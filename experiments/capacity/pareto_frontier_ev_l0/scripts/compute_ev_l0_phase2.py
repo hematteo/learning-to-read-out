@@ -36,7 +36,7 @@ import torch
 from src.core.paths import ssd_path
 from src.crosscoder.checkpoints import unwrap_ckpt
 
-SSD = ssd_path("wu_crosscoder")
+SSD = ssd_path()
 WU_CACHE = SSD / "snapshots"
 WE_CACHE = SSD / "we_snapshots"
 

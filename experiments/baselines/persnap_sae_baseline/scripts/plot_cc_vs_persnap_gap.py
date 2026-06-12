@@ -142,7 +142,7 @@ def main() -> int:
     ap.add_argument(
         "--release-root",
         type=Path,
-        default=ssd_path("wu_crosscoder"),
+        default=ssd_path(),
     )
     ap.add_argument(
         "--out-dir",
@@ -162,11 +162,17 @@ def main() -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     snap_dir = args.release_root / "snapshots"
-    cc_path = args.release_root / "hf_release" / "parameter-trajectory-crosscoders" / "pythia-160m" / "W_U" / "cross-snapshot-32" / "d8192" / "seed0.safetensors"
+    cc_path = (
+        args.release_root / "hf_release" / "parameter-trajectory-crosscoders"
+        / "pythia-160m" / "W_U" / "cross-snapshot-32" / "d8192" / "seed0.safetensors"
+    )
     per_snap_dir = (
         args.per_snap_job_dir
         if args.per_snap_job_dir is not None
-        else (args.release_root / "cluster_results" / "t1_3_per_snap_sae" / "20260428T230005Z_job28571218")
+        else (
+            args.release_root / "hf_release" / "parameter-trajectory-crosscoders"
+            / "pythia-160m" / "W_U" / "per-snapshot-saes" / "d8192"
+        )
     )
 
     print(f"Crosscoder: {cc_path}")

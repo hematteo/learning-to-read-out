@@ -28,6 +28,8 @@ from pathlib import Path
 
 import torch
 
+from src.core.paths import ssd_path
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -40,7 +42,7 @@ def main():
     ap.add_argument(
         "--cc-d8192",
         type=Path,
-        default=Path("results/wu_crosscoder/run3_ge_exact_results/wu_cc_ge_exact_seed0.pt"),
+        default=ssd_path("hf_release", "parameter-trajectory-crosscoders", "pythia-160m", "W_U", "cross-snapshot-32", "d8192", "seed0.safetensors"),
         help="d_sae=8192 K=32 crosscoder checkpoint",
     )
     ap.add_argument(

@@ -33,13 +33,25 @@ checkpoint flag.
 
 ## Released artifacts (Hugging Face)
 
-The trained trajectory crosscoders (with `.config.json`/`.md` training sidecars)
-and the per-model aggregate tensors (`derived/aggregates/aggregates_*.pt`, which
-have no in-repo producer) are distributed as a Hugging Face dataset; the repo
-link will be added here as soon as the upload completes. Download into
-`$UM_SSD_ROOT` following the layout above to skip retraining. Until then,
-everything except the aggregates is regenerable from scratch: every crosscoder
-retrains from public checkpoints with the settings of record in
+The trained trajectory crosscoders (with `.config.json`/`.md` training sidecars),
+the per-model aggregate tensors (`derived/aggregates/`), the activation-rate
+sidecars (`derived/rates/`), the attribution artifacts, and the held-out eval
+token corpus are distributed at
+**https://huggingface.co/matteohe/parameter-trajectory-crosscoders**
+(`index.json` there is the machine-readable inventory). Download into
+`$UM_SSD_ROOT` to skip retraining:
+
+```bash
+hf download matteohe/parameter-trajectory-crosscoders \
+    --local-dir "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders"
+```
+
+The recipe-control 31M models live separately at
+**https://huggingface.co/matteohe/readout-recipe-control**, and pre-extracted
+W_U snapshot caches at
+**https://huggingface.co/datasets/matteohe/wu-crosscoder-snapshots**.
+Independently of the release, every crosscoder is regenerable from scratch:
+each retrains from public checkpoints with the settings of record in
 `configs/runs/`.
 
 ## Source models and checkpoints (Hugging Face, public)
@@ -102,13 +114,17 @@ reproducibility appendix records the exact step lists.
 
 A group of intervention, per-snapshot, and lifecycle-edit evaluation scripts
 (under `experiments/causal/`, `experiments/lifecycle/feature_lifecycle_trajectories/`,
-and a few `scripts/extract/` helpers) default their `--eval-tokens` argument to a
-legacy tensor path such as `_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt`.
-That tensor is **not part of this release** and the `_archive/` tree is not
-shipped. These scripts are not on the figure-reproduction path (the paper
-figures derive from the small metric files the analyze-stage scripts write under
-`experiments/**/derived/`, see `REPRODUCE.md`); to run them, supply your own
-evaluation-token tensor with `--eval-tokens /path/to/tokens.pt`.
+and a few `scripts/extract/` helpers) take an `--eval-tokens` tensor of held-out
+evaluation tokens. The corpus used in the paper ships with the released
+artifacts at `evaluation/eval-corpus/eval_tokens.pt` (Wikipedia-derived,
+CC-BY-SA; see its README there for provenance):
+
+```bash
+--eval-tokens "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt"
+```
+
+Scripts whose defaults reference a legacy `_archive/...` path accept this flag
+to override; you can also supply your own token tensor.
 
 ## Derived metrics (regenerated, not shipped)
 
@@ -125,9 +141,9 @@ Regenerate them by running that experiment's scripts (see `REPRODUCE.md`).
 
 ## Not redistributed
 
-Original model checkpoints, raw Wikipedia dumps, and trained dictionaries are
-not included here. The thesis commits to releasing the derived analysis
-artifacts (not new models or raw dumps) under MIT.
+Original model checkpoints and raw Wikipedia dumps are not redistributed.
+Trained dictionaries are not bundled in this code repository — they are
+released separately on Hugging Face (see "Released artifacts" above) under MIT.
 
 ## Secrets
 

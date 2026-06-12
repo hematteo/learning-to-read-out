@@ -34,7 +34,7 @@ SELECTED_CMAP_NAME = "viridis"
 EVENT_SNAP_IDX = 11  # step 1000 — diverging colormap centered here
 
 REPO = Path(__file__).resolve().parents[4]
-SSD = ssd_path("wu_crosscoder")
+SSD = ssd_path()
 OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
 OUT.mkdir(parents=True, exist_ok=True)
 SELECTED_OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
@@ -73,9 +73,9 @@ SELECTED_RUNS: tuple[SelectedRun, ...] = (
         norms_path=Path(
             str(
                 ssd_path(
-                    "archive",
-                    "cluster_results",
-                    "t4_6_wu_d24576",
+                    "derived",
+                    "rates",
+                    "wu-d24576-multiseed",
                     "decoder_norms_dsae24576_seed0.npy",
                 )
             )
@@ -284,7 +284,7 @@ def stratified_sample(norms: np.ndarray, n: int, rng: np.random.Generator) -> np
 
 def main() -> None:
     norms_160 = np.load(SSD / "derived/rates/wu-d8192-multiseed/decoder_norms_all_seeds.npy")[0].astype(np.float32)
-    norms_1b = np.load(SSD / "run5_pythia1b_capsweep/decoder_norms_dsae24576_seed0.npy").astype(np.float32)
+    norms_1b = np.load(SSD / "derived/rates/wu-1b-d24576/decoder_norms_dsae24576_seed0.npy").astype(np.float32)
 
     # CSV cache (mode-independent, long-form). Writes one row per
     # (panel, feature_id, snap_idx) so any of the four x-axis variants

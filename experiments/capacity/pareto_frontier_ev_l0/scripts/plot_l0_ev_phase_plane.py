@@ -112,7 +112,7 @@ def main() -> int:
     ap.add_argument(
         "--release-root",
         type=Path,
-        default=ssd_path("wu_crosscoder"),
+        default=ssd_path(),
     )
     ap.add_argument(
         "--out-dir",

@@ -36,7 +36,10 @@ Primary comparison:
 
 ## Reproduce
 
-Run from the repo root. First train the late-start crosscoder:
+Run from the repo root. The trained late-start crosscoder ships with the
+released artifacts at
+`hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32-matched-window/d24576/seed0.safetensors`
+(see `docs/DATA.md`), so the training step below is optional. To retrain it:
 
 ```bash
 uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/train_late_start.py \
