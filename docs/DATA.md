@@ -43,8 +43,12 @@ token corpus are distributed at
 
 ```bash
 hf download matteohe/parameter-trajectory-crosscoders \
+    --revision fb7ee860b9257f125ddbac7ff3c793b35fdcce8d \
     --local-dir "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders"
 ```
+
+(The pinned revision is the verified release commit; drop `--revision` for the
+latest.)
 
 The recipe-control 31M models live separately at
 **https://huggingface.co/matteohe/readout-recipe-control**, and pre-extracted
