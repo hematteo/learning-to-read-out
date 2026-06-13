@@ -1,5 +1,7 @@
 # Learning to Read Out
 
+[![ci](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml/badge.svg)](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml)
+
 Sparse readout formation in language model pretraining, studied through
 parameter-trajectory crosscoders fit to the unembedding matrix (`W_U`). Across a
 fixed checkpoint schedule we extract `W_U` snapshots from public Hugging Face
