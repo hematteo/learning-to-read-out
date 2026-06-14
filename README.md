@@ -35,6 +35,21 @@ and thesis figures are rendered in the separate thesis LaTeX tree from metrics
 produced that way. Recomputing the metrics end-to-end needs external assets; see
 the documentation map below.
 
+## Pretrained artifacts (Hugging Face)
+
+The trained instruments and our own pretrained models are released on Hugging
+Face (full inventory, pinned revisions, and download commands in
+[`docs/DATA.md`](docs/DATA.md)):
+
+- **Trajectory crosscoders** — the dictionaries behind the figures, plus the
+  held-out eval corpus, aggregate tensors, and attribution artifacts:
+  **https://huggingface.co/hematteo/parameter-trajectory-crosscoders**
+- **Pretrained recipe-control LLMs** — the 31M models we trained for the
+  pretraining-recipe ablation:
+  **https://huggingface.co/hematteo/readout-recipe-control**
+- **W_U snapshot caches** (dataset) — pre-extracted unembedding snapshots:
+  **https://huggingface.co/datasets/hematteo/wu-crosscoder-snapshots**
+
 ## Reuse the library
 
 The trajectory-crosscoder and probe code is importable directly:

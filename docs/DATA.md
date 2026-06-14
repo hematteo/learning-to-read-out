@@ -37,12 +37,12 @@ The trained trajectory crosscoders (with `.config.json`/`.md` training sidecars)
 the per-model aggregate tensors (`derived/aggregates/`), the activation-rate
 sidecars (`derived/rates/`), the attribution artifacts, and the held-out eval
 token corpus are distributed at
-**https://huggingface.co/matteohe/parameter-trajectory-crosscoders**
+**https://huggingface.co/hematteo/parameter-trajectory-crosscoders**
 (`index.json` there is the machine-readable inventory). Download into
 `$UM_SSD_ROOT` to skip retraining:
 
 ```bash
-hf download matteohe/parameter-trajectory-crosscoders \
+hf download hematteo/parameter-trajectory-crosscoders \
     --revision fb7ee860b9257f125ddbac7ff3c793b35fdcce8d \
     --local-dir "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders"
 ```
@@ -51,9 +51,9 @@ hf download matteohe/parameter-trajectory-crosscoders \
 latest.)
 
 The recipe-control 31M models live separately at
-**https://huggingface.co/matteohe/readout-recipe-control**, and pre-extracted
+**https://huggingface.co/hematteo/readout-recipe-control**, and pre-extracted
 W_U snapshot caches at
-**https://huggingface.co/datasets/matteohe/wu-crosscoder-snapshots**.
+**https://huggingface.co/datasets/hematteo/wu-crosscoder-snapshots**.
 Independently of the release, every crosscoder is regenerable from scratch:
 each retrains from public checkpoints with the settings of record in
 `configs/runs/`.
