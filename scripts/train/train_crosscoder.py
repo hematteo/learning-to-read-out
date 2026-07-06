@@ -1,6 +1,6 @@
 """CLI front door for parameter-trajectory crosscoder training.
 
-Thin wrapper around ``src.crosscoder.wu_adapter.main`` so the trainer can be
+Thin wrapper around ``readout.crosscoder.wu_adapter.main`` so the trainer can be
 invoked as a script (the library module has no ``__main__`` block per the
 src/ layout contract). Trains a trajectory crosscoder on a cache of extracted
 W_U snapshots; see docs/REPRODUCE.md for the figure-by-figure reproduction map and
@@ -21,11 +21,7 @@ W_E value).
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
-from src.crosscoder.wu_adapter import main  # noqa: E402
+from readout.crosscoder.wu_adapter import main  # noqa: E402
 
 if __name__ == "__main__":
     main()

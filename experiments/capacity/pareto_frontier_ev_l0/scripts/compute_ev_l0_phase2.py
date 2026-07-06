@@ -22,10 +22,6 @@ with per-arm per-snapshot EV and L0 arrays, plus arm-level summaries.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import json
 import time
 from dataclasses import dataclass
@@ -33,8 +29,8 @@ from pathlib import Path
 
 import torch
 
-from src.core.paths import ssd_path
-from src.crosscoder.checkpoints import unwrap_ckpt
+from readout.core.paths import ssd_path
+from readout.crosscoder.checkpoints import unwrap_ckpt
 
 SSD = ssd_path()
 WU_CACHE = SSD / "snapshots"

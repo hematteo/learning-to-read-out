@@ -11,7 +11,7 @@ Data layout under ``UM_SSD_ROOT``:
 
 Use:
 
-    from src.core.paths import snapshot_path, release_path
+    from readout.core.paths import snapshot_path, release_path
     p = snapshot_path("EleutherAI/pythia-160m", step=1000)
     cc = release_path("pythia-1b", kind="W_U", dim=24576, seed=0)
 
@@ -25,9 +25,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-PROJECT = Path(__file__).resolve().parents[2]
-DEFAULT_SSD_ROOT = PROJECT / "local_snapshots"
-
 
 def repo_root() -> Path:
     """Repo root, robust to scripts moving up/down the tree.
@@ -40,8 +37,7 @@ def repo_root() -> Path:
         if (p / ".git").exists() or (p / "pyproject.toml").exists():
             return p
     raise RuntimeError(
-        "could not find repo root from src/core/paths.py "
-        "(no .git or pyproject.toml in any parent dir)"
+        "could not find repo root from src/readout/core/paths.py (no .git or pyproject.toml in any parent dir)"
     )
 
 
@@ -58,7 +54,10 @@ def ssd_root() -> Path:
 
     Override with ``UM_SSD_ROOT``; defaults to ``<repo>/local_snapshots``.
     """
-    return Path(os.environ.get("UM_SSD_ROOT", str(DEFAULT_SSD_ROOT)))
+    env = os.environ.get("UM_SSD_ROOT")
+    if env:
+        return Path(env)
+    return repo_root() / "local_snapshots"
 
 
 def ssd_path(*parts: str) -> Path:
@@ -70,9 +69,7 @@ def model_short(model_name: str) -> str:
     """Per-model dir name on the SSD (raises on unknown model)."""
     if model_name in _MODEL_SHORT:
         return _MODEL_SHORT[model_name]
-    raise KeyError(
-        f"Unknown model_name {model_name!r}. Add it to src.core.paths._MODEL_SHORT."
-    )
+    raise KeyError(f"Unknown model_name {model_name!r}. Add it to readout.core.paths._MODEL_SHORT.")
 
 
 def model_slug(model_name: str) -> str:
@@ -117,12 +114,7 @@ def release_path(
     -> ``<ssd>/hf_release/.../pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors``
     """
     return (
-        release_root()
-        / model_short_name
-        / kind
-        / f"cross-snapshot-{snapshots}"
-        / f"d{dim}"
-        / f"seed{seed}.safetensors"
+        release_root() / model_short_name / kind / f"cross-snapshot-{snapshots}" / f"d{dim}" / f"seed{seed}.safetensors"
     )
 
 
@@ -137,5 +129,4 @@ def crosscoder_main_derived_dir() -> Path:
     Currently ``experiments/crosscoders/crosscoder_main/derived/``; centralised
     here so call sites don't hardcode the path.
     """
-    return PROJECT / "experiments" / "crosscoders" / "crosscoder_main" / "derived"
-
+    return repo_root() / "experiments" / "crosscoders" / "crosscoder_main" / "derived"

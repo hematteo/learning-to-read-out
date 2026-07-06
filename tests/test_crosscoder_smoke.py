@@ -1,7 +1,7 @@
 """Smoke load test for crosscoder checkpoints (paper plan §6, §10).
 
 Builds a tiny crosscoder on the fly, saves it in the same format as
-``src/crosscoder/wu_adapter.py``, reloads it, and exercises the load
+``src/readout/crosscoder/wu_adapter.py``, reloads it, and exercises the load
 path used by ``extract_rates.py`` and the manifest writer. CPU-only,
 no ${UM_SSD_ROOT}/ dependency.
 """
@@ -14,12 +14,12 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.crosscoder.manifest import (
+from readout.crosscoder.manifest import (
     MANIFEST_HEADER,
     append_manifest_row,
     infer_row_from_checkpoint,
 )
-from src.crosscoder.wu_adapter import build_crosscoder, quick_quality
+from readout.crosscoder.wu_adapter import build_crosscoder, quick_quality
 
 D_MODEL = 16
 D_SAE = 32
@@ -221,7 +221,7 @@ def test_manifest_roundtrip_with_cusum_p(tiny_checkpoint: Path, tmp_path: Path):
     CUSUM_p via update_or_insert, and the same row carries both."""
     import csv as _csv
 
-    from src.crosscoder.manifest import (
+    from readout.crosscoder.manifest import (
         _atomic_write,
         _read_existing,
         update_or_insert,

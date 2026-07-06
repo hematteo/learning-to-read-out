@@ -5,9 +5,9 @@ the ``{"W_U": ...}``-style dict-unwrapping and SSD path resolution, and other
 modules should route their snapshot reads through it.
 
 Use this for analysis. For training (which extracts on cache miss),
-``src.crosscoder.wu_adapter.load_wu_snapshot`` / ``load_snapshots`` is the right entry.
+``readout.crosscoder.wu_adapter.load_wu_snapshot`` / ``load_snapshots`` is the right entry.
 
-Files are resolved through ``src.core.paths.snapshot_path`` so all callers go
+Files are resolved through ``readout.core.paths.snapshot_path`` so all callers go
 through the same SSD layout (``UM_SSD_ROOT``-aware).
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import torch
 
-from src.core.paths import snapshot_path
+from readout.core.paths import snapshot_path
 
 
 def load_snapshot_at(p: Path | str, *, dtype: torch.dtype | None = None) -> torch.Tensor:

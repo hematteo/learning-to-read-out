@@ -2,7 +2,7 @@
 
 Cache priority:
   1. Run-level pre-cached arrays (e.g. firing_rates_all_seeds.npy from Run 3).
-  2. Per-seed extracted rates (.pt from src/crosscoder/extract_rates.py).
+  2. Per-seed extracted rates (.pt from src/readout/crosscoder/extract_rates.py).
   3. Re-derive from checkpoint via compute_rates_canonical (slow, needs W_U snaps).
 
 Phase scripts use `load_run(row)` once per (run_id, seed) row from the analysis
@@ -214,7 +214,7 @@ def load_run(
             decoder_weights = decoder_weights_from_ckpt
         if rates is None and not is_dir_ckpt:
             try:
-                from src.crosscoder.extract_rates import compute_rates_canonical  # noqa: E402
+                from readout.crosscoder.extract_rates import compute_rates_canonical  # noqa: E402
 
                 cache_dir = _resolve_wu_cache_dir(ckpt_path)
                 rates_t, _ = compute_rates_canonical(ckpt_path, cache_dir, device="cpu")
@@ -270,7 +270,7 @@ def _resolve_wu_cache_dir(ckpt_path: Path) -> Path:
     if env:
         return Path(env)
     # Default for local SSD layout.
-    from src.core.paths import ssd_path
+    from readout.core.paths import ssd_path
 
     candidates = [
         ssd_path("wu_crosscoder", "snapshots"),

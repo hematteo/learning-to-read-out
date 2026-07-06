@@ -20,7 +20,6 @@ from __future__ import annotations
 import sys as _sys
 from pathlib import Path as _P
 
-_sys.path.insert(0, str(_P(__file__).resolve().parents[6]))  # repo root for `src.*`
 _sys.path.insert(0, str(_P(__file__).resolve().parent))  # this dir for `baseline_utils`
 
 import argparse

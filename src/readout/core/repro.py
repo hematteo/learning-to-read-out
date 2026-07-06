@@ -99,7 +99,9 @@ def _git_hash(repo: Path | None = None) -> tuple[str, bool]:
         if env_h:
             return env_h.strip(), False
         try:
-            commit_file = Path(__file__).resolve().parents[2] / "COMMIT_HASH"
+            from readout.core.paths import repo_root
+
+            commit_file = repo_root() / "COMMIT_HASH"
             if commit_file.is_file():
                 return (commit_file.read_text().strip() or "unknown"), False
         except OSError:

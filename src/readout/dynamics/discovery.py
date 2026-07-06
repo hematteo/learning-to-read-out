@@ -22,8 +22,8 @@ import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from src.core.model_specs import DEFAULT_STEPS_32 as GE_STEPS_32
-from src.core.paths import ssd_path
+from readout.core.model_specs import DEFAULT_STEPS_32 as GE_STEPS_32
+from readout.core.paths import ssd_path
 
 
 # Default roots: local SSD layout. Override on a cluster with DYNAMICS_DATA_ROOT
@@ -93,7 +93,7 @@ class RunRow:
 
 
 # 32-snapshot Ge schedule used by Run 3 / T1.3 / T1.5 / T3.x.
-# GE_STEPS_32 is imported above as DEFAULT_STEPS_32 from src.core.model_specs.
+# GE_STEPS_32 is imported above as DEFAULT_STEPS_32 from readout.core.model_specs.
 GE_STEPS_16 = [GE_STEPS_32[i] for i in range(0, 32, 2)]
 
 

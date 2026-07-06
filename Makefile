@@ -26,7 +26,7 @@ audit:  ## Validate the experiments.yaml <-> experiments/ <-> paper/ corresponde
 
 extract:  ## Stage 1: build W_E snapshots from HF checkpoints (needs network + disk)
 	@echo "Example: uv run python scripts/extract/extract_we_pythia.py --model EleutherAI/pythia-160m"
-	@echo "Snapshot schedule: src.core.model_specs.DEFAULT_STEPS_32. See docs/DATA.md."
+	@echo "Snapshot schedule: readout.core.model_specs.DEFAULT_STEPS_32. See docs/DATA.md."
 	@echo "(W_U snapshots are auto-extracted on cache-miss by the train target.)"
 
 train:  ## Stage 2: train a trajectory crosscoder from snapshots (needs GPU for >160M)

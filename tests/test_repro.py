@@ -1,4 +1,4 @@
-"""Reproducibility tests for src/core/repro.py (CPU-only).
+"""Reproducibility tests for src/readout/core/repro.py (CPU-only).
 
 Substantiates the seeding/provenance claim: matched seeds reproduce RNG
 draws across torch, NumPy, and Python `random`, and `log_run_provenance`
@@ -15,7 +15,7 @@ import torch
 
 
 def test_seed_everything_reproduces_torch():
-    from src.core.repro import seed_everything
+    from readout.core.repro import seed_everything
 
     seed_everything(0)
     a = torch.randn(4)
@@ -25,7 +25,7 @@ def test_seed_everything_reproduces_torch():
 
 
 def test_seed_everything_reproduces_numpy():
-    from src.core.repro import seed_everything
+    from readout.core.repro import seed_everything
 
     seed_everything(0)
     a = np.random.rand(4)
@@ -35,7 +35,7 @@ def test_seed_everything_reproduces_numpy():
 
 
 def test_seed_everything_reproduces_python_random():
-    from src.core.repro import seed_everything
+    from readout.core.repro import seed_everything
 
     seed_everything(0)
     a = random.random()
@@ -46,7 +46,7 @@ def test_seed_everything_reproduces_python_random():
 
 def test_seed_everything_same_sequence_matches():
     """Two seed-bracketed draws of the SAME multi-source sequence agree."""
-    from src.core.repro import seed_everything
+    from readout.core.repro import seed_everything
 
     def draw():
         return (
@@ -65,7 +65,7 @@ def test_seed_everything_same_sequence_matches():
 
 
 def test_different_seed_gives_different_draw():
-    from src.core.repro import seed_everything
+    from readout.core.repro import seed_everything
 
     seed_everything(0)
     a = torch.randn(4)
@@ -75,7 +75,7 @@ def test_different_seed_gives_different_draw():
 
 
 def test_log_run_provenance_keys_without_seed():
-    from src.core.repro import log_run_provenance
+    from readout.core.repro import log_run_provenance
 
     info = log_run_provenance()
     assert isinstance(info, dict)
@@ -85,7 +85,7 @@ def test_log_run_provenance_keys_without_seed():
 
 
 def test_log_run_provenance_includes_seed_when_passed():
-    from src.core.repro import log_run_provenance
+    from readout.core.repro import log_run_provenance
 
     info = log_run_provenance(seed=123)
     assert info["seed"] == 123
@@ -94,7 +94,7 @@ def test_log_run_provenance_includes_seed_when_passed():
 
 
 def test_git_commit_returns_none_or_sha():
-    from src.core.repro import git_commit
+    from readout.core.repro import git_commit
 
     h = git_commit()
     assert h is None or re.fullmatch(r"[0-9a-f]{40}", h), h

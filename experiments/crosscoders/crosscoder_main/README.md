@@ -76,7 +76,7 @@ live in their own claim-anchored experiments:
 
 This experiment follows the `{scripts/, derived/}` container layout. The core
 analysis library it builds on (`derive`, `discovery`, `metrics`, `provenance`)
-lives in `src/dynamics/` — it is shared with sibling experiments
+lives in `src/readout/dynamics/` — it is shared with sibling experiments
 (`crosscoder_we`) and the test suite, so per the repo's tier rule it sits in
 `src/`, not here. All analysis code lives
 under `scripts/` and the `*.csv` / `*.json` / `*.pt` sidecars the scripts write

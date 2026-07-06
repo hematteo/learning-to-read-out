@@ -1,4 +1,4 @@
-"""Tests for src/probes/contrastive_tasks.py.
+"""Tests for src/readout/probes/contrastive_tasks.py.
 
 Uses the actual Pythia-160m tokenizer (small, ~30MB, available offline if cached).
 If the tokenizer is unavailable in the test environment the tests skip rather
@@ -36,7 +36,7 @@ def _assert_examples_well_formed(examples, family_name: str, tokenizer):
 
 # ── builder smoke ────────────────────────────────────────────────────────────
 def test_sva_yields_examples(tokenizer):
-    from src.probes.contrastive_tasks import build_sva
+    from readout.probes.contrastive_tasks import build_sva
 
     ex = build_sva(tokenizer, n_max=20)
     assert len(ex) > 0
@@ -46,7 +46,7 @@ def test_sva_yields_examples(tokenizer):
 
 
 def test_induction_yields_examples(tokenizer):
-    from src.probes.contrastive_tasks import build_induction
+    from readout.probes.contrastive_tasks import build_induction
 
     ex = build_induction(tokenizer, n_max=20, rng_seed=0)
     assert len(ex) > 0
@@ -54,7 +54,7 @@ def test_induction_yields_examples(tokenizer):
 
 
 def test_ioi_yields_examples(tokenizer):
-    from src.probes.contrastive_tasks import build_ioi
+    from readout.probes.contrastive_tasks import build_ioi
 
     ex = build_ioi(tokenizer, n_max=20, rng_seed=0)
     assert len(ex) > 0
@@ -65,7 +65,7 @@ def test_ioi_yields_examples(tokenizer):
 
 
 def test_numeric_gt_yields_examples(tokenizer):
-    from src.probes.contrastive_tasks import build_numeric_greater_than
+    from readout.probes.contrastive_tasks import build_numeric_greater_than
 
     ex = build_numeric_greater_than(tokenizer, n_max=20, rng_seed=0)
     assert len(ex) > 0
@@ -81,7 +81,7 @@ def test_arc_numeric_labels_prompt_gold_consistent(tokenizer):
     Replicates _build_arc's normalisation on a synthetic numeric-label row and
     checks the gold letter shown in the prompt matches the gold token / meta.
     """
-    from src.probes.contrastive_tasks import _build_mcq
+    from readout.probes.contrastive_tasks import _build_mcq
 
     # answerKey "3" -> 3rd option ("nine"), which must be labelled "C" in prompt.
     raw = {
@@ -124,7 +124,7 @@ def test_arc_numeric_labels_prompt_gold_consistent(tokenizer):
 
 
 def test_relational_facts_yields_examples(tokenizer):
-    from src.probes.contrastive_tasks import build_relational_facts
+    from readout.probes.contrastive_tasks import build_relational_facts
 
     ex = build_relational_facts(tokenizer, n_max=20)
     assert len(ex) > 0
@@ -132,7 +132,7 @@ def test_relational_facts_yields_examples(tokenizer):
 
 
 def test_hypernym_yields_examples(tokenizer):
-    from src.probes.contrastive_tasks import build_hypernym
+    from readout.probes.contrastive_tasks import build_hypernym
 
     ex = build_hypernym(tokenizer, n_max=20)
     assert len(ex) > 0
@@ -142,7 +142,7 @@ def test_hypernym_yields_examples(tokenizer):
 # ── single-token invariant ───────────────────────────────────────────────────
 def test_y_plus_minus_are_single_tokens(tokenizer):
     """Filter contract: every y+/y- must tokenize to a single tokenizer token."""
-    from src.probes.contrastive_tasks import TASK_BUILDERS
+    from readout.probes.contrastive_tasks import TASK_BUILDERS
 
     for name, builder in TASK_BUILDERS.items():
         kwargs = {"n_max": 10}
@@ -163,7 +163,7 @@ def test_y_plus_minus_are_single_tokens(tokenizer):
 
 # ── corruption symmetry ──────────────────────────────────────────────────────
 def test_sva_corruption_swaps_labels(tokenizer):
-    from src.probes.contrastive_tasks import build_corruption, build_sva
+    from readout.probes.contrastive_tasks import build_corruption, build_sva
 
     ex = build_sva(tokenizer, n_max=5)
     assert len(ex) > 0
@@ -178,7 +178,7 @@ def test_sva_corruption_swaps_labels(tokenizer):
 
 
 def test_ioi_corruption_swaps_subject_recipient(tokenizer):
-    from src.probes.contrastive_tasks import build_corruption, build_ioi
+    from readout.probes.contrastive_tasks import build_corruption, build_ioi
 
     ex = build_ioi(tokenizer, n_max=5, rng_seed=0)
     assert len(ex) > 0
@@ -194,7 +194,7 @@ def test_ioi_corruption_swaps_subject_recipient(tokenizer):
 
 
 def test_corruption_returns_none_for_unsupported_family(tokenizer):
-    from src.probes.contrastive_tasks import (
+    from readout.probes.contrastive_tasks import (
         build_corruption,
         build_numeric_greater_than,
     )
@@ -208,7 +208,7 @@ def test_corruption_returns_none_for_unsupported_family(tokenizer):
 
 # ── random distractor control ────────────────────────────────────────────────
 def test_random_distractor_ids_distinct_from_y_plus(tokenizer):
-    from src.probes.contrastive_tasks import build_sva, random_distractor_ids
+    from readout.probes.contrastive_tasks import build_sva, random_distractor_ids
 
     ex = build_sva(tokenizer, n_max=10)
     if not ex:
@@ -221,7 +221,7 @@ def test_random_distractor_ids_distinct_from_y_plus(tokenizer):
 
 # ── round-trip JSONL save/load ───────────────────────────────────────────────
 def test_save_and_load_round_trip(tokenizer, tmp_path):
-    from src.probes.contrastive_tasks import build_sva, load_examples, save_examples
+    from readout.probes.contrastive_tasks import build_sva, load_examples, save_examples
 
     original = build_sva(tokenizer, n_max=5)
     if not original:

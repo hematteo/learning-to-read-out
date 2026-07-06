@@ -1,23 +1,19 @@
 """Loader / IO helpers specific to the Appendix-B baseline experiments.
 
 Generic model specs, step schedules, and snapshot helpers live in
-``src.core.model_specs``; this module only carries the appendix-specific
+``readout.core.model_specs``; this module only carries the appendix-specific
 output paths and the eval-corpus token-count loader.
 """
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[6]))
 import os
 from collections import Counter
 from pathlib import Path
 
 import torch
 
-from src.core.model_specs import (  # noqa: F401  (re-exports for callers)
+from readout.core.model_specs import (  # noqa: F401  (re-exports for callers)
     DEFAULT_STEPS_32,
     OLMO_2_7B,
     PYTHIA_1B,
@@ -30,7 +26,7 @@ from src.core.model_specs import (  # noqa: F401  (re-exports for callers)
     iter_snapshots,
     snap_path_for,
 )
-from src.core.paths import ssd_path
+from readout.core.paths import ssd_path
 
 REPO = Path(__file__).resolve().parents[6]
 DEFAULT_SNAP_DIR = Path(os.environ.get("WU_SNAP_DIR", str(ssd_path("snapshots"))))
@@ -43,7 +39,7 @@ RAW_DIR = (
 
 
 def load_snapshot(p: Path) -> torch.Tensor:
-    from src.crosscoder.snapshots import load_snapshot_at
+    from readout.crosscoder.snapshots import load_snapshot_at
 
     return load_snapshot_at(p)
 

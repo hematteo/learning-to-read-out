@@ -1,4 +1,4 @@
-"""Tests for src/core/model_specs.py — the canonical model and step registry."""
+"""Tests for src/readout/core/model_specs.py — the canonical model and step registry."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.core.model_specs import (
+from readout.core.model_specs import (
     DEFAULT_STEPS_32,
     DEFAULT_STEPS_BY_MODEL,
     MODEL_HF_NAMES,
@@ -38,7 +38,7 @@ def test_default_steps_32_matches_wu_adapter():
     """Trajectory crosscoders are trained from wu_adapter.DEFAULT_STEPS;
     the analysis-side copy must stay in sync or downstream rate caches
     silently disagree with checkpoint contents."""
-    from src.crosscoder.wu_adapter import DEFAULT_STEPS
+    from readout.crosscoder.wu_adapter import DEFAULT_STEPS
 
     assert list(DEFAULT_STEPS_32) == list(DEFAULT_STEPS)
 

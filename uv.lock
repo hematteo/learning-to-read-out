@@ -580,7 +580,7 @@ wheels = [
 [[package]]
 name = "learning-to-read-out"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "datasets" },
     { name = "einops" },

@@ -9,7 +9,7 @@ matrix: W_U
 # Dictionary geometry
 d_sae: 32768              # expansion_factor 8.0 at d_model=4096 (32768 / 4096)
 expansion_factor: 8.0
-n_snapshots: 32           # OLMo-2-7B 32-snapshot schedule (src.core.model_specs.OLMO_STEPS_32)
+n_snapshots: 32           # OLMo-2-7B 32-snapshot schedule (readout.core.model_specs.OLMO_STEPS_32)
 
 # Optimizer / schedule (verbatim from run_olmo_production.sh)
 batch_size: 2048

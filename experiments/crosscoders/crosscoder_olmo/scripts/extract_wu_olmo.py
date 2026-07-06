@@ -207,7 +207,7 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    from src.core.repro import log_run_provenance
+    from readout.core.repro import log_run_provenance
 
     log_run_provenance()
 

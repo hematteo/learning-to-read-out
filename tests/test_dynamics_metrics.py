@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.dynamics.metrics import (
+from readout.dynamics.metrics import (
     adjacent_rotation,
     lifecycle,
     terminal_direction_distance,

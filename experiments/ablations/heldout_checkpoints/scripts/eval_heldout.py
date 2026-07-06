@@ -37,10 +37,10 @@ from pathlib import Path
 
 import torch
 
-from src.core.data import center_scale_stats, explained_variance
-from src.core.model_specs import DEFAULT_STEPS_32
-from src.crosscoder.checkpoints import load_checkpoint
-from src.crosscoder.snapshots import load_snapshot_at
+from readout.core.data import center_scale_stats, explained_variance
+from readout.core.model_specs import DEFAULT_STEPS_32
+from readout.crosscoder.checkpoints import load_checkpoint
+from readout.crosscoder.snapshots import load_snapshot_at
 
 # 32-snapshot anchor schedule — matches the released seed0 config.
 TRAINED_STEPS = DEFAULT_STEPS_32

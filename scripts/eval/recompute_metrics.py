@@ -18,17 +18,14 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import sys as _sys
 from pathlib import Path
 from time import time
 
 import torch
 
-_sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from src.crosscoder.checkpoints import load_checkpoint
-from src.crosscoder.snapshots import load_snapshots
-from src.crosscoder.wu_adapter import preprocess_snapshots
+from readout.crosscoder.checkpoints import load_checkpoint
+from readout.crosscoder.snapshots import load_snapshots
+from readout.crosscoder.wu_adapter import preprocess_snapshots
 
 
 def compute_metrics(sd, X_norm: torch.Tensor, batch_rows: int, device: str) -> dict:

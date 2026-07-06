@@ -15,10 +15,6 @@ matched-control token ids, so it avoids re-encoding the full 1B vocabulary.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import argparse
 import json
 import sys
@@ -30,12 +26,11 @@ import numpy as np
 import torch
 from safetensors import safe_open
 
-from src.core.data import write_csv
-from src.core.paths import ssd_path
+from readout.core.data import write_csv
+from readout.core.paths import ssd_path
 
 REPO = Path(__file__).resolve().parents[4]
 TEMPORAL_PATCH_DIR = REPO / "experiments/causal/temporal_localization_patching/scripts"
-sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(TEMPORAL_PATCH_DIR))
 
 import temporal_patch_metrics as TPM  # noqa: E402

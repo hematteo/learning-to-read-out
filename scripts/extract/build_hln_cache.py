@@ -9,7 +9,7 @@ Each requested step:
    Pythia revision is a unique blob set, so the cache grows unbounded otherwise).
 
 h_LN is stored in --save-dtype (default bf16); W_U is stored in fp32 to match
-the layout consumed by ``src.crosscoder.snapshots.load_snapshot``.
+the layout consumed by ``readout.crosscoder.snapshots.load_snapshot``.
 
 Resume-safe: per-step exists-check + atomic write. A revision is skipped if
 both its h_LN and W_U snapshot are already present.
@@ -29,17 +29,13 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
-import sys
 import time
 from pathlib import Path
 
 import torch
 
 REPO = Path(__file__).resolve().parents[2]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.resume import atomic_write_torch
+from readout.core.resume import atomic_write_torch
 
 PYTHIA_DEFAULT_STEPS = [
     0,

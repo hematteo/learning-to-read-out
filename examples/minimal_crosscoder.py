@@ -12,15 +12,9 @@ point (build_crosscoder, train, quick_quality) is passed device="cpu"
 explicitly (their default auto-selects cuda/mps/cpu).
 """
 
-# Put the repo root on sys.path so this runs standalone from the repo root.
 import logging
-import sys
 import warnings
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-# The vendored llamascopium library decorates unused model classes with
 # @torch.autocast(device_type="cuda") at import time; harmless on CPU.
 warnings.filterwarnings("ignore", message="CUDA is not available")
 # torch.distributed logs a redirects notice at import on macOS/Windows; not
@@ -29,8 +23,8 @@ logging.getLogger("torch.distributed.elastic.multiprocessing.redirects").setLeve
 
 import torch
 
-from src.core.repro import seed_everything
-from src.crosscoder.wu_adapter import (
+from readout.core.repro import seed_everything
+from readout.crosscoder.wu_adapter import (
     build_crosscoder,
     preprocess_snapshots,
     quick_quality,

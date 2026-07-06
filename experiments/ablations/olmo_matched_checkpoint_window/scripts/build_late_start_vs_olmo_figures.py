@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import csv
 import json
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,10 +22,6 @@ import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-
 PYTHIA_LATE_START_STEPS = np.asarray(
     [
         256,

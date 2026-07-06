@@ -113,8 +113,8 @@ running the steps above (gitignored; not shipped in this code-only release).
 |---|---|
 | `scripts/run_feature_attribution.py` | encoder + attribution + paired top-K interventions; persists all metrics above |
 
-Library helpers: [src/probes/contrastive_tasks.py](../../../src/probes/contrastive_tasks.py),
-[src/probes/readout_swap.py](../../../src/probes/readout_swap.py).
+Library helpers: [src/readout/probes/contrastive_tasks.py](../../../src/readout/probes/contrastive_tasks.py),
+[src/readout/probes/readout_swap.py](../../../src/readout/probes/readout_swap.py).
 
 ## Scope notes
 

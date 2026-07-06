@@ -1,4 +1,4 @@
-"""Smoke tests for src/core/ modifications: data.py, models.py, training.py."""
+"""Smoke tests for src/readout/core/ modifications: data.py, models.py, training.py."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import torch
 
 
 def test_center_and_project_normalize_rows():
-    from src.core.data import center_and_project
+    from readout.core.data import center_and_project
 
     W = torch.randn(100, 32)
     data, centering = center_and_project(W, svd_remove=0, normalize_rows=True)
@@ -21,7 +21,7 @@ def test_center_and_project_normalize_rows():
 
 
 def test_center_and_project_backward_compat():
-    from src.core.data import center_and_project
+    from readout.core.data import center_and_project
 
     W = torch.randn(100, 32)
     data, centering = center_and_project(W, svd_remove=2)
@@ -30,7 +30,7 @@ def test_center_and_project_backward_compat():
 
 
 def test_adaptive_center_and_project():
-    from src.core.data import adaptive_center_and_project
+    from readout.core.data import adaptive_center_and_project
 
     W = torch.randn(100, 32)
     data, centering = adaptive_center_and_project(W, svd_remove=2)
@@ -39,7 +39,7 @@ def test_adaptive_center_and_project():
 
 
 def test_svd_baseline_module_cache():
-    from src.core.data import svd_baseline
+    from readout.core.data import svd_baseline
 
     data = torch.randn(50, 16)
     mse1 = svd_baseline(data, rank=4)
@@ -49,7 +49,7 @@ def test_svd_baseline_module_cache():
 
 
 def test_center_and_project_svd_s_stored():
-    from src.core.data import center_and_project
+    from readout.core.data import center_and_project
 
     W = torch.randn(100, 32)
     _, centering = center_and_project(W, svd_remove=2, verbose=False)
@@ -60,7 +60,7 @@ def test_center_and_project_svd_s_stored():
 
 
 def test_center_and_project_svd_s_none_when_no_removal():
-    from src.core.data import center_and_project
+    from readout.core.data import center_and_project
 
     W = torch.randn(100, 32)
     _, centering = center_and_project(W, svd_remove=0, verbose=False)
@@ -69,14 +69,14 @@ def test_center_and_project_svd_s_none_when_no_removal():
 
 
 def test_svd_baseline_from_centering_returns_none_without_svd_s():
-    from src.core.data import svd_baseline_from_centering
+    from readout.core.data import svd_baseline_from_centering
 
     centering = {"svd_S": None, "svd_components": None}
     assert svd_baseline_from_centering(centering, rank=4, n_rows=100) is None
 
 
 def test_svd_baseline_from_centering_returns_zero_large_rank():
-    from src.core.data import center_and_project, svd_baseline_from_centering
+    from readout.core.data import center_and_project, svd_baseline_from_centering
 
     W = torch.randn(100, 32)
     _, centering = center_and_project(W, svd_remove=2, verbose=False)
@@ -85,7 +85,7 @@ def test_svd_baseline_from_centering_returns_zero_large_rank():
 
 
 def test_svd_baseline_from_centering_matches_svd_baseline():
-    from src.core.data import _svd_cache, center_and_project, svd_baseline, svd_baseline_from_centering
+    from readout.core.data import _svd_cache, center_and_project, svd_baseline, svd_baseline_from_centering
 
     torch.manual_seed(42)
     W = torch.randn(200, 64)
@@ -105,7 +105,7 @@ def test_svd_baseline_from_centering_matches_svd_baseline():
 
 
 def test_extract_wu_from_model_lm_head():
-    from src.core.data import extract_wu_from_model
+    from readout.core.data import extract_wu_from_model
 
     class FakeHead(torch.nn.Module):
         def __init__(self):
@@ -121,7 +121,7 @@ def test_extract_wu_from_model_lm_head():
 
 
 def test_extract_wu_from_model_embed_out():
-    from src.core.data import extract_wu_from_model
+    from readout.core.data import extract_wu_from_model
 
     class FakeHead(torch.nn.Module):
         def __init__(self):
@@ -137,7 +137,7 @@ def test_extract_wu_from_model_embed_out():
 
 
 def test_extract_wu_from_model_raises_on_unknown():
-    from src.core.data import extract_wu_from_model
+    from readout.core.data import extract_wu_from_model
 
     class FakeModel:
         pass
@@ -148,7 +148,7 @@ def test_extract_wu_from_model_raises_on_unknown():
 
 def test_get_device_priority_cuda_over_mps(monkeypatch):
     """get_device() is the single device picker; README documents cuda > mps > cpu."""
-    from src.core.data import get_device
+    from readout.core.data import get_device
 
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
     monkeypatch.setattr(torch.backends.mps, "is_available", lambda: True)
@@ -163,7 +163,7 @@ def test_get_device_priority_cuda_over_mps(monkeypatch):
 
 
 def test_topk_sae_exact_l0():
-    from src.core.models import TopKSAE
+    from readout.core.models import TopKSAE
 
     model = TopKSAE(d_input=32, d_dict=64, k=5)
     x = torch.randn(20, 32)
@@ -174,7 +174,7 @@ def test_topk_sae_exact_l0():
 
 
 def test_batch_topk_sae_average_l0():
-    from src.core.models import BatchTopKSAE
+    from readout.core.models import BatchTopKSAE
 
     model = BatchTopKSAE(d_input=32, d_dict=64, k=5)
     x = torch.randn(20, 32)
@@ -187,7 +187,7 @@ def test_batch_topk_sae_average_l0():
 
 def test_batch_topk_sae_no_ties_issue():
     """Verify scatter-based implementation doesn't over-count on ties."""
-    from src.core.models import BatchTopKSAE
+    from readout.core.models import BatchTopKSAE
 
     model = BatchTopKSAE(d_input=32, d_dict=64, k=5)
     # Use zeros to maximize tie chance
@@ -203,7 +203,7 @@ def test_batch_topk_sae_no_ties_issue():
 
 
 def test_batch_topk_normalize_and_dict():
-    from src.core.models import BatchTopKSAE
+    from readout.core.models import BatchTopKSAE
 
     model = BatchTopKSAE(d_input=32, d_dict=64, k=5)
     model.normalize_decoder()
@@ -217,8 +217,8 @@ def test_batch_topk_normalize_and_dict():
 
 
 def test_train_simple_sae_topk():
-    from src.core.models import TopKSAE
-    from src.crosscoder.training import train_simple_sae
+    from readout.core.models import TopKSAE
+    from readout.crosscoder.training import train_simple_sae
 
     data = torch.randn(200, 16)
     model = TopKSAE(d_input=16, d_dict=32, k=4)
@@ -229,8 +229,8 @@ def test_train_simple_sae_topk():
 
 
 def test_train_simple_sae_early_stopping():
-    from src.core.models import TopKSAE
-    from src.crosscoder.training import train_simple_sae
+    from readout.core.models import TopKSAE
+    from readout.crosscoder.training import train_simple_sae
 
     data = torch.randn(200, 16)
     model = TopKSAE(d_input=16, d_dict=32, k=4)
@@ -241,8 +241,8 @@ def test_train_simple_sae_early_stopping():
 
 
 def test_cross_validate_sae():
-    from src.core.models import TopKSAE
-    from src.crosscoder.training import cross_validate_sae
+    from readout.core.models import TopKSAE
+    from readout.crosscoder.training import cross_validate_sae
 
     data = torch.randn(200, 16)
     result = cross_validate_sae(TopKSAE, data, n_folds=3, d_dict=32, k=4, num_epochs=30, lr=1e-3)
@@ -252,8 +252,8 @@ def test_cross_validate_sae():
 
 
 def test_resample_dead_features_device_assert():
-    from src.core.models import TopKSAE
-    from src.crosscoder.training import resample_dead_features
+    from readout.core.models import TopKSAE
+    from readout.crosscoder.training import resample_dead_features
 
     model = TopKSAE(d_input=16, d_dict=32, k=4)
     data = torch.randn(50, 16)

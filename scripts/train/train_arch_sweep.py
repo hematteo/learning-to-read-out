@@ -14,26 +14,23 @@ Use --dry-run for the validation pass: 4 snapshots, 2 epochs, batch_size=256.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
 import argparse
 import subprocess
+import sys as _sys
 from pathlib import Path
 
 import torch
 
-from src.core.paths import ssd_path, ssd_root
+from readout.core.paths import ssd_path, ssd_root
 
-# Repo root is already on sys.path (inserted above); ROOT is the git rev-parse cwd.
+# ROOT is the git rev-parse cwd for provenance stamping.
 ROOT = Path(__file__).resolve().parents[2]
 
-from src.crosscoder.crosscoder_arch_sweep import (  # noqa: E402
+from readout.crosscoder.crosscoder_arch_sweep import (  # noqa: E402
     quick_quality,
     train_arch_sweep,
 )
-from src.crosscoder.wu_adapter import (  # noqa: E402
+from readout.crosscoder.wu_adapter import (  # noqa: E402
     DEFAULT_CACHE,
     DEFAULT_MODEL,
     DEFAULT_STEPS,

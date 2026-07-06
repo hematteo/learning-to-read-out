@@ -1,4 +1,4 @@
-"""Tests for src/crosscoder/checkpoint_loaders.py.
+"""Tests for src/readout/crosscoder/checkpoint_loaders.py.
 
 Covers the cache-priority logic in `load_run`, the per-snap directory
 fallback, and the WU_CACHE_DIR resolver — without depending on
@@ -7,18 +7,14 @@ ${UM_SSD_ROOT}/.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
 from pathlib import Path
 
 import numpy as np
 import pytest
 import torch
 
-from src.core.paths import ssd_path
-from src.crosscoder.checkpoint_loaders import (
+from readout.core.paths import ssd_path
+from readout.crosscoder.checkpoint_loaders import (
     RunArrays,
     _decoder_norms_from_ckpt,
     _decoder_norms_from_per_snap_dir,

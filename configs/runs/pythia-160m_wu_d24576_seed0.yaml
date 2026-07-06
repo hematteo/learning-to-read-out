@@ -8,7 +8,7 @@ matrix: W_U
 # Dictionary geometry
 d_sae: 24576              # expansion_factor 32.0 at d_model=768 (24576 / 768)
 expansion_factor: 32.0
-n_snapshots: 32           # cross-snapshot-32 (src.core.model_specs.DEFAULT_STEPS_32)
+n_snapshots: 32           # cross-snapshot-32 (readout.core.model_specs.DEFAULT_STEPS_32)
 
 # Optimizer / schedule (shared Pythia W_U recipe; "Run 3")
 batch_size: 1024

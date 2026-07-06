@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,18 +20,15 @@ import torch
 from scipy.optimize import linear_sum_assignment
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.model_specs import (
+from readout.core.model_specs import (
     DEFAULT_STEPS_BY_MODEL,
 )
-from src.core.model_specs import (
+from readout.core.model_specs import (
     MODEL_HF_NAMES as MODEL_NAMES,
 )
-from src.core.paths import snapshot_path
-from src.core.repro import git_commit
-from src.crosscoder.snapshots import load_snapshot
+from readout.core.paths import snapshot_path
+from readout.core.repro import git_commit
+from readout.crosscoder.snapshots import load_snapshot
 
 K_VALUES = [5, 10, 20, 50]
 PYTHIA_MODEL_ORDER = ["pythia-160m", "pythia-1b", "pythia-6.9b"]

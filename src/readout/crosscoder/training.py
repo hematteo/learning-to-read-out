@@ -4,7 +4,7 @@
 persnap-SAE baselines, the test suite, and the minimal example;
 `cross_validate_sae`, `resample_dead_features`, and the encode/eval helpers
 support it. The production trajectory-crosscoder training loop lives in
-`src.crosscoder.wu_adapter.train`.
+`readout.crosscoder.wu_adapter.train`.
 """
 
 import math
@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm, trange
 
-from src.core.models import (
+from readout.core.models import (
     BatchTopKSAE,
     MatryoshkaBatchTopKSAE,
     TiedBatchTopKSAE,

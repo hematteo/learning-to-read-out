@@ -10,7 +10,7 @@ matrix: W_E
 # Dictionary geometry
 d_sae: 8192               # expansion_factor 10.6667 at d_model=768 (8192 / 768)
 expansion_factor: 10.6667
-n_snapshots: 32           # cross-snapshot-32 (src.core.model_specs.DEFAULT_STEPS_32)
+n_snapshots: 32           # cross-snapshot-32 (readout.core.model_specs.DEFAULT_STEPS_32)
 seeds_trained: [0, 1, 2, 3, 4]   # multi-seed pilot; this file records seed 0
 
 # Optimizer / schedule (shared Pythia recipe)

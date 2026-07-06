@@ -7,7 +7,7 @@ the figure-by-figure reproduction map is [`../docs/REPRODUCE.md`](../docs/REPROD
 
 | Topic | What its experiments establish |
 |---|---|
-| `crosscoders/` | The instrument itself: training and validating the trajectory crosscoders (Pythia W_U `crosscoder_main`, OLMo-2 `crosscoder_olmo`, input-embedding `crosscoder_we`). The shared analysis library they import lives in `src/dynamics/`. |
+| `crosscoders/` | The instrument itself: training and validating the trajectory crosscoders (Pythia W_U `crosscoder_main`, OLMo-2 `crosscoder_olmo`, input-embedding `crosscoder_we`). The shared analysis library they import lives in `src/readout/dynamics/`. |
 | `lifecycle/` | How individual sparse features form, reorganize, and persist across pretraining (trajectory/profile/wishbone metrics). |
 | `causal/` | Whether the readout structure is load-bearing: activation patching, sparse-feature interventions, contrastive-task feature rescue. |
 | `probes/` | Correlational evidence: concept probes over checkpoints and the contrastive readout-swap screen (whose causal companion lives under `causal/`). |

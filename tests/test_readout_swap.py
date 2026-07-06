@@ -1,4 +1,4 @@
-"""Tests for src/probes/readout_swap.py.
+"""Tests for src/readout/probes/readout_swap.py.
 
 Covers the contrastive-margin computation and the gauge-alignment ladder.
 align_readout is the single source of truth for the ladder (none/mean/scale/
@@ -14,7 +14,7 @@ import torch
 
 # ── compute_margin: hand-computed reference ──────────────────────────────────
 def test_compute_margin_matches_hand_value():
-    from src.probes.readout_swap import compute_margin
+    from readout.probes.readout_swap import compute_margin
 
     # Tiny toy: 2 examples, d=3, V=4.
     h = torch.tensor([[1.0, 0.0, -1.0], [0.5, 0.5, 0.0]])  # (2, 3)
@@ -37,7 +37,7 @@ def test_compute_margin_matches_hand_value():
 
 
 def test_margin_summary_basic_stats():
-    from src.probes.readout_swap import margin_summary
+    from readout.probes.readout_swap import margin_summary
 
     s = margin_summary(torch.tensor([1.0, 2.0, -1.0, 0.5]))
     assert s["n"] == 4
@@ -47,7 +47,7 @@ def test_margin_summary_basic_stats():
 
 # ── alignment ladder: identity + reference parity ────────────────────────────
 def test_align_none_is_identity():
-    from src.probes.readout_swap import align_readout
+    from readout.probes.readout_swap import align_readout
 
     torch.manual_seed(0)
     W_s = torch.randn(8, 5)
@@ -58,7 +58,7 @@ def test_align_none_is_identity():
 
 def test_align_modes_smoke():
     """Each mode runs and produces a (V, d) tensor of finite values."""
-    from src.probes.readout_swap import ALIGN_MODES, align_readout
+    from readout.probes.readout_swap import ALIGN_MODES, align_readout
 
     torch.manual_seed(1)
     W_s = torch.randn(16, 4)
@@ -70,7 +70,7 @@ def test_align_modes_smoke():
 
 
 def test_align_unknown_mode_raises():
-    from src.probes.readout_swap import align_readout
+    from readout.probes.readout_swap import align_readout
 
     W = torch.randn(4, 3)
     with pytest.raises(ValueError, match="unknown alignment mode"):
@@ -79,7 +79,7 @@ def test_align_unknown_mode_raises():
 
 def test_align_row_norm_matches_target_row_norms():
     """row_norm mode: every row of the aligned W_s has the row norm of W_t."""
-    from src.probes.readout_swap import align_readout
+    from readout.probes.readout_swap import align_readout
 
     torch.manual_seed(2)
     W_s = torch.randn(20, 6) * 3.0
@@ -92,7 +92,7 @@ def test_align_row_norm_matches_target_row_norms():
 
 def test_align_scale_matches_target_frob_norm():
     """scale mode: ||centered aligned W_s|| == ||centered W_t||."""
-    from src.probes.readout_swap import align_readout
+    from readout.probes.readout_swap import align_readout
 
     torch.manual_seed(3)
     W_s = torch.randn(20, 6) * 4.0

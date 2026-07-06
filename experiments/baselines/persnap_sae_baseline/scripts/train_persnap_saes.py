@@ -13,10 +13,6 @@ Outputs:
   ${UM_SSD_ROOT}/wu_crosscoder/per_snap_sae/wu_sae_dsae8192_step{step}.pt
 """
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import argparse
 import os
 import subprocess
@@ -26,12 +22,10 @@ from pathlib import Path
 
 import torch
 
-from src.core.paths import ssd_path, ssd_root
+from readout.core.paths import ssd_path, ssd_root
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-
-from src.crosscoder.wu_adapter import (  # noqa: E402
+from readout.crosscoder.wu_adapter import (  # noqa: E402
     DEFAULT_CACHE,
     DEFAULT_MODEL,
     DEFAULT_STEPS,

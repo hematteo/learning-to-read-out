@@ -40,8 +40,8 @@ the documentation map below.
 The trajectory-crosscoder and probe code is importable directly:
 
 ```python
-from src.crosscoder import build_crosscoder, train, quick_quality
-from src.core.data import center_and_project
+from readout.crosscoder import build_crosscoder, train, quick_quality
+from readout.core.data import center_and_project
 ```
 
 [`examples/minimal_crosscoder.py`](examples/minimal_crosscoder.py) is a small,
@@ -76,7 +76,7 @@ vocabulary families. See [`notebooks/README.md`](notebooks/README.md).
 
 | Tier | What it holds |
 |---|---|
-| `src/` | Importable library: `core/` (paths, model specs, data), `crosscoder/` (trajectory training), `dynamics/` (run discovery + lifecycle metrics), `probes/`, `baselines/`. |
+| `src/readout/` | The installable `readout` package (`uv sync` installs it editable): `core/` (paths, model specs, data), `crosscoder/` (trajectory training), `dynamics/` (run discovery + lifecycle metrics), `probes/`, `baselines/`. |
 | `experiments/` | Research code grouped by theme (`crosscoders/`, `lifecycle/`, `causal/`, `probes/`, `baselines/`, `ablations/`, `capacity/`); each experiment is `<topic>/<id>/{README,scripts}`, mapped to the thesis figures it backs in [`experiments.yaml`](experiments.yaml). |
 | `scripts/` | Command-line entry points grouped by verb: `extract/`, `train/`, `eval/`, `audit/`. |
 | `examples/` | Small, CPU-only runnable demos of the library — no data, GPU, or downloads. |
@@ -93,7 +93,7 @@ thesis LaTeX tree, not in this repo).
 
 The layout is a strict contract, enforced in CI by `make audit`
 (`scripts/audit/check_layout.py`): code lives in one of three tiers by reuse —
-`src/` and `scripts/<verb>/` (closed verb set: `train`, `extract`, `eval`,
+`src/readout/` and `scripts/<verb>/` (closed verb set: `train`, `extract`, `eval`,
 `audit`) hold only code used by more than one experiment; anything single-use
 lives under its experiment's `experiments/<topic>/<id>/scripts/`. Every
 experiment directory carries a `README.md` and a matching `experiments.yaml`

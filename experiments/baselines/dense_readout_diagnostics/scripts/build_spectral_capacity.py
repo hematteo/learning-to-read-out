@@ -14,22 +14,19 @@ import csv
 import json
 import math
 import os
-import sys
 import time
 from pathlib import Path
 
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
-from src.core.model_specs import (  # noqa: E402
+from readout.core.model_specs import (  # noqa: E402
     DEFAULT_STEPS_BY_MODEL,
 )
-from src.core.model_specs import MODEL_HF_NAMES as MODEL_NAMES  # noqa: E402
-from src.core.paths import snapshot_path  # noqa: E402
-from src.core.repro import git_commit  # noqa: E402
-from src.crosscoder.snapshots import load_snapshot  # noqa: E402
+from readout.core.model_specs import MODEL_HF_NAMES as MODEL_NAMES  # noqa: E402
+from readout.core.paths import snapshot_path  # noqa: E402
+from readout.core.repro import git_commit  # noqa: E402
+from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
 
 SMOKE_STEPS_BY_MODEL = {
     "pythia-160m": [0, 1000, 143000],

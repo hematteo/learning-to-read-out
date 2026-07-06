@@ -49,7 +49,7 @@ Single-token, two-choice tasks (no benchmark-format noise):
 | `relational_facts` | `The capital of France is`                                 | ` Paris` / matched capital |
 | `hypernym`         | `A robin is a type of`                                     | ` bird` / matched category |
 
-`src/probes/contrastive_tasks.py` also registers six benchmark-derived families
+`src/readout/probes/contrastive_tasks.py` also registers six benchmark-derived families
 (`piqa`, `arc_easy`, `arc_challenge`, `sciq`, `lambada`, `winogrande`). Each
 emits the standard `<family>.jsonl`, plus a `<family>_random_distractors.json`
 sidecar and (for the MCQ-letter families) a `<family>_label_permutation.json`
@@ -221,8 +221,8 @@ attribution experiment (`causal/contrastive_task_feature_rescue`).
 | `scripts/run_4gpu_extraction.sh` | 4-GPU extraction wrapper; supports `FAMILIES_OVERRIDE` and `HIDDEN_STEPS_MODE=all` |
 | `scripts/launch_swap_extraction.sh` | generic multi-GPU launcher for 1B/6.9B swap-grid extraction |
 
-Library helpers: [src/probes/contrastive_tasks.py](../../../src/probes/contrastive_tasks.py),
-[src/probes/readout_swap.py](../../../src/probes/readout_swap.py).
+Library helpers: [src/readout/probes/contrastive_tasks.py](../../../src/readout/probes/contrastive_tasks.py),
+[src/readout/probes/readout_swap.py](../../../src/readout/probes/readout_swap.py).
 
 ## Success criteria
 

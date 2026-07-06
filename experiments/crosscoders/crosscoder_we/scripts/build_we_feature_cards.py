@@ -16,13 +16,10 @@ from __future__ import annotations
 import argparse
 import csv
 import gc
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from safetensors import safe_open  # noqa: E402
@@ -33,8 +30,8 @@ from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E
     STEPS_32,
     _load_we_rates_and_norms,
 )
-from src.core.paths import release_path, ssd_root  # noqa: E402
-from src.crosscoder.snapshots import load_snapshot  # noqa: E402
+from readout.core.paths import release_path, ssd_root  # noqa: E402
+from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
 
 MODEL_NAME = "EleutherAI/pythia-160m"
 TOKENIZER = "EleutherAI/pythia-160m"

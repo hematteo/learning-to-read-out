@@ -112,7 +112,7 @@ The pipeline has three stages (see the `Makefile`):
 
 1. **Extract** snapshots from public Hugging Face checkpoints. Pythia `W_U`
    snapshots are auto-extracted on cache miss by the trainer
-   (`src.crosscoder.wu_adapter.load_wu_snapshot`); OLMo-2 is pre-extracted with
+   (`readout.crosscoder.wu_adapter.load_wu_snapshot`); OLMo-2 is pre-extracted with
    `experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py`;
    `scripts/extract/` holds the remaining extraction helpers (W_E, h_LN,
    firing rates, the OLMo eval corpus). Network + disk; CPU is fine for 160M.
@@ -178,7 +178,7 @@ read this").
 |---|---|---|---|---|
 | `fig:main-wordnet-matched-controls`, `fig:app-wordnet-supersense-probes-160m-inventory`, `fig:app-wordnet-supersense-probes-1b` | `concept_evolution_validation` | `experiments/probes/concept_evolution_validation/scripts/{run_wordnet_matched_controls,run_wordnet_supersense_probe}.py` persist probe-trajectory/summary CSVs under `experiments/probes/concept_evolution_validation/derived/` | no | crosscoders |
 
-These probe scripts read WordNet 3.0 through NLTK (`src/probes/concept_gazetteer.py`).
+These probe scripts read WordNet 3.0 through NLTK (`src/readout/probes/concept_gazetteer.py`).
 Before the first run, download the corpus once:
 `python -c "import nltk; nltk.download('wordnet')"` (one-time, into `~/nltk_data/`).
 

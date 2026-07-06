@@ -8,7 +8,7 @@ snapshot and save it under the same naming convention into a *separate*
 cache directory (so W_U and W_E caches do not collide).
 
 Saves Ge-exact 32-step snapshots by default
-(matches src/crosscoder/wu_adapter.py:DEFAULT_STEPS), so the resulting
+(matches src/readout/crosscoder/wu_adapter.py:DEFAULT_STEPS), so the resulting
 crosscoder is directly comparable to the production 160M W_U run
 (experiments.yaml: crosscoder_main).
 
@@ -27,18 +27,15 @@ wraps wu_adapter.main; the library module has no __main__ block):
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
 import argparse
 import shutil
+import sys as _sys
 from pathlib import Path
 
 import torch
 
-from src.core.paths import ssd_path, ssd_root
-from src.crosscoder.wu_adapter import DEFAULT_STEPS  # noqa: E402
+from readout.core.paths import ssd_path, ssd_root
+from readout.crosscoder.wu_adapter import DEFAULT_STEPS  # noqa: E402
 
 
 def extract_one(

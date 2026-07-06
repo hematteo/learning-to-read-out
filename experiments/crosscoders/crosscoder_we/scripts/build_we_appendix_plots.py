@@ -14,15 +14,12 @@ Outputs:
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
 from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
     STEPS_32,
     _load_we_rates_and_norms,
@@ -30,7 +27,7 @@ from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E
     _quality_rows,
     _write_csv,
 )
-from src.core.paths import repo_root, ssd_root
+from readout.core.paths import repo_root, ssd_root
 
 
 def _trajectory_rows(label: str, rates: np.ndarray, norms: np.ndarray) -> list[dict]:

@@ -26,11 +26,6 @@ import torch
 import torch.distributed as dist
 from torch.distributed.device_mesh import init_device_mesh
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(
-    0, str(REPO_ROOT)
-)  # so `from src.crosscoder.wu_adapter import ...` works
-
 
 def setup_distributed() -> tuple[int, int, "torch.distributed.device_mesh.DeviceMesh"]:
     """Initialise the process group and a single-axis device mesh on which
@@ -157,7 +152,7 @@ def main() -> int:
 
     rank, world_size, mesh = setup_distributed()
 
-    from src.core.repro import log_run_provenance, seed_everything
+    from readout.core.repro import log_run_provenance, seed_everything
 
     seed_everything(args.seed)
     if rank == 0:
@@ -166,7 +161,7 @@ def main() -> int:
     # Each rank loads the same W_U snapshot tensors (data-replicated). The
     # crosscoder's per-snapshot encoder/decoder *params* are sharded across
     # the mesh; the snapshot inputs themselves are not.
-    from src.crosscoder.wu_adapter import load_snapshots, preprocess_snapshots, train
+    from readout.crosscoder.wu_adapter import load_snapshots, preprocess_snapshots, train
 
     if rank == 0:
         print(
@@ -367,7 +362,7 @@ def main() -> int:
     # Eval is best-effort. If it OOMs or otherwise crashes, the model is already
     # on disk; we just won't have inline metrics. Re-run quick_quality offline
     # against the saved checkpoint with a smaller batch_size to recover them.
-    from src.crosscoder.wu_adapter import quick_quality
+    from readout.crosscoder.wu_adapter import quick_quality
 
     metrics = None
     try:

@@ -11,7 +11,7 @@ canonical source is now this module.
 This module is THE single source of truth for snapshot-step schedules: other
 modules (and scripts) must import ``DEFAULT_STEPS_32`` from here rather than
 re-typing the step list. The training-time copy
-``src.crosscoder.wu_adapter.DEFAULT_STEPS`` is the same Pythia schedule but lives
+``readout.crosscoder.wu_adapter.DEFAULT_STEPS`` is the same Pythia schedule but lives
 in a training module that pulls heavy deps; analysis code should import
 ``DEFAULT_STEPS_32`` from here.
 """
@@ -26,8 +26,8 @@ from pathlib import Path
 
 import torch
 
-from src.core.paths import snapshot_path as _snapshot_path
-from src.core.paths import ssd_root
+from readout.core.paths import snapshot_path as _snapshot_path
+from readout.core.paths import ssd_root
 
 # ---- step schedules ---------------------------------------------------------
 
@@ -102,7 +102,7 @@ def snap_path_for(
 ) -> Path:
     """Resolve a snapshot path, with a per-model subdir fallback to a flat dir.
 
-    Wraps ``src.core.paths.snapshot_path`` for the canonical layout, and falls
+    Wraps ``readout.core.paths.snapshot_path`` for the canonical layout, and falls
     back to a flat ``<snap_dir>/<slug>_step<N>_<wu|we>.pt`` layout used by some
     older caches.
     """
@@ -132,7 +132,7 @@ def iter_snapshots(
     matrix: str = "W_U",
 ) -> Iterator[tuple[int, torch.Tensor]]:
     """Yield ``(step, W_t)`` pairs from disk one at a time. CPU tensors, fp32."""
-    from src.crosscoder.snapshots import load_snapshot_at
+    from readout.crosscoder.snapshots import load_snapshot_at
 
     for s in steps:
         yield (

@@ -17,24 +17,17 @@ from __future__ import annotations
 
 import argparse
 import csv
-import sys as _sys
 from dataclasses import dataclass
 from pathlib import Path
-
-_sys.path.insert(0, str(Path(__file__).resolve().parents[5]))
 
 import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-import sys
 
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
-from src.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
-from src.core.paths import ssd_path  # noqa: E402
+from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
+from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
+from readout.core.paths import ssd_path  # noqa: E402
 
 OUT_DEFAULT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories/wishbone"
 CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"

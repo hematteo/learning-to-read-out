@@ -1,11 +1,10 @@
-"""Tests for src/core/paths.py."""
+"""Tests for src/readout/core/paths.py."""
 
 from __future__ import annotations
 
 import pytest
 
-from src.core.paths import (
-    PROJECT,
+from readout.core.paths import (
     aggregate_path,
     crosscoder_main_derived_dir,
     model_short,
@@ -26,10 +25,9 @@ def test_repo_root_finds_pyproject_or_git():
     assert (root / "pyproject.toml").exists() or (root / ".git").exists()
 
 
-def test_repo_root_matches_project_constant():
-    """The hand-rolled PROJECT (parents[2]) and dynamic repo_root should agree
-    while paths.py stays at src/core/paths.py."""
-    assert repo_root() == PROJECT
+def test_repo_root_contains_this_package():
+    """repo_root() must be the checkout that holds this package (src layout)."""
+    assert (repo_root() / "src" / "readout" / "core" / "paths.py").is_file()
 
 
 # ── ssd_root / model_short / model_slug ────────────────────────
@@ -42,7 +40,7 @@ def test_ssd_root_honours_um_ssd_root_env(monkeypatch, tmp_path):
 
 def test_ssd_root_default_when_unset(monkeypatch):
     monkeypatch.delenv("UM_SSD_ROOT", raising=False)
-    assert ssd_root() == PROJECT / "local_snapshots"
+    assert ssd_root() == repo_root() / "local_snapshots"
 
 
 def test_model_short_known_models():
@@ -115,5 +113,5 @@ def test_aggregate_path(monkeypatch, tmp_path):
 
 def test_crosscoder_main_derived_dir_under_repo():
     p = crosscoder_main_derived_dir()
-    assert p.is_relative_to(PROJECT)
+    assert p.is_relative_to(repo_root())
     assert p.name == "derived"

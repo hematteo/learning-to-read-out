@@ -3,16 +3,14 @@
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-from src.core.paths import ssd_path  # noqa: E402
-from src.crosscoder.wu_adapter import (  # noqa: E402
+from readout.core.paths import ssd_path  # noqa: E402
+from readout.crosscoder.wu_adapter import (  # noqa: E402
     batch_iter,
     build_crosscoder,
     load_snapshots,
@@ -27,9 +25,9 @@ OUT = REPO / "figures/persnap_sae_baseline"
 DEFAULT_SAE_LOG = ROOT / "derived/rates/wu-d8192-persnap/train.log"
 DEFAULT_CC_CKPT = ROOT / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors"
 
-from src.core.model_specs import DEFAULT_STEPS_32  # noqa: E402
+from readout.core.model_specs import DEFAULT_STEPS_32  # noqa: E402
 
-# Canonical 32-checkpoint Pythia ladder (was an inline literal; see src/core/model_specs.py).
+# Canonical 32-checkpoint Pythia ladder (was an inline literal; see src/readout/core/model_specs.py).
 GE_STEPS = DEFAULT_STEPS_32
 
 

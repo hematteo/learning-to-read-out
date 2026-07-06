@@ -68,7 +68,7 @@ def snap_path_for(snap_dir: Path, model_name: str, matrix: str, step: int) -> Pa
 
 
 def load_snapshot(p: Path) -> torch.Tensor:
-    from src.crosscoder.snapshots import load_snapshot_at
+    from readout.crosscoder.snapshots import load_snapshot_at
 
     return load_snapshot_at(p)
 

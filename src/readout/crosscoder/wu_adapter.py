@@ -15,20 +15,20 @@ import torch
 from llamascopium.models.crosscoder import Crosscoder, CrosscoderConfig
 from transformers import AutoModelForCausalLM
 
-from src.core.data import get_device
-from src.core.model_specs import DEFAULT_STEPS_32
-from src.core.repro import git_commit, log_run_provenance, seed_everything
+from readout.core.data import get_device
+from readout.core.model_specs import DEFAULT_STEPS_32
+from readout.core.repro import git_commit, log_run_provenance, seed_everything
 
 from ._schedules import lr_multiplier as _lr_multiplier
 
 # Ge et al. 2026 (arxiv 2509.17196) §4 "Experimental setup": 32 snapshots out of 154.
-# Canonical schedule lives in src.core.model_specs (single source of truth).
+# Canonical schedule lives in readout.core.model_specs (single source of truth).
 DEFAULT_STEPS = DEFAULT_STEPS_32
 
 DEFAULT_MODEL = "EleutherAI/pythia-160m"
-# Default to the canonical SSD layout (per src.core.paths.snapshot_dir).
+# Default to the canonical SSD layout (per readout.core.paths.snapshot_dir).
 # Override via WU_CACHE_DIR for non-canonical caches (e.g. W_E extraction).
-from src.core.paths import snapshot_dir as _snapshot_dir  # noqa: E402
+from readout.core.paths import snapshot_dir as _snapshot_dir  # noqa: E402
 
 DEFAULT_CACHE = Path(os.environ.get("WU_CACHE_DIR", str(_snapshot_dir(DEFAULT_MODEL))))
 
@@ -119,7 +119,7 @@ def build_crosscoder(
     along the n_heads axis and forward/backward are head-parallel via
     All-Reduce on the shared pre-activation (Ge §A.3).
 
-    ``device=None`` auto-selects via ``src.core.data.get_device()``
+    ``device=None`` auto-selects via ``readout.core.data.get_device()``
     (cuda > mps > cpu).
     """
     if device is None:
@@ -753,7 +753,7 @@ def main():
     print(f"Saved to {args.output}")
 
     if args.append_manifest:
-        from src.crosscoder.manifest import append_manifest_row
+        from readout.crosscoder.manifest import append_manifest_row
 
         try:
             row = append_manifest_row(

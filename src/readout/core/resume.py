@@ -6,7 +6,7 @@ atomic writes, per-item exists-check, append-only manifest, restart banner.
 
 Usage pattern:
 
-    from src.core.resume import (
+    from readout.core.resume import (
         atomic_write_json, atomic_write_torch,
         iter_undone, append_manifest, aggregate_json_shards,
     )

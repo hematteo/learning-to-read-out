@@ -156,7 +156,7 @@ class _BatchTopKHead(nn.Module):
 
     K (the sparsity budget) is set so the per-token mean L0 equals
     ``cfg.batchtopk_k``. Implementation matches BatchTopKSAE._batch_topk in
-    src/core/models.py.
+    src/readout/core/models.py.
     """
 
     def __init__(self, cfg: ArchSweepConfig):

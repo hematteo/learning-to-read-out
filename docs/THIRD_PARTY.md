@@ -11,7 +11,7 @@ explicit.
   `llamascopium`. Upstream: <https://github.com/OpenMOSS/Language-Model-SAEs>.
 - **Licence:** MIT, © 2024 OpenMOSS. See `lib/Language-Model-SAEs/LICENSE`.
 - **Why it is vendored rather than pulled from PyPI:** the thesis training path
-  (`src/crosscoder/wu_adapter.py`) uses this library's `Crosscoder` /
+  (`src/readout/crosscoder/wu_adapter.py`) uses this library's `Crosscoder` /
   `CrosscoderConfig` model and `SparseAdam` optimizer. The vendored copy carries
   **one local patch** — a DTensor-safe `init_encoder_with_decoder_transpose`
   that avoids a deadlock observed during 4-GPU head-parallel training. The
@@ -49,7 +49,7 @@ dictionaries follow (`\citet{ge2026crosscoder}`).
 ## First-party crosscoder code
 
 The production trajectory dictionaries are trained by first-party glue code
-in `src/crosscoder/` (`wu_adapter.py`, `training.py`) wrapping the
+in `src/readout/crosscoder/` (`wu_adapter.py`, `training.py`) wrapping the
 vendored llamascopium `Crosscoder`. An earlier, independent `TiedTopKCrossCoder`
 implementation (a per-checkpoint approach that was abandoned because it failed to
 match the trajectory) is **not** on the result-producing path and has been

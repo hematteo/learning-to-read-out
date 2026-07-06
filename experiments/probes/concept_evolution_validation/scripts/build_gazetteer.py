@@ -12,14 +12,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from transformers import AutoTokenizer
 
-from src.probes.concept_gazetteer import (
+from readout.probes.concept_gazetteer import (
     audit_gazetteer,
     build_gazetteer,
     save_gazetteer,

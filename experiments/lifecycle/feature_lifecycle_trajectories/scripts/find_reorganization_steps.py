@@ -19,27 +19,19 @@ full pipeline.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from src.core.data import write_csv
-from src.core.paths import ssd_path
+from readout.core.data import write_csv
+from readout.core.paths import ssd_path
 
 REPO = Path(__file__).resolve().parents[4]
-import sys
 
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
-from src.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
+from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
+from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
 
 OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
 CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"

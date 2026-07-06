@@ -1,5 +1,5 @@
 """Core SAE framework: models and data utilities. Training lives in
-`src.crosscoder.training`."""
+`readout.crosscoder.training`."""
 
 from .data import (
     adaptive_center_and_project,

@@ -26,18 +26,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[5]
-sys.path.insert(0, str(REPO))
-
-from src.crosscoder.checkpoint_loaders import _load_npy_or_pt, load_run  # noqa: E402
-from src.dynamics import derive as derive_mod  # noqa: E402
-from src.dynamics.discovery import RunRow, list_runs  # noqa: E402
-from src.dynamics.provenance import (  # noqa: E402
+from readout.crosscoder.checkpoint_loaders import _load_npy_or_pt, load_run  # noqa: E402
+from readout.dynamics import derive as derive_mod  # noqa: E402
+from readout.dynamics.discovery import RunRow, list_runs  # noqa: E402
+from readout.dynamics.provenance import (  # noqa: E402
     METRIC_VERSION,
     file_sha256,
     git_sha,

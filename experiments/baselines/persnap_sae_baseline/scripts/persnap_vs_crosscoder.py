@@ -12,10 +12,6 @@ the joint crosscoder, and reports the metrics to stdout.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import argparse
 import sys
 from pathlib import Path
@@ -23,12 +19,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.core.paths import ssd_path
+from readout.core.paths import ssd_path
 
 ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT / "src"))
-
-from src.crosscoder.wu_adapter import (  # noqa: E402
+from readout.crosscoder.wu_adapter import (  # noqa: E402
     DEFAULT_CACHE,
     DEFAULT_MODEL,
     DEFAULT_STEPS,

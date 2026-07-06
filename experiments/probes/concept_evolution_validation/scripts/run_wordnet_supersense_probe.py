@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from collections import Counter
 from pathlib import Path
@@ -21,15 +20,12 @@ import torch
 from transformers import AutoTokenizer
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.data import write_csv
-from src.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES
-from src.core.paths import repo_root, snapshot_path
-from src.core.repro import git_commit
-from src.crosscoder.snapshots import load_snapshot
-from src.probes.wu_probes_gpu import probe_balanced_accuracy_batched
+from readout.core.data import write_csv
+from readout.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES
+from readout.core.paths import repo_root, snapshot_path
+from readout.core.repro import git_commit
+from readout.crosscoder.snapshots import load_snapshot
+from readout.probes.wu_probes_gpu import probe_balanced_accuracy_batched
 
 try:
     from nltk.corpus import wordnet as wn

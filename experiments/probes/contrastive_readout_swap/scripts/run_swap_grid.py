@@ -26,32 +26,28 @@ import argparse
 import gc
 import json
 import os
-import sys
 import time
 from pathlib import Path
 
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.model_specs import (  # noqa: E402
+from readout.core.model_specs import (  # noqa: E402
     DEFAULT_STEPS_32 as PYTHIA_STEPS_32,
 )
-from src.core.model_specs import (
+from readout.core.model_specs import (
     OLMO_STEPS_32 as OLMO_STEPS,
 )
-from src.core.repro import git_commit  # noqa: E402
-from src.core.resume import (  # noqa: E402
+from readout.core.repro import git_commit  # noqa: E402
+from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,
     atomic_write_json,
     atomic_write_torch,  # noqa: F401 — used in main() under --save-per-example
     iter_undone,
 )
-from src.crosscoder.snapshots import load_snapshot  # noqa: E402
-from src.probes import contrastive_tasks as CT  # noqa: E402
-from src.probes import readout_swap as RS  # noqa: E402
+from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
+from readout.probes import contrastive_tasks as CT  # noqa: E402
+from readout.probes import readout_swap as RS  # noqa: E402
 
 MODEL_HF = {
     "pythia-160m": "EleutherAI/pythia-160m",
@@ -62,7 +58,7 @@ MODEL_HF = {
 
 # OLMo HF revisions use the format "stage1-step{N}-tokens{T}B"; the {T}B suffix
 # is looked up at runtime. The step schedule is the canonical OLMO_STEPS_32
-# (src/core/model_specs.py), matching extract_wu_olmo.py and thesis Appendix A.
+# (src/readout/core/model_specs.py), matching extract_wu_olmo.py and thesis Appendix A.
 
 
 def _model_steps(model_short: str) -> list[int]:

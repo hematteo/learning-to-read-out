@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -34,9 +33,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
-from src.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32  # noqa: E402
+from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32  # noqa: E402
 
 DEFAULT_HIDDEN_DIR = REPO / "results/experiments/probes/contrastive_readout_swap/hidden_p1b"
 DEFAULT_DATASETS_DIR = REPO / "results/experiments/probes/contrastive_readout_swap/datasets_p1b"

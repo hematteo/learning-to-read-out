@@ -28,8 +28,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.core.paths import crosscoder_main_derived_dir, ssd_path
-from src.crosscoder.checkpoint_loaders import load_run
+from readout.core.paths import crosscoder_main_derived_dir, ssd_path
+from readout.crosscoder.checkpoint_loaders import load_run
 
 from . import metrics
 from .discovery import RunRow
@@ -256,7 +256,7 @@ def derive_row(
             # matrix we cannot compute it. Leave cusum_null_path unset.
             pass
         else:
-            from src.baselines.permutation_test_fast import (  # noqa: E402
+            from readout.baselines.permutation_test_fast import (  # noqa: E402
                 permutation_test_vectorized,
             )
 

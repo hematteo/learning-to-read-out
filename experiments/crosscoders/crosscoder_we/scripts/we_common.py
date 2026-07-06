@@ -18,8 +18,8 @@ import numpy as np
 import torch
 from safetensors.torch import load_file as load_safetensors
 
-from src.core.model_specs import DEFAULT_STEPS_32 as STEPS_32
-from src.core.paths import release_path
+from readout.core.model_specs import DEFAULT_STEPS_32 as STEPS_32
+from readout.core.paths import release_path
 
 MODEL_NAME = "EleutherAI/pythia-160m"
 MODEL_SHORT = "pythia-160m"

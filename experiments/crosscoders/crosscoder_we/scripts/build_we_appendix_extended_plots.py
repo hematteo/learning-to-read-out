@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import csv
 import math
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -27,8 +26,6 @@ from safetensors import safe_open
 from scipy.optimize import linear_sum_assignment
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
 from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
     MODEL_NAME,
     MODEL_SHORT,
@@ -45,9 +42,9 @@ from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E
     _write_csv,
     _write_rows_and_cache,
 )
-from src.core.paths import release_path, repo_root, ssd_root
-from src.crosscoder.snapshots import load_snapshot
-from src.dynamics.metrics import lifecycle
+from readout.core.paths import release_path, repo_root, ssd_root
+from readout.crosscoder.snapshots import load_snapshot
+from readout.dynamics.metrics import lifecycle
 
 
 def _norm_rows_from_safetensors(path: Path) -> np.ndarray:

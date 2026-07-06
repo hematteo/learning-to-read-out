@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "learning-to-read-out"
 version = "0.1.0"
@@ -31,6 +35,10 @@ dependencies = [
     "pyyaml>=6,<7",
 ]
 
+[tool.hatch.build.targets.wheel]
+# The import package is `readout` (src layout); the distribution keeps the repo name.
+packages = ["src/readout"]
+
 [tool.uv.sources]
 # Pin Linux torch build to CUDA 11.8 wheels: cu118 is forward-compatible with
 # older GPU-node drivers that the cu124/cu130 wheels uv otherwise picks are
@@ -41,7 +49,7 @@ torch = [
 # THIRD-PARTY: OpenMOSS Language-Model-SAEs / llamascopium (MIT, (c) 2024
 # OpenMOSS), vendored under lib/ and built from source. The thesis uses its
 # Crosscoder/CrosscoderConfig model and SparseAdam optimizer for the production
-# W_U dictionaries (src/crosscoder/wu_adapter.py). The vendored copy carries one
+# W_U dictionaries (src/readout/crosscoder/wu_adapter.py). The vendored copy carries one
 # local patch — a DTensor-safe init_encoder_with_decoder_transpose that avoids a
 # deadlock during 4-GPU head-parallel training — so the published PyPI wheel
 # (2.0.0b34) is not a drop-in substitute. See docs/THIRD_PARTY.md.
@@ -66,13 +74,14 @@ extend-exclude = ["lib"]
 select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.ruff.lint.isort]
-# experiments/ is a namespace package (no __init__.py); pin it (and src) as
+# experiments/ is a namespace package (no __init__.py); pin it (and readout) as
 # first-party so import sorting doesn't depend on package-marker files.
-known-first-party = ["src", "experiments"]
+known-first-party = ["readout", "experiments"]
 
 [tool.ruff.lint.per-file-ignores]
-# Standalone experiment/CLI scripts do sys.path setup (and the example sets
-# warning filters) before src imports.
+# A few experiment scripts set module-level constants or same-dir sys.path
+# entries (sibling-module imports) before library imports; the example sets
+# warning filters first.
 "experiments/**" = ["E402"]
 "scripts/**" = ["E402"]
 "examples/**" = ["E402"]

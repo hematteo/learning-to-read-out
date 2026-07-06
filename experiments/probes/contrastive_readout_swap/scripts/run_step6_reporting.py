@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -32,8 +31,6 @@ import pandas as pd
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
 PT_RE = re.compile(r"^(?P<fam>.+)__a-(?P<al>[^_]+)__h(?P<h>\d+)__s(?P<s>\d+)\.pt$")
 
 

@@ -14,10 +14,6 @@ Outputs (one file per (d_sae, seed)):
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[5]))
 import argparse
 import csv
 import json
@@ -27,7 +23,7 @@ from pathlib import Path
 import torch
 from safetensors import safe_open
 
-from src.core.paths import ssd_root
+from readout.core.paths import ssd_root
 
 REPO = Path(__file__).resolve().parents[5]
 SSD = ssd_root()

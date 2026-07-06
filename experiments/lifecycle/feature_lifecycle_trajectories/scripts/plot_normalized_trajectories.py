@@ -15,19 +15,15 @@ rendered).
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import csv
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
-from src.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST
-from src.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST
-from src.core.paths import ssd_path
+from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST
+from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST
+from readout.core.paths import ssd_path
 
 CMAP_NAME = "RdBu_r"
 SELECTED_CMAP_NAME = "viridis"
@@ -41,7 +37,7 @@ SELECTED_OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajector
 CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"
 
 # Canonical Pythia cross-snap-32 schedule (single source of truth in
-# src.core.model_specs); kept as an int64 ndarray for ndarray-index/.astype use.
+# readout.core.model_specs); kept as an int64 ndarray for ndarray-index/.astype use.
 GE_STEPS_32 = np.array(_PYTHIA_STEPS_LIST)
 
 ACTIVE_THR = 0.01
@@ -62,7 +58,7 @@ class SelectedRun:
 
 
 # Canonical OLMo-2-7B cross-snap-32 schedule (single source of truth in
-# src.core.model_specs); kept as an int64 ndarray for ndarray-index/.astype use.
+# readout.core.model_specs); kept as an int64 ndarray for ndarray-index/.astype use.
 OLMO_STEPS_32 = np.array(_OLMO_STEPS_LIST, dtype=np.int64)
 
 SELECTED_RUNS: tuple[SelectedRun, ...] = (
@@ -142,7 +138,7 @@ def _load_norms_from_selected_run(run: SelectedRun) -> np.ndarray:
         blob = torch.load(run.aggregate_path, map_location="cpu", weights_only=False)
         norms = blob["decoder_norms"].float().numpy().astype(np.float32)
     elif run.checkpoint_path is not None:
-        from src.crosscoder.checkpoints import load_checkpoint
+        from readout.crosscoder.checkpoints import load_checkpoint
 
         print(f"deriving decoder norms from {run.checkpoint_path}")
         cp = load_checkpoint(run.checkpoint_path)

@@ -10,7 +10,7 @@ import hashlib
 import subprocess
 from pathlib import Path
 
-from src.core import paths as _paths
+from readout.core import paths as _paths
 
 # Bumped when the operational definitions in plan §3 change. Analysis scripts
 # treat (metric_version, git_sha) as the cache key for derived artifacts:

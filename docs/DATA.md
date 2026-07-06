@@ -7,7 +7,7 @@ what each stage needs and where to get it.
 ## Storage root: `UM_SSD_ROOT`
 
 Analysis scripts resolve their inputs under a single environment variable,
-`UM_SSD_ROOT` (default `./local_snapshots`), via `src/core/paths.py`. Point
+`UM_SSD_ROOT` (default `./local_snapshots`), via `src/readout/core/paths.py`. Point
 it anywhere before running:
 
 ```bash
@@ -30,13 +30,13 @@ finer-grained overrides, all optional and defaulting under `UM_SSD_ROOT`:
 
 | Variable | Read by | Overrides |
 |---|---|---|
-| `UM_SSD_ROOT` | `src/core/paths.py` | storage root (default `<repo>/local_snapshots`) |
-| `WU_SNAP_DIR` | `src/core/model_specs.py` | W_U/W_E snapshot dir (default `<ssd>/snapshots`) |
-| `WU_CACHE_DIR` | `src/crosscoder/wu_adapter.py`, `checkpoint_loaders.py` | trainer's W_U snapshot cache |
-| `CLUSTER_SCRATCH` | `src/crosscoder/checkpoint_loaders.py` | scratch dir searched by run discovery (default `~/scratch`) |
-| `DYNAMICS_DATA_ROOT` | `src/dynamics/discovery.py` | legacy training-run tree the analysis table discovers runs under (default `<ssd>/wu_crosscoder`); sub-roots individually overridable via `DYNAMICS_RUN3_DIR`, `DYNAMICS_CLUSTER_RESULTS`, `DYNAMICS_PYTHIA1B_DIR`, `DYNAMICS_WE_DIR`, `DYNAMICS_T2_1_DIR` |
-| `DYNAMICS_DERIVED_ROOT` | `src/dynamics/derive.py` | per-run derived-artifact cache (default `experiments/crosscoders/crosscoder_main/derived`) |
-| `READOUT_COMMIT` | `src/core/repro.py` | git commit recorded in provenance when running without `.git` |
+| `UM_SSD_ROOT` | `src/readout/core/paths.py` | storage root (default `<repo>/local_snapshots`) |
+| `WU_SNAP_DIR` | `src/readout/core/model_specs.py` | W_U/W_E snapshot dir (default `<ssd>/snapshots`) |
+| `WU_CACHE_DIR` | `src/readout/crosscoder/wu_adapter.py`, `checkpoint_loaders.py` | trainer's W_U snapshot cache |
+| `CLUSTER_SCRATCH` | `src/readout/crosscoder/checkpoint_loaders.py` | scratch dir searched by run discovery (default `~/scratch`) |
+| `DYNAMICS_DATA_ROOT` | `src/readout/dynamics/discovery.py` | legacy training-run tree the analysis table discovers runs under (default `<ssd>/wu_crosscoder`); sub-roots individually overridable via `DYNAMICS_RUN3_DIR`, `DYNAMICS_CLUSTER_RESULTS`, `DYNAMICS_PYTHIA1B_DIR`, `DYNAMICS_WE_DIR`, `DYNAMICS_T2_1_DIR` |
+| `DYNAMICS_DERIVED_ROOT` | `src/readout/dynamics/derive.py` | per-run derived-artifact cache (default `experiments/crosscoders/crosscoder_main/derived`) |
+| `READOUT_COMMIT` | `src/readout/core/repro.py` | git commit recorded in provenance when running without `.git` |
 | `HF_HOME` / `HF_HUB_CACHE` | Hugging Face libraries and extraction scripts | standard HF cache locations |
 
 The selected **sparse 6.9B** dictionary (λ=0.6) lives in the canonical layout
@@ -86,7 +86,7 @@ each retrains from public checkpoints with the settings of record in
 | Pile pretraining corpus (`pretraining_recipe_control` only) | `monology/pile-uncopyrighted` (slice tokenized locally), or `EleutherAI/pile-standard-pythia-preshuffled` for the exact Pythia order (byte-range prefix, no full 602 GB download) | MIT (Pile compilation) |
 
 The WordNet 3.0 supersense probes read the corpus through NLTK
-(`src/probes/concept_gazetteer.py`). After installing dependencies, download the
+(`src/readout/probes/concept_gazetteer.py`). After installing dependencies, download the
 corpus once with `python -c "import nltk; nltk.download('wordnet')"` (it lands in
 `~/nltk_data/`); the probe experiment raises `LookupError`/`ModuleNotFoundError`
 until this is done.
@@ -98,14 +98,14 @@ of the paper figures depend on them. The tokenized slice is a local artifact
 or its `scripts/fetch_pythia_preshuffled.py`
 (both under `experiments/ablations/pretraining_recipe_control/scripts/`).
 
-Checkpoint schedules are fixed in `src/core/model_specs.py`
+Checkpoint schedules are fixed in `src/readout/core/model_specs.py`
 (`DEFAULT_STEPS_32`, the 32-checkpoint Ge et al. schedule). The thesis
 reproducibility appendix records the exact step lists.
 
 ## Reproducing the inputs
 
 1. **W_U snapshots** (`$UM_SSD_ROOT/snapshots/<model>/`): produced on demand by
-   the trajectory trainer. On a cache miss `src.crosscoder.wu_adapter.load_wu_snapshot`
+   the trajectory trainer. On a cache miss `readout.crosscoder.wu_adapter.load_wu_snapshot`
    downloads each Pythia `step{N}` revision, saves its `embed_out.weight`
    unembedding as `{slug}_step{N}_wu.pt`, and reuses it thereafter — so simply
    running the trainer populates them:

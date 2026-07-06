@@ -118,10 +118,6 @@ results/temporal_patch_metrics/<tag>/
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import argparse
 import csv
 import importlib.util
@@ -144,9 +140,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from src.core.paths import ssd_path
-from src.crosscoder.checkpoints import load_checkpoint
-from src.crosscoder.snapshots import load_snapshot as _load_canonical_snapshot
+from readout.core.paths import ssd_path
+from readout.crosscoder.checkpoints import load_checkpoint
+from readout.crosscoder.snapshots import load_snapshot as _load_canonical_snapshot
 
 _REPO = Path(__file__).resolve().parents[4]
 _ITV_PATH = _REPO / "_archive/legacy_crosscoder_160m/intervention/02_intervention.py"

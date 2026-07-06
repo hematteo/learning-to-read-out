@@ -218,7 +218,7 @@ def main():
     print(f"Saved to {args.output}")
 
     if args.append_manifest:
-        from src.crosscoder.manifest import (
+        from readout.crosscoder.manifest import (
             MANIFEST_HEADER,
             _atomic_write,
             _ensure_manifest_dir,

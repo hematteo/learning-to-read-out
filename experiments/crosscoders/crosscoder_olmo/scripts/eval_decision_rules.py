@@ -21,9 +21,6 @@ from pathlib import Path
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO_ROOT / "src" / "crosscoder"))
-
 # Pre-registered thresholds from SCHEDULE.md (committed 2026-04-27).
 # EV bumped from 0.40 to 0.55 per code review: Run 5 1B/d_SAE=8192 hit 0.477,
 # so 0.40 admits an undertrained crosscoder (Run 2 failure mode).
@@ -160,7 +157,7 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
-    from src.core.repro import log_run_provenance, seed_everything
+    from readout.core.repro import log_run_provenance, seed_everything
 
     seed_everything(args.seed)
     log_run_provenance(seed=args.seed)

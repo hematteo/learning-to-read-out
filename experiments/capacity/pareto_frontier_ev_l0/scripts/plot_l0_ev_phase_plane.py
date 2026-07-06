@@ -14,10 +14,6 @@ Mac CPU only. Drops checkpoint weights with `del` between checkpoints.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import argparse
 import sys
 from pathlib import Path
@@ -25,10 +21,8 @@ from pathlib import Path
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
-from src.core.paths import ssd_path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "src"))
-from src.crosscoder.extract_rates import compute_rates_canonical  # noqa: E402,F401
+from readout.core.paths import ssd_path
+from readout.crosscoder.extract_rates import compute_rates_canonical  # noqa: E402,F401
 
 DEVICE = "cpu"
 MODEL_SLUG = "EleutherAI_pythia-160m"

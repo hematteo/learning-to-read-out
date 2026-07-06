@@ -6,22 +6,14 @@ script also works for other Pythia sizes (d_model is read from the snapshots).
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import argparse
-import sys
 from pathlib import Path
 
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-from src.core.paths import ssd_path
-from src.crosscoder import wu_adapter
+from readout.core.paths import ssd_path
+from readout.crosscoder import wu_adapter
 
 LATE_START_STEPS_32 = [
     256,
@@ -192,7 +184,7 @@ def main() -> int:
     print(f"Saved to {args.output}", flush=True)
 
     if args.append_manifest:
-        from src.crosscoder.manifest import append_manifest_row
+        from readout.crosscoder.manifest import append_manifest_row
 
         row = append_manifest_row(
             args.output,

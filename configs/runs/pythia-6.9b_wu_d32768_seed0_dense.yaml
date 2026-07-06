@@ -11,7 +11,7 @@ variant: dense            # default-lambda comparison (higher L0); cf. *_sparse 
 # Dictionary geometry
 d_sae: 32768              # expansion_factor 8.0 at d_model=4096 (32768 / 4096)
 expansion_factor: 8.0
-n_snapshots: 32           # cross-snapshot-32 (src.core.model_specs.DEFAULT_STEPS_32)
+n_snapshots: 32           # cross-snapshot-32 (readout.core.model_specs.DEFAULT_STEPS_32)
 
 # Optimizer / schedule (shared Pythia W_U recipe, per-model lr)
 lr: 1.0e-5                # NB: NOT the 5e-5 160M recipe; from the checkpoint-embedded training dict

@@ -28,7 +28,7 @@ from pathlib import Path
 
 import torch
 
-from src.core.paths import ssd_path
+from readout.core.paths import ssd_path
 
 
 def main():

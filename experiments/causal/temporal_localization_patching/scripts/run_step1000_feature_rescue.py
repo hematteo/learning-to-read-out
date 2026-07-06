@@ -40,23 +40,20 @@ import torch
 import torch.nn.functional as F
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
 TPM_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(TPM_DIR))
 import temporal_patch_metrics as TPM  # noqa: E402
 
-from src.core.paths import release_path  # noqa: E402
-from src.core.repro import git_commit  # noqa: E402
-from src.core.resume import (  # noqa: E402
+from readout.core.paths import release_path  # noqa: E402
+from readout.core.repro import git_commit  # noqa: E402
+from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,
     atomic_write_json,
     iter_undone,
 )
-from src.crosscoder.checkpoints import load_checkpoint  # noqa: E402
-from src.crosscoder.snapshots import load_snapshots  # noqa: E402
-from src.crosscoder.wu_adapter import preprocess_snapshots  # noqa: E402
+from readout.crosscoder.checkpoints import load_checkpoint  # noqa: E402
+from readout.crosscoder.snapshots import load_snapshots  # noqa: E402
+from readout.crosscoder.wu_adapter import preprocess_snapshots  # noqa: E402
 
 
 def encode_at_step(

@@ -5,14 +5,11 @@ from __future__ import annotations
 import argparse
 import csv
 import shutil
-import sys
 from pathlib import Path
 
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO))
-
 RESULTS_DIR = REPO / "results" / "experiments" / "dense_readout_diagnostics"
 FIG_DIR = REPO / "figures" / "dense_readout_diagnostics"
 PAPER_DIR = REPO / "paper" / "figures" / "dense_readout"

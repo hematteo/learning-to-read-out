@@ -18,10 +18,6 @@ Re-runs are no-ops if the CSV exists; pass --force to recompute.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[5]))
 import argparse
 import csv
 import json
@@ -32,8 +28,8 @@ from pathlib import Path
 import torch
 from safetensors.torch import safe_open
 
-from src.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32
-from src.core.paths import ssd_root
+from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32
+from readout.core.paths import ssd_root
 
 REPO = Path(__file__).resolve().parents[5]
 SSD = ssd_root()

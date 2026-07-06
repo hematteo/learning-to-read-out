@@ -183,7 +183,7 @@ def build_sva(tokenizer, *, n_max: int = 2000, W_U_for_norm_match=None) -> list[
 
 def build_sva_across_pp(tokenizer, *, n_max: int = 2000, W_U_for_norm_match=None) -> list[Example]:
     """Harder SVA with a prepositional-phrase attractor and varied verbs."""
-    from src.probes.sva import generate_sva_across_pp
+    from readout.probes.sva import generate_sva_across_pp
 
     out: list[Example] = []
     for item in generate_sva_across_pp(n=max(n_max, 1000), seed=0):

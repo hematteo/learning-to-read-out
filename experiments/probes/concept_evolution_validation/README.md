@@ -27,7 +27,7 @@ result corroborates the readout-emergence timing in the paper.
 This experiment computes metrics only (no figure rendering): the scripts persist the metrics below as the
 reproducible artifacts. Thesis figures are rendered in the separate thesis LaTeX
 tree from these metrics; no figure-rendering code ships here. The probe scripts
-read WordNet 3.0 through NLTK (`../../../src/probes/concept_gazetteer.py`); before
+read WordNet 3.0 through NLTK (`../../../src/readout/probes/concept_gazetteer.py`); before
 the first run, download the corpus once with
 `python -c "import nltk; nltk.download('wordnet')"` (one-time, into `~/nltk_data/`).
 

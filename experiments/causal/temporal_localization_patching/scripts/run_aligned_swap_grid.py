@@ -32,25 +32,21 @@ import torch
 import torch.nn.functional as F
 
 REPO = Path(__file__).resolve().parents[4]
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
-
-# Reuse the Pythia/OLMo plumbing from the temporal-patch grid (same directory).
 TPM_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(TPM_DIR))
 import temporal_patch_metrics as TPM  # noqa: E402
 
-from src.core.repro import git_commit  # noqa: E402
-from src.core.resume import (  # noqa: E402
+from readout.core.repro import git_commit  # noqa: E402
+from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,
     atomic_write_json,
     iter_undone,
 )
-from src.probes.readout_swap import ALIGN_MODES  # noqa: E402
-from src.probes.readout_swap import align_readout as align
+from readout.probes.readout_swap import ALIGN_MODES  # noqa: E402
+from readout.probes.readout_swap import align_readout as align
 
 # Gauge-alignment ladder (none/mean/scale/row_norm/procrustes). Canonical
-# implementation lives in src.probes.readout_swap.align_readout; imported here
+# implementation lives in readout.probes.readout_swap.align_readout; imported here
 # so there is a single source of truth (regression-tested in tests/test_readout_swap.py).
 ALIGNMENTS = list(ALIGN_MODES)
 
