@@ -280,20 +280,18 @@ CSV-aggregation step that the thesis-tree panels assume is not shipped. The
 metrics level: its localization metrics come from the same
 `sparse_feature_causal_tests` pilot/specificity entry points.
 
-- **Intervention-helper dependency (`02_intervention.py`).** The temporal-patch
-  metrics library
-  (`experiments/causal/temporal_localization_patching/scripts/temporal_patch_metrics.py`)
-  sources shared helpers (`encode`, `get_pieces`, `script_of`, …) and the
-  eval-token corpus (`eval_tokens.pt`) from a legacy intervention module at
-  `_archive/legacy_crosscoder_160m/intervention/`. That `_archive/` tree is
-  **not shipped** (it predates the trajectory-dictionary refactor and was not
-  duplicated). The library now loads the helper **lazily**, so importing it — and
-  the shipped scripts that depend on it (`temporal_patch_grid.py`, the `run_*`
-  swap drivers, and the sibling `sparse_feature_causal_tests` entry points) — no
-  longer fails; the helper is required only at runtime for the full end-to-end
-  metric recompute, and the thesis figures it supports are otherwise covered by
-  the regenerated per-snapshot/aggregate CSVs (gitignored, not shipped). (The
+- **Former intervention-helper dependency (`02_intervention.py`) — resolved.**
+  The temporal-patch metrics library (`readout.dynamics.temporal_patch`)
+  historically sourced shared helpers (`encode`, `get_pieces`, `script_of`) and
+  the eval-token corpus from a non-shipped `_archive/` module. Those helpers
+  now live in shipped code (`encode_snapshot_local` on
+  `readout.crosscoder.inference`, `readout.probes.token_scripts.script_of`)
+  and the corpus default resolves to the released copy under
+  `$UM_SSD_ROOT/hf_release/.../evaluation/eval-corpus/eval_tokens.pt`
+  (byte-identical to the archived original), so the full temporal-patch
+  recompute runs from public assets. The replacement was verified against the
+  archived originals on the real release data: helper outputs bitwise
+  identical, and the end-to-end smoke pipeline byte-identical. (The
   exploratory "global temporal patch" scripts and the `build_1b_aggregates.py`
-  builder, which could only run via that helper, have been removed; the
-  aggregates will be distributed as released artifacts — see
-  [DATA.md](DATA.md).)
+  builder were removed earlier; the aggregates are distributed as released
+  artifacts — see [DATA.md](DATA.md).)

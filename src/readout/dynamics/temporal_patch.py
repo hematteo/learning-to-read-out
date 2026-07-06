@@ -12,7 +12,7 @@ The cross-snapshot crosscoder has snapshot-local encoder/decoder pieces
 threshold. Snapshot-local activations are computed by re-encoding the
 snapshot's W_U through that snapshot's pieces:
 
-    a_k(t)[v]  =  encode(W_U_t, pieces_t)[v, k]
+    a_k(t)[v]  =  encode_snapshot_local(W_U_t, pieces_t)[v, k]
                 =  jumprelu( (W_U_t[v] - mean_t)/scale_t @ W_E[t][:,k] + b_E[t,k] )
 
 The rank-1 readout contribution of feature k at snapshot t is therefore:
@@ -119,17 +119,7 @@ results/temporal_patch_metrics/<tag>/
 from __future__ import annotations
 
 import csv
-import importlib.util
 import json
-
-# ---------------------------------------------------------------------------
-# Reuse helpers from the archived crosscoder_160m intervention module.
-# 02_intervention.py lives under _archive/, which is NOT shipped
-# in the public release (see docs/DATA.md / docs/REPRODUCE.md). Load it lazily so that
-# merely importing this library never fails when the legacy helper is absent:
-# the end-to-end recompute paths that need encode()/get_pieces()/script_of()
-# raise a clear, actionable error only when actually invoked.
-# ---------------------------------------------------------------------------
 import string
 import time
 from dataclasses import dataclass, field
@@ -139,67 +129,49 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from readout.core.data import get_device
 from readout.core.hf_revisions import resolve_revision
 from readout.core.paths import repo_root, ssd_path
 from readout.crosscoder import inference
 from readout.crosscoder.checkpoints import load_checkpoint
 from readout.crosscoder.snapshots import load_snapshot as _load_canonical_snapshot
+from readout.probes.token_scripts import script_of
 
 _REPO = repo_root()
-_ITV_PATH = _REPO / "_archive/legacy_crosscoder_160m/intervention/02_intervention.py"
+
+DEVICE = get_device()  # cuda > mps > cpu, as documented in the README
+# Sequence length of the eval corpora (both the released Pythia corpus and
+# scripts/extract/build_eval_corpus_olmo.py chunk to this).
+SEQ_LEN = 512
+# Sequences per forward pass when building the hLN cache (archived
+# intervention pipeline value; small because K x V x d activations dominate).
+HLN_FORWARD_BATCH = 4
 
 
-def _load_legacy_intervention():
-    """Load the archived crosscoder_160m intervention helpers on demand."""
-    if not _ITV_PATH.exists():
-        raise FileNotFoundError(
-            f"Legacy intervention helpers not found at {_ITV_PATH}. They ship "
-            "only in the author's full working tree, not the public release; "
-            "see docs/DATA.md to obtain the legacy helper and eval corpus. The "
-            "temporal-patch metrics that depend on them are documented as "
-            "external-data-gated in docs/REPRODUCE.md."
-        )
-    spec = importlib.util.spec_from_file_location("itv_seed0", _ITV_PATH)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+def encode_snapshot_local(W_U: torch.Tensor, pieces: dict) -> torch.Tensor:
+    """Snapshot-LOCAL feature activations a_k(t) from one snapshot's pieces.
 
+    Preprocess the raw W_U with snapshot t's (mean, scale), take that
+    snapshot's encoder head alone, and gate on the raw pre-activation (the
+    rate convention — no decoder-norm rescale; historically the archived
+    02_intervention.encode). ``pieces`` comes from
+    :func:`extract_pieces_for_steps`.
+    """
+    x_proc = (W_U - pieces["mean_i"]) / pieces["scale_i"]
+    pre = x_proc @ pieces["W_E"] + pieces["b_E"]
+    acts, _fired = inference.jumprelu_feature_acts(pre, pieces["thr"])
+    return acts
 
-class _LazyLegacyHelper:
-    """Proxy that loads the legacy intervention module on first call."""
-
-    def __init__(self, name: str) -> None:
-        self._name = name
-
-    def __call__(self, *args, **kwargs):
-        return getattr(_load_legacy_intervention(), self._name)(*args, **kwargs)
-
-
-try:
-    _ITV = _load_legacy_intervention()
-    encode = _ITV.encode  # encode(W_U_t, pieces_t) -> a(t) (V, D)
-    get_pieces = _ITV.get_pieces
-    script_of = _ITV.script_of
-    DEVICE = _ITV.DEVICE
-    SEQ_LEN = _ITV.SEQ_LEN
-except FileNotFoundError:
-    # _archive/ absent (public release): keep the module importable. The helpers
-    # raise on first use; the constants get safe fallbacks (only ever reached on
-    # code paths that also need the corpus, which fails first with a clear error).
-    encode = _LazyLegacyHelper("encode")  # encode(W_U_t, pieces_t) -> a(t) (V, D)
-    get_pieces = _LazyLegacyHelper("get_pieces")
-    script_of = _LazyLegacyHelper("script_of")
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    SEQ_LEN = 512  # fallback; real value comes from the legacy helper when present
 
 # ---------------------------------------------------------------------------
 # Per-model configurations (resolve at run start).
 # SSD root is env-driven so the same code works on local SSD + cluster nfs.
 # ---------------------------------------------------------------------------
 SSD = ssd_path()
-# Canonical (Pythia-tokenized) eval corpus — lives in the non-shipped _archive/ tree;
-# override with --eval-tokens (see docs/DATA.md).
-CORPUS_TOKENS_PYTHIA = _REPO / "_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt"
+# Canonical (Pythia-tokenized) eval corpus — ships with the released HF
+# artifacts (byte-identical to the archived original); override with
+# --eval-tokens (see docs/DATA.md).
+CORPUS_TOKENS_PYTHIA = SSD / "hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt"
 # OLMo-tokenized variant; regenerate with scripts/extract/build_eval_corpus_olmo.py
 # (this is that builder's default --output). Selected by temporal_patch_grid.py
 # for --model olmo-2-7b.
@@ -224,7 +196,10 @@ class ModelCfg:
 
 CFG_PYTHIA_160M = ModelCfg(
     model_name="EleutherAI/pythia-160m",
-    ckpt_template=str(SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed{seed}.safetensors"),
+    ckpt_template=str(
+        SSD
+        / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed{seed}.safetensors"
+    ),
     aggregates_template=None,
     npy_dir=SSD / "derived/rates/wu-d8192-multiseed",
     hLN_cache_dir=SSD / "readout_edit_timing",
@@ -266,7 +241,10 @@ CFG_PYTHIA_160M = ModelCfg(
 
 CFG_PYTHIA_1B = ModelCfg(
     model_name="EleutherAI/pythia-1b",
-    ckpt_template=str(SSD / "hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d{d_sae}/seed{seed}.safetensors"),
+    ckpt_template=str(
+        SSD
+        / "hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d{d_sae}/seed{seed}.safetensors"
+    ),
     aggregates_template=str(SSD / "derived/aggregates/aggregates_dsae{d_sae}_seed{seed}.pt"),
     npy_dir=None,
     hLN_cache_dir=SSD / "readout_edit_timing_pythia1b",
@@ -313,7 +291,10 @@ CFG_PYTHIA_1B = ModelCfg(
 # helpers will fail loudly if invoked on these configs without ckpts in place.
 CFG_PYTHIA_6_9B = ModelCfg(
     model_name="EleutherAI/pythia-6.9b",
-    ckpt_template=str(SSD / "hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d{d_sae}/seed{seed}.safetensors"),
+    ckpt_template=str(
+        SSD
+        / "hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d{d_sae}/seed{seed}.safetensors"
+    ),
     aggregates_template=str(SSD / "derived/aggregates/aggregates_pythia-6.9b_d{d_sae}_seed{seed}.pt"),
     npy_dir=None,
     hLN_cache_dir=SSD / "hln_cache/temporal_patch_grid/pythia-6.9b",
@@ -1037,8 +1018,8 @@ def _resolve_readout_module(model):
 def _cache_hidden_generic(model, ids_seqs: torch.Tensor) -> torch.Tensor:
     """Capture the input to the readout module via a forward pre-hook.
 
-    Generalization of _ITV.cache_pythia_hidden: works for both embed_out
-    (Pythia) and lm_head (OLMo / LLaMA) without tying to a specific class.
+    Works for both embed_out (Pythia) and lm_head (OLMo / LLaMA) without
+    tying to a specific class.
     """
     captured: list[torch.Tensor] = []
 
@@ -1047,7 +1028,7 @@ def _cache_hidden_generic(model, ids_seqs: torch.Tensor) -> torch.Tensor:
 
     readout = _resolve_readout_module(model)
     handle = readout.register_forward_pre_hook(hook)
-    bsz = _ITV.BATCH_SIZE
+    bsz = HLN_FORWARD_BATCH
     print(
         f"Forwarding {type(model).__name__} on {ids_seqs.shape[0]} sequences (batch={bsz})...",
         flush=True,
@@ -1137,7 +1118,7 @@ class TemporalPatch:
 def decode_subset_at(feat_acts: torch.Tensor, pieces: dict, subset_idx: list[int]) -> torch.Tensor:
     """sum_{k in S} a_k(t)[v] * D_k(t) * scale_t  ->  (V, d_model).
 
-    `feat_acts = encode(W_U_t, pieces_t)` provides the snapshot-LOCAL
+    `feat_acts = encode_snapshot_local(W_U_t, pieces_t)` provides the snapshot-LOCAL
     activations a_k(t)[v]. The decoder W_D[t, k] and preprocessing scale[t]
     are also per-snapshot. Sign convention matches `differential_W_U` in
     `02_intervention.py`."""
@@ -1192,8 +1173,8 @@ def build_temporal_patch(
     Caller is responsible for managing the lifetime of pieces_b/pieces_t and
     the W_U slabs — typically extract once per (base, target) snapshot in
     `run()` and reuse across all subsets/concepts."""
-    a_b = encode(W_U_b, pieces_b)  # snapshot-local a_k(b)
-    a_t = encode(W_U_t, pieces_t)  # snapshot-local a_k(t)
+    a_b = encode_snapshot_local(W_U_b, pieces_b)  # a_k(b)
+    a_t = encode_snapshot_local(W_U_t, pieces_t)  # a_k(t)
     R_b = decode_subset_at(a_b, pieces_b, feature_subset)
     R_t = decode_subset_at(a_t, pieces_t, feature_subset)
     delta_S = R_t - R_b

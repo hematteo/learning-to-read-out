@@ -143,8 +143,8 @@ CC-BY-SA; see its README there for provenance):
 --eval-tokens "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt"
 ```
 
-Scripts whose defaults reference a legacy `_archive/...` path accept this flag
-to override; you can also supply your own token tensor.
+This released copy is also the scripts' default (resolved under
+`UM_SSD_ROOT`); the flag exists to point at your own token tensor.
 
 ## Derived metrics (regenerated, not shipped)
 

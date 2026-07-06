@@ -34,6 +34,7 @@ import torch
 from transformers import AutoTokenizer
 
 from readout.core.paths import repo_root
+from readout.probes.token_scripts import script_of
 
 REPO = repo_root()
 DEFAULT_OUT = (
@@ -45,32 +46,6 @@ TARGET_CHARS_PER_LANG = 20_000
 LANGUAGES = ["en", "ru", "zh", "ja", "th", "ar", "hi", "ko", "bn"]
 
 
-def script_of(token_text: str) -> str:
-    if not token_text:
-        return "empty"
-    s = token_text.lstrip(" ")
-    if not s:
-        return "space"
-    cp = ord(s[0])
-    if cp < 128:
-        return "ASCII"
-    if 0x0400 <= cp <= 0x04FF:
-        return "Cyrillic"
-    if 0x0E00 <= cp <= 0x0E7F:
-        return "Thai"
-    if 0x0600 <= cp <= 0x06FF:
-        return "Arabic"
-    if 0x0900 <= cp <= 0x097F:
-        return "Devanagari"
-    if 0x0980 <= cp <= 0x09FF:
-        return "Bengali"
-    if 0x4E00 <= cp <= 0x9FFF:
-        return "CJK"
-    if 0x3040 <= cp <= 0x30FF:
-        return "Japanese"
-    if 0xAC00 <= cp <= 0xD7AF:
-        return "Korean"
-    return "other_unicode"
 
 
 def try_wikipedia_streaming(lang: str, target_chars: int) -> str | None:
