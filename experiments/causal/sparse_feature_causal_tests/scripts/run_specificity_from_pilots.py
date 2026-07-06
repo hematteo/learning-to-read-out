@@ -15,8 +15,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling: run_1b_pilot
 
 import run_1b_pilot as PILOT  # noqa: E402
 

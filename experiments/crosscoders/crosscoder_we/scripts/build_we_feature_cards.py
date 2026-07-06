@@ -15,19 +15,26 @@ from __future__ import annotations
 
 import argparse
 import gc
+
+# Same-experiment sibling module; the insert makes this robust to import
+# from outside the scripts/ dir (direct file execution already has it first).
+import sys as _sys  # noqa: E402
 from dataclasses import dataclass
 from pathlib import Path
+from pathlib import Path as _P  # noqa: E402
 
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from safetensors import safe_open  # noqa: E402
 from transformers import AutoTokenizer  # noqa: E402
 
-from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
+_sys.path.insert(0, str(_P(__file__).resolve().parent))
+from we_common import (  # noqa: E402
     MODEL_SHORT,
     STEPS_32,
     _load_we_rates_and_norms,
 )
+
 from readout.core.data import write_csv
 from readout.core.paths import (  # noqa: E402
     release_path,

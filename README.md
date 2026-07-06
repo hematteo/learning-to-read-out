@@ -109,6 +109,7 @@ Recommended reading order:
 | [`docs/REPRODUCE.md`](docs/REPRODUCE.md) | **Start here to chase a figure.** Figure → experiment → metric-producing script map (companion to `experiments.yaml`). |
 | [`docs/DATA.md`](docs/DATA.md) | External data and checkpoints; the `UM_SSD_ROOT` storage layout. |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | The vendored `llamascopium` library and what was patched. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Dev workflow: the tier rule, how to add an experiment, the audit contract. |
 | [`CITATION.cff`](CITATION.cff) | Citation metadata. |
 
 ## Notation

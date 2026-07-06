@@ -38,6 +38,14 @@ Checks:
               When it is ambiguous whether a reference is a committed input or a
               regenerable output, the case is downgraded to WARN (see
               check_manifest_consistency) rather than ERRORed.
+  13. [ERROR] sys.path hygiene: the readout package is installed (uv sync), so no
+              script may edit sys.path except a same-directory insert for sibling
+              modules inside its own scripts/ dir. Repo-root bootstraps
+              (parents[N], REPO/ROOT vars, .../src) are forbidden.
+  14. [ERROR] No cross-experiment imports: a script under experiments/<topic>/<id>/
+              may import readout and its own siblings, never another experiment's
+              tree (path reach-ins are caught by 13; package-style
+              `import experiments.*` is caught here).
 
 Run:
     uv run python scripts/audit/check_layout.py            # warnings + errors
@@ -109,6 +117,7 @@ ALLOWED_TOP_LEVEL = {
 # Files allowed at top level (REPRODUCE.md / DATA.md / THIRD_PARTY.md now live under docs/)
 ALLOWED_TOP_FILES = {
     "README.md",
+    "CONTRIBUTING.md",
     "CITATION.cff",
     "LICENSE",
     "Makefile",
@@ -216,6 +225,58 @@ def check_readme_exists() -> list[str]:
 
 # from experiments[.…] / import experiments[.…]
 _FORBIDDEN_SCRIPT_IMPORT = re.compile(r"^\s*(?:from|import)\s+(experiments)(?:\.|\s|,|$)")
+
+# sys.path edits: only a same-directory insert (sibling modules in the file's
+# own scripts/ dir) is allowed; the readout package itself is installed.
+_SYS_PATH_EDIT = re.compile(r"sys\.path\.(insert|append)\s*\(")
+_SAME_DIR_INSERT = re.compile(
+    r"sys\.path\.(insert\(\s*0\s*,|append\()\s*str\(\s*(_P|Path)\(__file__\)(\.resolve\(\))?\.parent\s*\)"
+)
+
+
+def check_sys_path_hygiene() -> list[str]:
+    """No repo-root/off-tree sys.path bootstraps anywhere (check 13)."""
+    issues: list[str] = []
+    for root in ("scripts", "experiments", "examples", "tests"):
+        base = REPO / root
+        if not base.exists():
+            continue
+        for p in sorted(base.rglob("*.py")):
+            if "__pycache__" in p.parts:
+                continue
+            try:
+                text = p.read_text()
+            except (UnicodeDecodeError, OSError):
+                continue
+            for lineno, line in enumerate(text.splitlines(), start=1):
+                if _SYS_PATH_EDIT.search(line) and not _SAME_DIR_INSERT.search(line):
+                    issues.append(
+                        f"{p.relative_to(REPO)}:{lineno} edits sys.path beyond a same-dir "
+                        f"insert (the readout package is installed; import it): {line.strip()}"
+                    )
+    return issues
+
+
+def check_no_cross_experiment_imports() -> list[str]:
+    """experiments/ scripts must not import other experiments (check 14)."""
+    issues: list[str] = []
+    exp = REPO / "experiments"
+    if not exp.exists():
+        return issues
+    for p in sorted(exp.rglob("*.py")):
+        if "__pycache__" in p.parts:
+            continue
+        try:
+            text = p.read_text()
+        except (UnicodeDecodeError, OSError):
+            continue
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if _FORBIDDEN_SCRIPT_IMPORT.match(line):
+                issues.append(
+                    f"{p.relative_to(REPO)}:{lineno} imports the experiments tree "
+                    f"(promote shared code to src/readout/): {line.strip()}"
+                )
+    return issues
 
 
 def check_scripts_imports() -> list[str]:
@@ -491,6 +552,8 @@ def main() -> int:
     errors += check_yaml_dir_parity()
     errors += check_readme_exists()
     errors += check_scripts_imports()
+    errors += check_sys_path_hygiene()
+    errors += check_no_cross_experiment_imports()
     resolve_errors, resolve_warnings = check_committed_paths_resolve()
     errors += resolve_errors
     warnings += check_src_no_main()

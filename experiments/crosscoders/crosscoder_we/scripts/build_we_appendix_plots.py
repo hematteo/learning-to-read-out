@@ -14,18 +14,25 @@ Outputs:
 from __future__ import annotations
 
 import argparse
+
+# Same-experiment sibling module; the insert makes this robust to import
+# from outside the scripts/ dir (direct file execution already has it first).
+import sys as _sys  # noqa: E402
 from pathlib import Path
+from pathlib import Path as _P  # noqa: E402
 
 import numpy as np
 import torch
 
-from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
+_sys.path.insert(0, str(_P(__file__).resolve().parent))
+from we_common import (  # noqa: E402
     STEPS_32,
     _load_we_rates_and_norms,
     _load_wu_rates_and_norms,
     _quality_rows,
     _write_csv,
 )
+
 from readout.core.paths import repo_root, ssd_root
 
 REPO = repo_root()
