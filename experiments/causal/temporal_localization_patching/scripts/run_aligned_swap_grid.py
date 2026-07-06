@@ -24,7 +24,6 @@ import argparse
 import gc
 import json
 import math
-import sys
 import time
 from pathlib import Path
 
@@ -32,10 +31,7 @@ import torch
 import torch.nn.functional as F
 
 REPO = Path(__file__).resolve().parents[4]
-TPM_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(TPM_DIR))
-import temporal_patch_metrics as TPM  # noqa: E402
-
+import readout.dynamics.temporal_patch as TPM  # noqa: E402
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,

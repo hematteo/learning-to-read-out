@@ -34,7 +34,6 @@ import argparse
 import csv
 import json
 import math
-import sys
 import time
 from pathlib import Path
 
@@ -42,8 +41,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-sys.path.insert(0, str(Path(__file__).parent))
-import temporal_patch_metrics as TPM  # noqa: E402
+import readout.dynamics.temporal_patch as TPM  # noqa: E402
 
 DEVICE = TPM.DEVICE
 

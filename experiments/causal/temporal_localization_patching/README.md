@@ -38,11 +38,11 @@ This experiment computes metrics only: it computes and persists the metrics behi
 ships no figure-rendering code. Thesis figures are rendered in the separate thesis LaTeX
 tree from these metrics. Per `--out-dir`, the scripts persist:
 - `temporal_patch_grid.py` -> `manifest.json`, `summary_global.csv` (one row per `(h_t, W_U_s)`), `summary_concept.csv` (one row per `(h_t, W_U_s, concept)`), `raw.pt`
-- `temporal_patch_metrics.py` (shared library; its `__main__` driver) -> `manifest.json`, `subsets.json`, `summary.csv`, `selectivity.csv`, `paired_vs_random.csv`, `raw.pt`
+- `temporal_patch_metrics.py` (CLI driver over `readout.dynamics.temporal_patch`) -> `manifest.json`, `subsets.json`, `summary.csv`, `selectivity.csv`, `paired_vs_random.csv`, `raw.pt`
 - `run_aligned_swap_grid.py` -> `manifest.json`, per-cell JSON shards, aggregated `summary.csv`
 - `run_step1000_feature_rescue.py` -> `manifest.json`, per-cell JSON shards, aggregated `rescue_summary.csv`
 
 ## Layout
 | path | role |
 |---|---|
-| `scripts/` | temporal-patching code: `temporal_patch_metrics` is the shared library imported by `temporal_patch_grid` and the `run_*` swap drivers (`run_aligned_swap_grid`, `run_step1000_feature_rescue`). It loads the archived intervention helper lazily, so importing it never requires the non-shipped `_archive/` tree. The sibling experiment `sparse_feature_causal_tests` imports `temporal_patch_metrics` from here. |
+| `scripts/` | temporal-patching drivers. The shared analysis library lives in `src/readout/dynamics/temporal_patch.py` (it is also used by the `sparse_feature_causal_tests` experiment, so per the repo's tier rule it sits in `src/`, not here); `temporal_patch_metrics.py` is its CLI driver, and `temporal_patch_grid` plus the `run_*` swap drivers (`run_aligned_swap_grid`, `run_step1000_feature_rescue`) import it directly. The library loads the archived intervention helper lazily, so importing it never requires the non-shipped `_archive/` tree. |

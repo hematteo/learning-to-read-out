@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,10 +29,7 @@ from readout.core.data import write_csv
 from readout.core.paths import ssd_path
 
 REPO = Path(__file__).resolve().parents[4]
-TEMPORAL_PATCH_DIR = REPO / "experiments/causal/temporal_localization_patching/scripts"
-sys.path.insert(0, str(TEMPORAL_PATCH_DIR))
-
-import temporal_patch_metrics as TPM  # noqa: E402
+import readout.dynamics.temporal_patch as TPM  # noqa: E402
 
 CKPT_PATH = ssd_path(
     "hf_release",

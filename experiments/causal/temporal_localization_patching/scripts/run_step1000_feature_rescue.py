@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import argparse
 import gc
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -40,10 +39,7 @@ import torch
 import torch.nn.functional as F
 
 REPO = Path(__file__).resolve().parents[4]
-TPM_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(TPM_DIR))
-import temporal_patch_metrics as TPM  # noqa: E402
-
+import readout.dynamics.temporal_patch as TPM  # noqa: E402
 from readout.core.paths import release_path  # noqa: E402
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import (  # noqa: E402
