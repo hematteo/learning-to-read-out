@@ -20,10 +20,6 @@ cache (callers should pass --force-rederive or clear the directory).
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import os
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -32,20 +28,18 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.core.paths import ssd_path
+from src.core.paths import crosscoder_main_derived_dir, ssd_path
 from src.crosscoder.checkpoint_loaders import load_run
 
 from . import metrics
 from .discovery import RunRow
-
-REPO = Path(__file__).resolve().parents[4]
 
 
 def default_derived_root() -> Path:
     env = os.environ.get("DYNAMICS_DERIVED_ROOT")
     if env:
         return Path(env)
-    return REPO / "experiments/crosscoders/crosscoder_main/derived"
+    return crosscoder_main_derived_dir()
 
 
 @dataclass

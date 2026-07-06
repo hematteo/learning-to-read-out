@@ -10,6 +10,8 @@ import hashlib
 import subprocess
 from pathlib import Path
 
+from src.core import paths as _paths
+
 # Bumped when the operational definitions in plan §3 change. Analysis scripts
 # treat (metric_version, git_sha) as the cache key for derived artifacts:
 # bumping this invalidates everything downstream.
@@ -43,11 +45,7 @@ def git_sha(repo_root: Path | str | None = None) -> str | None:
     global _GIT_SHA_CACHE
     if _GIT_SHA_CACHE is not None:
         return _GIT_SHA_CACHE
-    cwd = (
-        Path(repo_root)
-        if repo_root is not None
-        else Path(__file__).resolve().parents[3]
-    )
+    cwd = Path(repo_root) if repo_root is not None else _paths.repo_root()
     try:
         out = subprocess.check_output(
             ["git", "rev-parse", "--short=12", "HEAD"],

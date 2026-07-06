@@ -18,10 +18,6 @@ Locked manifest of expected runs from plan §2 (eligible runs):
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _P
-
-_sys.path.insert(0, str(_P(__file__).resolve().parents[4]))
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -43,17 +39,11 @@ def _default_data_root() -> Path:
 
 
 SSD_ROOT = _default_data_root()
-CLUSTER_RESULTS = Path(
-    os.environ.get("DYNAMICS_CLUSTER_RESULTS") or (SSD_ROOT / "cluster_results")
-)
-RUN3_DIR = Path(
-    os.environ.get("DYNAMICS_RUN3_DIR") or (SSD_ROOT / "run3_ge_exact_results")
-)
+CLUSTER_RESULTS = Path(os.environ.get("DYNAMICS_CLUSTER_RESULTS") or (SSD_ROOT / "cluster_results"))
+RUN3_DIR = Path(os.environ.get("DYNAMICS_RUN3_DIR") or (SSD_ROOT / "run3_ge_exact_results"))
 T1_3_DIR = CLUSTER_RESULTS / "t1_3_per_snap_sae"
 T1_5_DIR = CLUSTER_RESULTS  # Gated/BatchTopK retune lives under t1_5* subdirs
-PYTHIA1B_DIR = Path(
-    os.environ.get("DYNAMICS_PYTHIA1B_DIR") or (SSD_ROOT / "run5_pythia1b_capsweep")
-)
+PYTHIA1B_DIR = Path(os.environ.get("DYNAMICS_PYTHIA1B_DIR") or (SSD_ROOT / "run5_pythia1b_capsweep"))
 WE_DIR = Path(os.environ.get("DYNAMICS_WE_DIR") or (SSD_ROOT / "we_snapshots"))
 T2_1_DIR = Path(os.environ.get("DYNAMICS_T2_1_DIR") or (SSD_ROOT / "t2_1_pythia69b"))
 
@@ -147,15 +137,13 @@ def _t1_5_rows() -> list[RunRow]:
     seen: set[str] = set()
     if not T1_5_DIR.exists():
         return rows
-    sweep_dirs = sorted(T1_5_DIR.glob("t1_5_arch_sweep*")) + sorted(
-        T1_5_DIR.glob("t1_5_gated_retune*")
-    )
+    sweep_dirs = sorted(T1_5_DIR.glob("t1_5_arch_sweep*")) + sorted(T1_5_DIR.glob("t1_5_gated_retune*"))
     for sub in sweep_dirs:
         for arch_glob, arch_name in [
             ("*gated*.pt", "Gated"),
             ("*batchtopk*.pt", "BatchTopK"),
         ]:
-            for ckpt in sub.rglob(arch_glob):
+            for ckpt in sorted(sub.rglob(arch_glob)):
                 if ckpt.name.startswith("._"):  # macOS resource forks
                     continue
                 run_id = f"t1_5_{arch_name.lower()}_d8192"
@@ -256,7 +244,7 @@ def _t3_x_rows() -> list[RunRow]:
                 )
             )
     for d in sorted(base.glob("t3_2*")):
-        for ckpt in d.rglob("we_cc_dsae24576_seed*.pt"):
+        for ckpt in sorted(d.rglob("we_cc_dsae24576_seed*.pt")):
             seed = _parse_seed(ckpt.stem)
             rows.append(
                 RunRow(
@@ -310,9 +298,7 @@ def _t4_4_rows() -> list[RunRow]:
                     n_snapshots=16,
                     steps=list(GE_STEPS_16),
                     ckpt_path=str(ckpt),
-                    rates_path=str(rates_candidate)
-                    if rates_candidate.exists()
-                    else None,
+                    rates_path=str(rates_candidate) if rates_candidate.exists() else None,
                     norms_path=None,
                     seed_index_in_cache=None,
                 )
@@ -334,7 +320,7 @@ def _pythia1b_rows() -> list[RunRow]:
     if CLUSTER_RESULTS.exists():
         search_dirs.extend(sorted(CLUSTER_RESULTS.glob("pythia1b_wu_main*")))
     for d in search_dirs:
-        for ckpt in d.rglob("wu_cc_1b_dsae*_seed*.pt"):
+        for ckpt in sorted(d.rglob("wu_cc_1b_dsae*_seed*.pt")):
             if ckpt.name.startswith("._"):
                 continue
             row = _pythia1b_row_from_ckpt(ckpt)
@@ -357,8 +343,8 @@ def _pythia1b_row_from_ckpt(ckpt: Path) -> RunRow:
     rates_path = str(rates_candidate) if rates_candidate.exists() else None
     if rates_path is None and CLUSTER_RESULTS.exists():
         # Look across pythia1b_wu_main job dirs for a matching rates cache.
-        for d in CLUSTER_RESULTS.glob("pythia1b_wu_main*"):
-            for c in d.rglob(f"wu_1b_rates_dsae{d_sae}_seed{seed}.pt"):
+        for d in sorted(CLUSTER_RESULTS.glob("pythia1b_wu_main*")):
+            for c in sorted(d.rglob(f"wu_1b_rates_dsae{d_sae}_seed{seed}.pt")):
                 if c.name.startswith("._"):
                     continue
                 rates_path = str(c)
@@ -424,9 +410,7 @@ def _t4_6_rows() -> list[RunRow]:
                     n_snapshots=32,
                     steps=list(GE_STEPS_32),
                     ckpt_path=str(ckpt),
-                    rates_path=str(rates_candidate)
-                    if rates_candidate.exists()
-                    else None,
+                    rates_path=str(rates_candidate) if rates_candidate.exists() else None,
                     norms_path=None,
                     seed_index_in_cache=None,
                 )
