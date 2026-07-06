@@ -18,8 +18,11 @@ underlying metrics, and states honestly what a reader can run.
 
 Alphabetical by label; deep-link as `docs/REPRODUCE.md#<label>`. The third column is
 the figure's path in the thesis LaTeX tree (not shipped here); the script that produces
-its metrics is in that experiment's README "Figures produced" ledger.
+its metrics is in that experiment's README "Figures produced" ledger. This table is
+**generated from [`experiments.yaml`](../experiments.yaml)** by
+`scripts/audit/gen_reproduce_index.py` (drift fails CI); edit the manifest, not the table.
 
+<!-- BEGIN GENERATED FIGURE INDEX (scripts/audit/gen_reproduce_index.py) -->
 | Label | Experiment | Rendered figure (thesis tree) |
 |---|---|---|
 | <a id="fig:app-160m-baselines"></a>`fig:app-160m-baselines` | persnap_sae_baseline | paper/figures/persnap_sae/pythia160m_baseline_comparison.pdf |
@@ -105,6 +108,7 @@ its metrics is in that experiment's README "Figures produced" ledger.
 | <a id="tab:lr-validation"></a>`tab:lr-validation` | (thesis-tree only) | (thesis-tree only) |
 | <a id="tab:repro-compute"></a>`tab:repro-compute` | (thesis-tree only) | (thesis-tree only) |
 | <a id="tab:repro-hparams"></a>`tab:repro-hparams` | crosscoder_main | (produced; see experiments.yaml / tables below) |
+<!-- END GENERATED FIGURE INDEX -->
 
 ## How to read this
 

@@ -42,6 +42,9 @@ thesis figures render in the separate LaTeX tree from these metrics.
    orphans on either side.
 3. Runnable commands in the README must be complete: a reader chasing a
    figure copy-pastes them (include required flags and output paths).
+   The figure-index table in `docs/REPRODUCE.md` is generated from the
+   manifest — run `uv run python scripts/audit/gen_reproduce_index.py` after
+   editing `paper_labels`/`paper_figures` (CI checks for drift).
 4. Seed everything (`readout.core.repro.seed_everything`); stamp provenance
    (`log_run_provenance` / `git_commit`) on anything that writes artifacts.
 

@@ -68,3 +68,5 @@ jobs:
         run: uv sync --extra dev
       - name: Validate layout contract
         run: uv run --extra dev python scripts/audit/check_layout.py
+      - name: Figure index in sync with experiments.yaml
+        run: uv run --extra dev python scripts/audit/gen_reproduce_index.py --check

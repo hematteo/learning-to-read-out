@@ -23,6 +23,7 @@ lint:  ## Ruff lint (same check as CI)
 
 audit:  ## Validate the experiments.yaml <-> experiments/ <-> paper/ correspondence
 	uv run python scripts/audit/check_layout.py
+	uv run python scripts/audit/gen_reproduce_index.py --check
 
 extract:  ## Stage 1: build W_E snapshots from HF checkpoints (needs network + disk)
 	@echo "Example: uv run python scripts/extract/extract_we_pythia.py --model EleutherAI/pythia-160m"
