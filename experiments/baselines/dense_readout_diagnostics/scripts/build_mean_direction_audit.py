@@ -15,7 +15,6 @@ Outputs:
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import subprocess
 import time
@@ -23,15 +22,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-REPO = Path(__file__).resolve().parents[4]
 import torch  # noqa: E402
 
+from readout.core.data import write_csv
 from readout.core.model_specs import (  # noqa: E402
     DEFAULT_STEPS_BY_MODEL,
 )
 from readout.core.model_specs import MODEL_HF_NAMES as MODEL_NAMES  # noqa: E402
-from readout.core.paths import snapshot_path  # noqa: E402
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    snapshot_path,  # noqa: E402
+)
 from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
+
+REPO = repo_root()
 
 OUT_DIR = REPO / "results/experiments/dense_readout_diagnostics"
 
@@ -238,14 +242,7 @@ def compute_one(
 
 
 def _write_csv(rows: list[dict], path: Path) -> None:
-    if not rows:
-        raise ValueError("no rows to write")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fields = list(rows[0].keys())
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv(path, rows, require_rows=True)
 
 
 def _parse_models(values: Iterable[str]) -> list[tuple[str, str]]:

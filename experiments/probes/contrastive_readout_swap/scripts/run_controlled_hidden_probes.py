@@ -32,8 +32,10 @@ from sklearn.model_selection import GroupKFold, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-REPO = Path(__file__).resolve().parents[4]
 from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32  # noqa: E402
+from readout.core.paths import repo_root  # noqa: E402
+
+REPO = repo_root()
 
 DEFAULT_HIDDEN_DIR = REPO / "results/experiments/probes/contrastive_readout_swap/hidden_p1b"
 DEFAULT_DATASETS_DIR = REPO / "results/experiments/probes/contrastive_readout_swap/datasets_p1b"

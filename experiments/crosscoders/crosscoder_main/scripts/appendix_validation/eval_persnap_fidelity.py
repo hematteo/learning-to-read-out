@@ -17,14 +17,13 @@ import csv
 import gc
 import json
 import time
-from pathlib import Path
 
 import torch
 from safetensors.torch import load_file
 
-from readout.core.paths import ssd_root
+from readout.core.paths import repo_root, ssd_root
 
-REPO = Path(__file__).resolve().parents[5]
+REPO = repo_root()
 SSD = ssd_root()
 HF = SSD / "hf_release/parameter-trajectory-crosscoders"
 SNAP = SSD / "snapshots/pythia-160m"

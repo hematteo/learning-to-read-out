@@ -19,16 +19,20 @@ import pandas as pd
 import torch
 from scipy.optimize import linear_sum_assignment
 
-REPO = Path(__file__).resolve().parents[4]
 from readout.core.model_specs import (
     DEFAULT_STEPS_BY_MODEL,
 )
 from readout.core.model_specs import (
     MODEL_HF_NAMES as MODEL_NAMES,
 )
-from readout.core.paths import snapshot_path
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    snapshot_path,
+)
 from readout.core.repro import git_commit
 from readout.crosscoder.snapshots import load_snapshot
+
+REPO = repo_root()
 
 K_VALUES = [5, 10, 20, 50]
 PYTHIA_MODEL_ORDER = ["pythia-160m", "pythia-1b", "pythia-6.9b"]

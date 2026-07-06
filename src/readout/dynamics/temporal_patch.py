@@ -139,6 +139,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from readout.core.hf_revisions import resolve_revision
 from readout.core.paths import repo_root, ssd_path
 from readout.crosscoder.checkpoints import load_checkpoint
 from readout.crosscoder.snapshots import load_snapshot as _load_canonical_snapshot
@@ -1054,29 +1055,7 @@ def _cache_hidden_generic(model, ids_seqs: torch.Tensor) -> torch.Tensor:
 
 
 # Cache for HF branch enumeration so we don't re-hit the API per step.
-_OLMO_REV_CACHE: dict[str, list[str]] = {}
-
-
-def _resolve_revision(model_name: str, step: int) -> str:
-    """Return the HF branch name for ``step`` of ``model_name``.
-
-    Pythia: ``step{N}``. OLMo: ``stage1-step{N}-tokens{T}B`` (looked up via
-    HF API; resolution map cached per process)."""
-    if "olmo" in model_name.lower():
-        if model_name not in _OLMO_REV_CACHE:
-            import requests
-
-            r = requests.get(f"https://huggingface.co/api/models/{model_name}/refs", timeout=30)
-            r.raise_for_status()
-            _OLMO_REV_CACHE[model_name] = [b["name"] for b in r.json().get("branches", [])]
-        import re as _re
-
-        pat = _re.compile(rf"^stage1-step{step}(-tokens.*)?$")
-        for rev in _OLMO_REV_CACHE[model_name]:
-            if pat.match(rev):
-                return rev
-        raise ValueError(f"No OLMo revision matches stage1-step{step} for {model_name}")
-    return f"step{step}"
+_resolve_revision = resolve_revision  # canonical resolver: readout.core.hf_revisions
 
 
 def cache_or_build_hLN(step: int, ids_seqs: torch.Tensor) -> dict:

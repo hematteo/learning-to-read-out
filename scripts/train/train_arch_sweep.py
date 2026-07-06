@@ -21,11 +21,10 @@ from pathlib import Path
 
 import torch
 
-from readout.core.paths import ssd_path, ssd_root
+from readout.core.paths import repo_root, ssd_path, ssd_root
 
 # ROOT is the git rev-parse cwd for provenance stamping.
-ROOT = Path(__file__).resolve().parents[2]
-
+ROOT = repo_root()
 from readout.crosscoder.crosscoder_arch_sweep import (  # noqa: E402
     quick_quality,
     train_arch_sweep,

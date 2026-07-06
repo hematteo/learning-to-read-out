@@ -49,8 +49,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
-from readout.core.paths import release_path  # noqa: E402
+from readout.core.paths import (
+    release_path,  # noqa: E402
+    repo_root,  # noqa: E402
+)
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import atomic_write_json  # noqa: E402
 from readout.crosscoder import inference  # noqa: E402
@@ -59,6 +61,8 @@ from readout.crosscoder.snapshots import load_snapshots  # noqa: E402
 from readout.crosscoder.wu_adapter import preprocess_snapshots  # noqa: E402
 from readout.probes import contrastive_tasks as CT  # noqa: E402
 from readout.probes import readout_swap as RS  # noqa: E402
+
+REPO = repo_root()
 
 
 # ---------------------------------------------------------------------------

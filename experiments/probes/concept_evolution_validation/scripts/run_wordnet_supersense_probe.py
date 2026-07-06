@@ -19,13 +19,14 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer
 
-REPO = Path(__file__).resolve().parents[4]
 from readout.core.data import write_csv
 from readout.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES
 from readout.core.paths import repo_root, snapshot_path
 from readout.core.repro import git_commit
 from readout.crosscoder.snapshots import load_snapshot
 from readout.probes.wu_probes_gpu import probe_balanced_accuracy_batched
+
+REPO = repo_root()
 
 try:
     from nltk.corpus import wordnet as wn

@@ -19,9 +19,13 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
-REPO = Path(__file__).resolve().parents[4]
-from readout.core.paths import snapshot_path  # noqa: E402
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    snapshot_path,  # noqa: E402
+)
 from readout.probes import contrastive_tasks as CT  # noqa: E402
+
+REPO = repo_root()
 
 
 def _maybe_load_terminal_W_U(model_name: str) -> torch.Tensor | None:

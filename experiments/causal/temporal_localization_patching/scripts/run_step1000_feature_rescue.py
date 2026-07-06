@@ -38,9 +38,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-REPO = Path(__file__).resolve().parents[4]
 import readout.dynamics.temporal_patch as TPM  # noqa: E402
-from readout.core.paths import release_path  # noqa: E402
+from readout.core.paths import (
+    release_path,  # noqa: E402
+    repo_root,  # noqa: E402
+)
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,
@@ -51,6 +53,8 @@ from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import load_checkpoint  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshots  # noqa: E402
 from readout.crosscoder.wu_adapter import preprocess_snapshots  # noqa: E402
+
+REPO = repo_root()
 
 
 # Crosscoder math lives in readout.crosscoder.inference (equivalence-tested

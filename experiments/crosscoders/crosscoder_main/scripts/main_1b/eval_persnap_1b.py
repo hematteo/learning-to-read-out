@@ -18,15 +18,14 @@ import argparse
 import csv
 import json
 import time
-from pathlib import Path
 
 import torch
 from safetensors import safe_open
 
-from readout.core.paths import ssd_root
+from readout.core.paths import repo_root, ssd_root
 from readout.crosscoder import inference  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[5]
+REPO = repo_root()
 SSD = ssd_root()
 HF = SSD / "hf_release/parameter-trajectory-crosscoders"
 SNAPS = SSD / "snapshots/pythia-1b"

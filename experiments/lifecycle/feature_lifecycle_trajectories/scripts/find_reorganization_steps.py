@@ -26,10 +26,9 @@ import numpy as np
 import torch
 
 from readout.core.data import write_csv
-from readout.core.paths import ssd_path
+from readout.core.paths import repo_root, ssd_path
 
-REPO = Path(__file__).resolve().parents[4]
-
+REPO = repo_root()
 from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
 from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
 

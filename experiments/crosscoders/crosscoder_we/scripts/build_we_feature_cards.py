@@ -14,12 +14,10 @@ Outputs:
 from __future__ import annotations
 
 import argparse
-import csv
 import gc
 from dataclasses import dataclass
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from safetensors import safe_open  # noqa: E402
@@ -30,8 +28,15 @@ from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E
     STEPS_32,
     _load_we_rates_and_norms,
 )
-from readout.core.paths import release_path, ssd_root  # noqa: E402
+from readout.core.data import write_csv
+from readout.core.paths import (  # noqa: E402
+    release_path,
+    repo_root,  # noqa: E402
+    ssd_root,
+)
 from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
+
+REPO = repo_root()
 
 MODEL_NAME = "EleutherAI/pythia-160m"
 TOKENIZER = "EleutherAI/pythia-160m"
@@ -251,13 +256,7 @@ def _csv_rows(cards: list[dict]) -> list[dict]:
 
 
 def _write_csv(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not rows:
-        raise ValueError(f"no rows for {path}")
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv(path, rows, require_rows=True)
 
 
 def _write_sidecars(name: str, cards: list[dict], bases: list[Path]) -> None:

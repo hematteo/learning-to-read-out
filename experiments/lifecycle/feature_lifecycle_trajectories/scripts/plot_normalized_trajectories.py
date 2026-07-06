@@ -23,13 +23,13 @@ import numpy as np
 
 from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST
 from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST
-from readout.core.paths import ssd_path
+from readout.core.paths import repo_root, ssd_path
 
 CMAP_NAME = "RdBu_r"
 SELECTED_CMAP_NAME = "viridis"
 EVENT_SNAP_IDX = 11  # step 1000 — diverging colormap centered here
 
-REPO = Path(__file__).resolve().parents[4]
+REPO = repo_root()
 SSD = ssd_path()
 OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
 OUT.mkdir(parents=True, exist_ok=True)

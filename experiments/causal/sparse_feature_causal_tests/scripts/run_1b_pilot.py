@@ -26,9 +26,9 @@ import torch
 from safetensors import safe_open
 
 from readout.core.data import write_csv
-from readout.core.paths import ssd_path
+from readout.core.paths import repo_root, ssd_path
 
-REPO = Path(__file__).resolve().parents[4]
+REPO = repo_root()
 import readout.dynamics.temporal_patch as TPM  # noqa: E402
 
 CKPT_PATH = ssd_path(

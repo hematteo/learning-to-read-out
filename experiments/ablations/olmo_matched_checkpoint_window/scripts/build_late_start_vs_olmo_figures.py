@@ -21,7 +21,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
+from readout.core.paths import repo_root
+
+REPO = repo_root()
 PYTHIA_LATE_START_STEPS = np.asarray(
     [
         256,

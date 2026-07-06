@@ -31,13 +31,14 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
+from readout.core.hf_revisions import resolve_revision
 from readout.core.model_specs import (  # noqa: E402
     DEFAULT_STEPS_32 as PYTHIA_STEPS_32,
 )
 from readout.core.model_specs import (
     OLMO_STEPS_32 as OLMO_STEPS,
 )
+from readout.core.paths import repo_root  # noqa: E402
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,
@@ -48,6 +49,8 @@ from readout.core.resume import (  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
 from readout.probes import contrastive_tasks as CT  # noqa: E402
 from readout.probes import readout_swap as RS  # noqa: E402
+
+REPO = repo_root()
 
 MODEL_HF = {
     "pythia-160m": "EleutherAI/pythia-160m",
@@ -72,27 +75,7 @@ def _model_steps(model_short: str) -> list[int]:
 _OLMO_REV_CACHE: dict[str, list[str]] = {}
 
 
-def _resolve_revision(model_name: str, step: int) -> str:
-    """HF revision for this step; OLMo branches encode tokens-seen as a suffix."""
-    if "olmo" in model_name.lower():
-        if model_name not in _OLMO_REV_CACHE:
-            import requests
-
-            r = requests.get(
-                f"https://huggingface.co/api/models/{model_name}/refs", timeout=30
-            )
-            r.raise_for_status()
-            _OLMO_REV_CACHE[model_name] = [
-                b["name"] for b in r.json().get("branches", [])
-            ]
-        import re as _re
-
-        pat = _re.compile(rf"^stage1-step{step}(-tokens.*)?$")
-        for rev in _OLMO_REV_CACHE[model_name]:
-            if pat.match(rev):
-                return rev
-        raise ValueError(f"no OLMo revision matches step{step} for {model_name}")
-    return f"step{step}"
+_resolve_revision = resolve_revision  # canonical resolver: readout.core.hf_revisions
 
 
 def _load_W_U(model_name: str, step: int) -> torch.Tensor:

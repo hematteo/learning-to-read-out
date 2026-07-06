@@ -30,7 +30,9 @@ import numpy as np
 import pandas as pd
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
+from readout.core.paths import repo_root
+
+REPO = repo_root()
 PT_RE = re.compile(r"^(?P<fam>.+)__a-(?P<al>[^_]+)__h(?P<h>\d+)__s(?P<s>\d+)\.pt$")
 
 

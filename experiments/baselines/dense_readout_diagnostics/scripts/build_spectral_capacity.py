@@ -10,7 +10,6 @@ Outputs are numeric only. Plotting lives in `plot_spectral_capacity.py`.
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import math
 import os
@@ -19,14 +18,19 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
+from readout.core.data import write_csv
 from readout.core.model_specs import (  # noqa: E402
     DEFAULT_STEPS_BY_MODEL,
 )
 from readout.core.model_specs import MODEL_HF_NAMES as MODEL_NAMES  # noqa: E402
-from readout.core.paths import snapshot_path  # noqa: E402
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    snapshot_path,  # noqa: E402
+)
 from readout.core.repro import git_commit  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
+
+REPO = repo_root()
 
 SMOKE_STEPS_BY_MODEL = {
     "pythia-160m": [0, 1000, 143000],
@@ -113,15 +117,6 @@ def spectral_metrics(
         )
 
     return summary, cumulative, s
-
-
-def write_csv(path: Path, rows: list[dict]) -> None:
-    if not rows:
-        raise ValueError(f"no rows for {path}")
-    with path.open("w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def parse_args() -> argparse.Namespace:

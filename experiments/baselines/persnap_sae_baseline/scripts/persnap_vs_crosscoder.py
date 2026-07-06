@@ -19,10 +19,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from readout.core.paths import ssd_path
+from readout.core.paths import repo_root, ssd_path
 from readout.crosscoder import inference  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[4]
+ROOT = repo_root()
 from readout.crosscoder.wu_adapter import (  # noqa: E402
     DEFAULT_CACHE,
     DEFAULT_MODEL,

@@ -8,7 +8,6 @@ damage/recover their own family or whether the intervention is generic.
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import sys
 from pathlib import Path
@@ -17,10 +16,14 @@ import numpy as np
 import torch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import run_1b_pilot as PILOT  # noqa: E402
+
+from readout.core.data import write_csv
+from readout.core.paths import repo_root  # noqa: E402
+
+REPO = repo_root()
 
 CONCEPTS = ["non_latin_scripts", "punctuation", "digits", "function_words"]
 
@@ -36,14 +39,6 @@ def read_top_features(root: Path, concept: str, snapshot_step: int) -> list[int]
         weights_only=False,
     )
     return [int(x) for x in raw["top_features"]]
-
-
-def write_csv(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def main() -> None:

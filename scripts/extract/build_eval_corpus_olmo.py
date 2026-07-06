@@ -33,7 +33,9 @@ from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 
-REPO = Path(__file__).resolve().parents[2]
+from readout.core.paths import repo_root
+
+REPO = repo_root()
 DEFAULT_OUT = (
     REPO
     / "results/experiments/causal/temporal_localization_patching/eval_tokens_olmo.pt"

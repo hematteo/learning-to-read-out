@@ -34,8 +34,10 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+from readout.core.paths import repo_root  # noqa: E402
 from readout.core.resume import atomic_write_torch
+
+REPO = repo_root()
 
 PYTHIA_DEFAULT_STEPS = [
     0,

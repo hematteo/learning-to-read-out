@@ -29,10 +29,10 @@ import torch
 from safetensors.torch import safe_open
 
 from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32
-from readout.core.paths import ssd_root
+from readout.core.paths import repo_root, ssd_root
 from readout.crosscoder import inference  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[5]
+REPO = repo_root()
 SSD = ssd_root()
 HF = SSD / "hf_release/parameter-trajectory-crosscoders"
 SNAPSHOTS = SSD / "snapshots"

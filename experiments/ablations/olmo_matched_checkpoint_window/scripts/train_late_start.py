@@ -11,9 +11,13 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
-from readout.core.paths import ssd_path
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    ssd_path,
+)
 from readout.crosscoder import wu_adapter
+
+REPO = repo_root()
 
 LATE_START_STEPS_32 = [
     256,

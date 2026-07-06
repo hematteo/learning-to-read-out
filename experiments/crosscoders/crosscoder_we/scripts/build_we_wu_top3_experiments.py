@@ -20,7 +20,6 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
 from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E402
     MODEL_NAME,
     MODEL_SHORT,
@@ -41,6 +40,8 @@ from experiments.crosscoders.crosscoder_we.scripts.we_common import (  # noqa: E
 from readout.core.paths import release_path, repo_root, ssd_root
 from readout.crosscoder.snapshots import load_snapshot
 from readout.dynamics.metrics import lifecycle
+
+REPO = repo_root()
 
 
 def _load_we_d24576_rates_and_norms(

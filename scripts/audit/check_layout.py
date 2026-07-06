@@ -50,7 +50,9 @@ import re
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+from readout.core.paths import repo_root
+
+REPO = repo_root()
 EXPERIMENTS_YAML = REPO / "experiments.yaml"
 PAPER_TEX = REPO / "paper" / "main.tex"
 README = REPO / "README.md"

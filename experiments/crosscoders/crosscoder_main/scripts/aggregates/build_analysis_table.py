@@ -30,7 +30,7 @@ from pathlib import Path
 
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[5]
+from readout.core.paths import repo_root  # noqa: E402
 from readout.crosscoder.checkpoint_loaders import _load_npy_or_pt, load_run  # noqa: E402
 from readout.dynamics import derive as derive_mod  # noqa: E402
 from readout.dynamics.discovery import RunRow, list_runs  # noqa: E402
@@ -39,6 +39,8 @@ from readout.dynamics.provenance import (  # noqa: E402
     file_sha256,
     git_sha,
 )
+
+REPO = repo_root()
 
 OUTPUT_PARQUET = REPO / "experiments/crosscoders/crosscoder_main/derived/aggregates/analysis_table.parquet"
 OUTPUT_JSON = REPO / "experiments/crosscoders/crosscoder_main/derived/aggregates/analysis_table.manifest.json"

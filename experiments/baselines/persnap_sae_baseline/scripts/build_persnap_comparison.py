@@ -8,14 +8,17 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
-from readout.core.paths import ssd_path  # noqa: E402
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    ssd_path,  # noqa: E402
+)
 from readout.crosscoder.wu_adapter import (  # noqa: E402
     batch_iter,
     build_crosscoder,
     load_snapshots,
 )
 
+REPO = repo_root()
 ROOT = ssd_path()
 WU_CACHE = ssd_path("snapshots")
 OUT = REPO / "figures/persnap_sae_baseline"

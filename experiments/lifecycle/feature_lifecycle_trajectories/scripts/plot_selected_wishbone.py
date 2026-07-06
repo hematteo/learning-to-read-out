@@ -23,11 +23,14 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
-
 from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
 from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
-from readout.core.paths import ssd_path  # noqa: E402
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    ssd_path,  # noqa: E402
+)
+
+REPO = repo_root()
 
 OUT_DEFAULT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories/wishbone"
 CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"

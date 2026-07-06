@@ -26,9 +26,9 @@ from readout.core.model_specs import (  # noqa: F401  (re-exports for callers)
     iter_snapshots,
     snap_path_for,
 )
-from readout.core.paths import ssd_path
+from readout.core.paths import repo_root, ssd_path
 
-REPO = Path(__file__).resolve().parents[6]
+REPO = repo_root()
 DEFAULT_SNAP_DIR = Path(os.environ.get("WU_SNAP_DIR", str(ssd_path("snapshots"))))
 EVAL_TOKENS_PT = REPO / "_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt"
 FIG_DIR = REPO / "figures/run5/a_instrument_validation"

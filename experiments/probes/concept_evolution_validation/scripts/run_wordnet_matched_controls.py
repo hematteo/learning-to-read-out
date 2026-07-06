@@ -26,14 +26,12 @@ from typing import Iterable
 
 import numpy as np
 import torch
-from transformers import AutoTokenizer
-
-REPO = Path(__file__).resolve().parents[4]
 from run_wordnet_supersense_probe import (
     LEXNAME_ORDER,
     build_wordnet_concepts,
     centered_rows,
 )
+from transformers import AutoTokenizer
 
 from readout.core.data import write_csv
 from readout.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES
@@ -41,6 +39,8 @@ from readout.core.paths import repo_root, snapshot_path
 from readout.core.repro import git_commit
 from readout.crosscoder.snapshots import load_snapshot
 from readout.probes.wu_probes_gpu import probe_balanced_accuracy_batched
+
+REPO = repo_root()
 
 DEFAULT_EVAL_TOKENS = (
     REPO / "_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt"

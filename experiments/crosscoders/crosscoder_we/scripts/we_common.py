@@ -18,6 +18,7 @@ import numpy as np
 import torch
 from safetensors.torch import load_file as load_safetensors
 
+from readout.core.data import write_csv
 from readout.core.model_specs import DEFAULT_STEPS_32 as STEPS_32
 from readout.core.paths import release_path
 
@@ -86,13 +87,7 @@ def _quality_rows() -> list[dict]:
 
 
 def _write_csv(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not rows:
-        raise ValueError(f"no rows for {path}")
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv(path, rows, require_rows=True)
 
 
 def _figure_bases(name: str, fig_dir: Path) -> list[Path]:

@@ -30,8 +30,8 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-REPO = Path(__file__).resolve().parents[4]
 import readout.dynamics.temporal_patch as TPM  # noqa: E402
+from readout.core.paths import repo_root  # noqa: E402
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import (  # noqa: E402
     aggregate_json_shards,
@@ -40,6 +40,8 @@ from readout.core.resume import (  # noqa: E402
 )
 from readout.probes.readout_swap import ALIGN_MODES  # noqa: E402
 from readout.probes.readout_swap import align_readout as align
+
+REPO = repo_root()
 
 # Gauge-alignment ladder (none/mean/scale/row_norm/procrustes). Canonical
 # implementation lives in readout.probes.readout_swap.align_readout; imported here

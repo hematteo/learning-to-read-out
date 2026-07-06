@@ -16,15 +16,16 @@ with CSV and .pt sidecars for auditability.
 
 from __future__ import annotations
 
-import csv
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable
 
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
+from readout.core.data import write_csv
+from readout.core.paths import repo_root
+
+REPO = repo_root()
 OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
 SOURCE = OUT / "selected_decoder_norm_trajectories.pt"
 
@@ -243,15 +244,6 @@ def feature_rows(
             }
         )
     return rows
-
-
-def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
-    if not rows:
-        return
-    with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 Classifier = Callable[[np.ndarray, np.ndarray], dict[str, np.ndarray]]

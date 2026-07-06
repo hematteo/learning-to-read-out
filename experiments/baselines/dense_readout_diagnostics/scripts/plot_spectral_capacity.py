@@ -9,7 +9,10 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[4]
+from readout.core.data import write_csv
+from readout.core.paths import repo_root
+
+REPO = repo_root()
 RESULTS_DIR = REPO / "results" / "experiments" / "dense_readout_diagnostics"
 FIG_DIR = REPO / "figures" / "dense_readout_diagnostics"
 PAPER_DIR = REPO / "paper" / "figures" / "dense_readout"
@@ -29,15 +32,6 @@ def load_csv(path: Path) -> list[dict]:
             except Exception:
                 pass
     return rows
-
-
-def write_csv(path: Path, rows: list[dict]) -> None:
-    if not rows:
-        raise ValueError(f"no plot rows for {path}")
-    with path.open("w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def x_step(step: int | float) -> float:

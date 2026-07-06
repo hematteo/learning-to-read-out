@@ -15,12 +15,16 @@ from pathlib import Path
 import torch
 
 
-def write_csv(path: Path, rows: list[dict]) -> None:
+def write_csv(path: Path, rows: list[dict], *, require_rows: bool = False) -> None:
     """Write ``rows`` to ``path`` as CSV (header from the first row's keys).
 
-    No-op when ``rows`` is empty. Parent directories are created if missing.
+    Empty ``rows`` is a no-op by default; pass ``require_rows=True`` to raise
+    instead (for callers where zero rows means the upstream data is missing).
+    Parent directories are created if missing.
     """
     if not rows:
+        if require_rows:
+            raise ValueError(f"no rows for {path}")
         return
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
