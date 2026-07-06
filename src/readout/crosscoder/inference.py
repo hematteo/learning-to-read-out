@@ -158,6 +158,31 @@ def reconstruct_step(
     return recon
 
 
+def reconstruct_preprocess_stats(snapshots) -> dict:
+    """Deterministically rebuild ``center_scale`` preprocess stats, streaming.
+
+    Release safetensors sidecars do not embed the training-time stats (the
+    legacy ``.pt`` checkpoints did). This recomputes them one raw snapshot at
+    a time, delegating each to ``wu_adapter.preprocess_snapshots`` so the
+    formula cannot drift from training. Verified against the training-time
+    stats embedded in the legacy Run-3 checkpoint: means bitwise identical,
+    scales within 1-2 float32 ulps (reduction-order noise).
+
+    ``snapshots`` is any iterable of raw (V, d_model) tensors in step order.
+    Returns ``{"mean": (K, 1, d), "scale": (K, 1, 1), "mode": "center_scale"}``.
+    """
+    from readout.crosscoder.wu_adapter import preprocess_snapshots  # local: keeps this module light to import
+
+    means, scales = [], []
+    for x in snapshots:
+        _, stats = preprocess_snapshots(x.float().unsqueeze(0), mode="center_scale")
+        means.append(stats["mean"])
+        scales.append(stats["scale"])
+    if not means:
+        raise ValueError("no snapshots provided")
+    return {"mean": torch.cat(means), "scale": torch.cat(scales), "mode": "center_scale"}
+
+
 def preprocess_arrays(preprocess_stats: dict, device=None) -> tuple[torch.Tensor, torch.Tensor]:
     """Normalize stored ``preprocess_stats`` to ``means (K, d), scales (K,)``.
 

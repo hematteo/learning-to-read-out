@@ -105,6 +105,21 @@ def test_subset_decode_matches_full_decode_minus_bias():
     assert (empty == 0).all()
 
 
+def test_reconstruct_preprocess_stats_matches_training_stats():
+    """Streaming reconstruction == the stats preprocess_snapshots produced."""
+    seed_everything(2)
+    raw = torch.randn(K, V, D_MODEL) * 2 + 1.0
+    _, train_stats = preprocess_snapshots(raw, mode="center_scale")
+    rebuilt = inf.reconstruct_preprocess_stats(raw[k] for k in range(K))
+    assert rebuilt["mode"] == "center_scale"
+    assert torch.equal(rebuilt["mean"], train_stats["mean"])
+    assert torch.equal(rebuilt["scale"], train_stats["scale"])
+    import pytest
+
+    with pytest.raises(ValueError, match="no snapshots"):
+        inf.reconstruct_preprocess_stats(iter([]))
+
+
 def test_preprocess_arrays_roundtrip():
     """preprocess_arrays + invert_preprocess undo preprocess_snapshots."""
     seed_everything(1)

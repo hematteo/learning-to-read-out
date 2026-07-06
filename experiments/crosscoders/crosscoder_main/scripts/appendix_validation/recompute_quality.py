@@ -37,23 +37,9 @@ from readout.crosscoder import inference
 
 
 def reconstruct_preprocess_stats_streaming(snap_paths, slug):
-    """Compute per-snap (mean, scale) without loading all K at once.
-
-    Matches preprocess_snapshots(mode='center_scale') from wu_adapter.py.
-    """
-    means, scales = [], []
-    for p in snap_paths:
-        x = load_snapshot(p)
-        m = x.mean(dim=0, keepdim=True)  # (1, d)
-        centered = x - m
-        d = x.shape[-1]
-        mean_sq = centered.pow(2).sum(dim=-1).mean(dim=-1, keepdim=True).unsqueeze(-1)
-        s = (mean_sq / d).clamp_min(1e-8).sqrt().squeeze(-1)
-        means.append(m.unsqueeze(0))  # (1, 1, d)
-        scales.append(s.reshape(1, 1, 1))
-    return torch.cat(means, dim=0).squeeze(1), torch.cat(scales, dim=0).squeeze(
-        -1
-    ).squeeze(-1)
+    """Per-snap (means (K, d), scales (K,)) rebuilt when the ckpt ships none."""
+    stats = inference.reconstruct_preprocess_stats(load_snapshot(p) for p in snap_paths)
+    return inference.preprocess_arrays(stats)
 
 
 def snap_path_for(snap_dir: Path, model_name: str, matrix: str, step: int) -> Path:

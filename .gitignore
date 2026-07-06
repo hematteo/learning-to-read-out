@@ -76,8 +76,8 @@ cache/
 # LaTeX build output (artifacts live under paper/build/)
 paper/build/
 
-# Stale assets kept locally, not in version control
-_archive/
+# Stale assets kept locally, not in version control (dir or symlink)
+_archive
 
 # Overleaf round-trip exports (live in papers/ instead)
 overleaf_main_report_*/

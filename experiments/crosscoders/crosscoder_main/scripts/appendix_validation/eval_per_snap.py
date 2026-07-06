@@ -65,21 +65,8 @@ def load_ckpt_state(ckpt_path: Path) -> tuple[dict, dict | None]:
 
 
 def reconstruct_preprocess_stats(snap_dir: Path, prefix: str, steps: list[int]) -> dict:
-    """center_scale: per-snap (mean, scale). Used when ckpt drops preprocess_stats."""
-    means, scales = [], []
-    for s in steps:
-        W = torch.load(
-            snap_dir / f"{prefix}_step{s}_wu.pt", map_location="cpu", weights_only=True
-        ).float()
-        mu = W.mean(dim=0, keepdim=True)
-        sc = (W - mu).pow(2).mean().sqrt().view(1, 1)
-        means.append(mu)
-        scales.append(sc)
-    return {
-        "mean": torch.stack(means),
-        "scale": torch.stack(scales),
-        "mode": "center_scale",
-    }
+    """center_scale per-snap (mean, scale), rebuilt when the ckpt ships none."""
+    return inference.reconstruct_preprocess_stats(load_snap(snap_dir, prefix, s) for s in steps)
 
 
 def load_snap(snap_dir: Path, prefix: str, step: int) -> torch.Tensor:

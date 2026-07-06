@@ -141,6 +141,7 @@ import torch.nn.functional as F
 
 from readout.core.hf_revisions import resolve_revision
 from readout.core.paths import repo_root, ssd_path
+from readout.crosscoder import inference
 from readout.crosscoder.checkpoints import load_checkpoint
 from readout.crosscoder.snapshots import load_snapshot as _load_canonical_snapshot
 
@@ -962,9 +963,12 @@ def load_snapshot(step: int) -> torch.Tensor:
 def load_crosscoder(seed: int) -> tuple[dict, dict, list[int]]:
     """Returns (state_dict, preprocess_stats, steps).
 
-    For 160M (Run 3), preprocess_stats and steps live in the checkpoint.
-    For 1B (run5_pythia1b_capsweep), they live in the aggregates sidecar that is
-    distributed as a released artifact (see docs/DATA.md).
+    For 1B (run5_pythia1b_capsweep) the stats live in the aggregates sidecar
+    distributed as a released artifact (see docs/DATA.md). For 160M they lived
+    in the legacy Run-3 .pt; the released safetensors sidecars ship none, so
+    they are rebuilt deterministically from the raw snapshots on load
+    (bitwise means, ulp-level scales — see
+    readout.crosscoder.inference.reconstruct_preprocess_stats).
     """
     ckpt_path = Path(ACTIVE_CFG.ckpt_template.format(seed=seed, d_sae=ACTIVE_D_SAE))
     cp = load_checkpoint(ckpt_path)
@@ -984,7 +988,11 @@ def load_crosscoder(seed: int) -> tuple[dict, dict, list[int]]:
             )
         agg = torch.load(agg_path, map_location="cpu", weights_only=False)
         return cp.state_dict, agg["preprocess_stats"], list(agg["steps"])
-    return cp.state_dict, cp.preprocess_stats, cp.steps
+    ps = cp.preprocess_stats
+    steps = cp.steps or ACTIVE_CFG.steps_canonical
+    if ps is None:
+        ps = inference.reconstruct_preprocess_stats(load_snapshot(s) for s in steps)
+    return cp.state_dict, ps, steps
 
 
 def load_aggregate_stats(seed: int) -> dict:
