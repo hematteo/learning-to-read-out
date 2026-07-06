@@ -23,6 +23,22 @@ $UM_SSD_ROOT/
   derived/aggregates/aggregates_<model>_d<N>_seed<S>.pt
 ```
 
+### Environment variables
+
+`UM_SSD_ROOT` is the only variable most users set. The code also honours
+finer-grained overrides, all optional and defaulting under `UM_SSD_ROOT`:
+
+| Variable | Read by | Overrides |
+|---|---|---|
+| `UM_SSD_ROOT` | `src/core/paths.py` | storage root (default `<repo>/local_snapshots`) |
+| `WU_SNAP_DIR` | `src/core/model_specs.py` | W_U/W_E snapshot dir (default `<ssd>/snapshots`) |
+| `WU_CACHE_DIR` | `src/crosscoder/wu_adapter.py`, `checkpoint_loaders.py` | trainer's W_U snapshot cache |
+| `CLUSTER_SCRATCH` | `src/crosscoder/checkpoint_loaders.py` | scratch dir searched by run discovery (default `~/scratch`) |
+| `DYNAMICS_DATA_ROOT` | `src/dynamics/discovery.py` | legacy training-run tree the analysis table discovers runs under (default `<ssd>/wu_crosscoder`); sub-roots individually overridable via `DYNAMICS_RUN3_DIR`, `DYNAMICS_CLUSTER_RESULTS`, `DYNAMICS_PYTHIA1B_DIR`, `DYNAMICS_WE_DIR`, `DYNAMICS_T2_1_DIR` |
+| `DYNAMICS_DERIVED_ROOT` | `src/dynamics/derive.py` | per-run derived-artifact cache (default `experiments/crosscoders/crosscoder_main/derived`) |
+| `READOUT_COMMIT` | `src/core/repro.py` | git commit recorded in provenance when running without `.git` |
+| `HF_HOME` / `HF_HUB_CACHE` | Hugging Face libraries and extraction scripts | standard HF cache locations |
+
 The selected **sparse 6.9B** dictionary (λ=0.6) lives in the canonical layout
 as `pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors` — the
 `-sparse` suffix distinguishes it from the default-λ comparison run
@@ -78,9 +94,9 @@ until this is done.
 The last two rows are needed **only** to retrain the `pretraining_recipe_control`
 ablation from scratch (`experiments/ablations/pretraining_recipe_control/`); none
 of the paper figures depend on them. The tokenized slice is a local artifact
-(flat `uint16` `.bin`); build it with that experiment's `trainer/tokenize_slice.py`
+(flat `uint16` `.bin`); build it with that experiment's `scripts/tokenize_slice.py`
 or its `scripts/fetch_pythia_preshuffled.py`
-(both under `experiments/ablations/pretraining_recipe_control/`).
+(both under `experiments/ablations/pretraining_recipe_control/scripts/`).
 
 Checkpoint schedules are fixed in `src/core/model_specs.py`
 (`DEFAULT_STEPS_32`, the 32-checkpoint Ge et al. schedule). The thesis

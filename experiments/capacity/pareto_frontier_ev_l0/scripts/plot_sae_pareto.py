@@ -42,7 +42,15 @@ def main():
     ap.add_argument(
         "--cc-d8192",
         type=Path,
-        default=ssd_path("hf_release", "parameter-trajectory-crosscoders", "pythia-160m", "W_U", "cross-snapshot-32", "d8192", "seed0.safetensors"),
+        default=ssd_path(
+            "hf_release",
+            "parameter-trajectory-crosscoders",
+            "pythia-160m",
+            "W_U",
+            "cross-snapshot-32",
+            "d8192",
+            "seed0.safetensors",
+        ),
         help="d_sae=8192 K=32 crosscoder checkpoint",
     )
     ap.add_argument(
@@ -54,7 +62,7 @@ def main():
     ap.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("experiments/crosscoders/crosscoder_main/notes"),
+        default=Path("experiments/capacity/pareto_frontier_ev_l0/derived"),
         help="where sae_pareto.txt is written",
     )
     args = ap.parse_args()

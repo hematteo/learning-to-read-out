@@ -31,9 +31,9 @@ separate thesis LaTeX tree from these metrics, not here.
   `…/l0_ev_phase_plane_cache.pt` — per-snapshot `(L0, EV)` table across the
   crosscoder families, one row per `(label, snapshot index)` (`plot_l0_ev_phase_plane.py`,
   metrics-only despite its name).
-- `experiments/crosscoders/crosscoder_main/notes/sae_pareto.txt` — single-snapshot
-  SAE vs multi-snapshot crosscoder EV/L0 comparison table (`plot_sae_pareto.py`,
-  metrics-only despite its name).
+- `derived/sae_pareto.txt` — single-snapshot SAE vs multi-snapshot crosscoder
+  EV/L0 comparison table (`plot_sae_pareto.py`, metrics-only despite its name;
+  written under this experiment's own `derived/`, gitignored).
 
 ## Inputs (SSD canonical paths)
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-{160m,1b}/W_U/cross-snapshot-32/d{4096,8192,16384,24576}/seed0.safetensors`
