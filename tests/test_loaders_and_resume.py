@@ -193,10 +193,16 @@ def test_append_manifest_and_aggregate_shards(tmp_path):
 # ── permutation null (production statistic) ──────────────────────
 
 
+def test_cusum_rejects_degenerate_snapshot_count():
+    # For K<=8 the 2-sample MAD baseline is identically zero and the statistic
+    # would be NaN; the guard turns that into a loud error. The shipped
+    # schedules' smallest K is 9.
+    with pytest.raises(ValueError, match="K >= 9"):
+        cusum_max_feature_batched(torch.rand(3, 8, 16))
+
+
 def test_cusum_batched_matches_single_and_is_batch_invariant():
-    # K=32 is the production snapshot count. (For K<=8 the robust-floor MAD
-    # baseline degenerates to zero and the statistic is NaN — never hit by the
-    # shipped schedules, whose smallest K is 9.)
+    # K=32 is the production snapshot count.
     torch.manual_seed(0)
     rates = torch.rand(32, 64)  # (K, D)
     single = cusum_max_feature_single(rates)

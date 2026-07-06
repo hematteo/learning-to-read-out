@@ -33,6 +33,15 @@ def cusum_max_feature_batched(rates_perm, variance_estimator_n=10):
     """
     B, K, D = rates_perm.shape
     n_base = min(variance_estimator_n, max(K // 3, 2))
+    if n_base < 3:
+        # With a 2-sample baseline the MAD is identically zero (torch's
+        # even-count median takes the lower value), every sigma collapses to
+        # the NaN mask, and the statistic silently returns NaN. No shipped
+        # schedule is this short (smallest is K=9).
+        raise ValueError(
+            f"K={K} snapshots gives an n_base={n_base} MAD baseline that is "
+            f"identically zero; the robust-floor CUSUM statistic needs K >= 9."
+        )
     base = rates_perm[:, :n_base]  # (B, n_base, D)
     baseline_mean = base.mean(dim=1, keepdim=True)  # (B, 1, D)
     median = base.median(dim=1, keepdim=True).values  # (B, 1, D)
