@@ -51,11 +51,15 @@ from readout.core.resume import (  # noqa: E402
     atomic_write_json,
     iter_undone,
 )
+from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import load_checkpoint  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshots  # noqa: E402
 from readout.crosscoder.wu_adapter import preprocess_snapshots  # noqa: E402
 
 
+# Crosscoder math lives in readout.crosscoder.inference (equivalence-tested
+# against the llamascopium module); these adapters only carry this script's
+# per-step `stats_step` payload convention.
 def encode_at_step(
     sd: dict[str, torch.Tensor],
     accumulated: torch.Tensor,  # (V, D), already summed over K snapshots
@@ -64,13 +68,7 @@ def encode_at_step(
     device: str,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute (feat_acts, decoder_norm_t, fired) at one snapshot index."""
-    W_D = sd["W_D"][step_idx].to(device)  # (D, d)
-    threshold = sd["activation_function.log_jumprelu_threshold"].exp().to(device)
-    decoder_norm = torch.linalg.norm(W_D, dim=-1)  # (D,)
-    scaled = accumulated * decoder_norm[None, :]
-    fired = scaled > threshold[None, :]
-    feature_acts = (scaled * fired) / decoder_norm.clamp_min(1e-12)[None, :]
-    return feature_acts, decoder_norm, fired
+    return inference.encode_at_step(sd, accumulated, step_idx, device=device)
 
 
 def reconstruct(
@@ -82,14 +80,16 @@ def reconstruct(
     device: str,
 ) -> torch.Tensor:
     """W_recon (V, d) in raw model-space units."""
-    W_D = sd["W_D"][step_idx].to(device)
-    b_D = sd["b_D"][step_idx].to(device)
-    recon_norm = feature_acts @ W_D + b_D
-    if stats_step is not None:
-        scale = stats_step["scale"].to(device).float()
-        mean = stats_step["mean"].to(device).float()
-        return recon_norm * scale + mean
-    return recon_norm
+    if stats_step is None:
+        return inference.decode_step(sd, feature_acts, step_idx, device=device)
+    return inference.reconstruct_step(
+        sd,
+        feature_acts,
+        step_idx,
+        mean_k=stats_step["mean"].to(device).float(),
+        scale_k=stats_step["scale"].to(device).float(),
+        device=device,
+    )
 
 
 def subset_contribution(
@@ -102,17 +102,9 @@ def subset_contribution(
     device: str,
 ) -> torch.Tensor:
     """Rank-|S| contribution sum_{k in S} a_k(t) * D_k(t) * scale_t -> (V, d)."""
-    if subset.numel() == 0:
-        V, _ = feature_acts.shape
-        d = sd["W_D"][step_idx].shape[-1]
-        return torch.zeros(V, d, device=device, dtype=torch.float32)
-    W_D = sd["W_D"][step_idx].to(device)  # (D, d)
-    a = feature_acts[:, subset]  # (V, |S|)
-    d = W_D[subset]  # (|S|, d)
-    contrib = a @ d  # (V, d) in normalized space
+    contrib = inference.subset_decode(sd, feature_acts, step_idx, subset, device=device)
     if stats_step is not None:
-        scale = stats_step["scale"].to(device).float()
-        contrib = contrib * scale
+        contrib = contrib * stats_step["scale"].to(device).float()
     return contrib
 
 

@@ -53,6 +53,7 @@ REPO = Path(__file__).resolve().parents[4]
 from readout.core.paths import release_path  # noqa: E402
 from readout.core.repro import git_commit  # noqa: E402
 from readout.core.resume import atomic_write_json  # noqa: E402
+from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import load_checkpoint  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshots  # noqa: E402
 from readout.crosscoder.wu_adapter import preprocess_snapshots  # noqa: E402
@@ -61,7 +62,9 @@ from readout.probes import readout_swap as RS  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Crosscoder encode/decode (matches run_step1000_feature_rescue)
+# Crosscoder encode/decode — math lives in readout.crosscoder.inference
+# (equivalence-tested against the llamascopium module); these adapters carry
+# this script's per-step `stats_step` payload convention.
 # ---------------------------------------------------------------------------
 def encode_at_step(
     sd: dict[str, torch.Tensor],
@@ -79,12 +82,7 @@ def encode_at_step(
 
     Returns (feat_acts (V, D_sae), decoder_norm (D_sae,)) at one snapshot.
     """
-    W_D = sd["W_D"][step_idx].to(device)
-    threshold = sd["activation_function.log_jumprelu_threshold"].exp().to(device)
-    decoder_norm = torch.linalg.norm(W_D, dim=-1)
-    scaled = encoder_preact * decoder_norm[None, :]
-    fired = scaled > threshold[None, :]
-    feature_acts = (scaled * fired) / decoder_norm.clamp_min(1e-12)[None, :]
+    feature_acts, decoder_norm, _fired = inference.encode_at_step(sd, encoder_preact, step_idx, device=device)
     return feature_acts, decoder_norm
 
 
@@ -96,14 +94,16 @@ def reconstruct_W(
     *,
     device: str,
 ) -> torch.Tensor:
-    W_D = sd["W_D"][step_idx].to(device)
-    b_D = sd["b_D"][step_idx].to(device)
-    W_recon = feature_acts @ W_D + b_D
-    if stats_step is not None:
-        scale = stats_step["scale"].to(device).float()
-        mean = stats_step["mean"].to(device).float()
-        return W_recon * scale + mean
-    return W_recon
+    if stats_step is None:
+        return inference.decode_step(sd, feature_acts, step_idx, device=device)
+    return inference.reconstruct_step(
+        sd,
+        feature_acts,
+        step_idx,
+        mean_k=stats_step["mean"].to(device).float(),
+        scale_k=stats_step["scale"].to(device).float(),
+        device=device,
+    )
 
 
 def feature_contribution(
@@ -116,17 +116,9 @@ def feature_contribution(
     device: str,
 ) -> torch.Tensor:
     """sum_{f in subset} a_{:,f} * D_f * scale_t  ->  (V, d). No bias term."""
-    if subset.numel() == 0:
-        V = feature_acts.shape[0]
-        d = sd["W_D"][step_idx].shape[-1]
-        return torch.zeros(V, d, device=device, dtype=torch.float32)
-    W_D = sd["W_D"][step_idx].to(device)
-    a = feature_acts[:, subset]
-    d_rows = W_D[subset]
-    contrib = a @ d_rows
+    contrib = inference.subset_decode(sd, feature_acts, step_idx, subset, device=device)
     if stats_step is not None:
-        scale = stats_step["scale"].to(device).float()
-        contrib = contrib * scale
+        contrib = contrib * stats_step["scale"].to(device).float()
     return contrib
 
 

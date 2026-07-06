@@ -30,6 +30,7 @@ from safetensors.torch import safe_open
 
 from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32
 from readout.core.paths import ssd_root
+from readout.crosscoder import inference  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[5]
 SSD = ssd_root()
@@ -101,11 +102,8 @@ def eval_cross_snapshot(
     b_E = sd["b_E"].to(device).float()  # (K, D)
     W_D = sd["W_D"].to(device).float()  # (K, D, d)
     b_D = sd["b_D"].to(device).float()  # (K, d)
-    log_thr = (
-        sd["activation_function.log_jumprelu_threshold"].to(device).float()
-    )  # (D,)
-    thr = log_thr.exp()
-    dec_norm = W_D.pow(2).sum(dim=2).sqrt().clamp_min(1e-8)  # (K, D)
+    thr = inference.jumprelu_threshold(sd, device=device)  # (D,)
+    dec_norm = inference.decoder_norms(sd, eps=1e-8, device=device)  # (K, D)
 
     K_, d, D = W_E.shape
     print(f"  cross-snapshot eval: K={K} D={D} d={d} on {device}", flush=True)
@@ -145,9 +143,7 @@ def eval_cross_snapshot(
         x_centered = x_i - x_i.mean(dim=0, keepdim=True)
         ss_tot = x_centered.pow(2).sum().item()
         # Activations: jumprelu w.r.t. dec_norm[i]
-        scaled = joint_pre * dec_norm[i]
-        acts_scaled = torch.where(scaled > thr, scaled, torch.zeros_like(scaled))
-        acts_i = acts_scaled / dec_norm[i]  # (V, D)
+        acts_i, _ = inference.jumprelu_feature_acts(joint_pre, thr, dec_norm[i])  # (V, D)
         recon = acts_i @ W_D[i] + b_D[i]  # (V, d)
         ss_res = (x_i - recon).pow(2).sum().item()
         ev = 1.0 - ss_res / max(ss_tot, 1e-12)
@@ -158,7 +154,7 @@ def eval_cross_snapshot(
         rows.append(
             {"step": s, "ev": ev, "l0": l0, "dead_rate": dead, "kind": "cross-snap"}
         )
-        del W_raw, x_i, acts_scaled, acts_i, recon, x_centered
+        del W_raw, x_i, acts_i, recon, x_centered
     return rows
 
 
@@ -207,9 +203,7 @@ def eval_final_snapshot(
         ss_tot = x_centered.pow(2).sum().item()
 
         pre = x @ W_E + b_E  # (V, D)
-        scaled = pre * dec_norm
-        acts_scaled = torch.where(scaled > thr, scaled, torch.zeros_like(scaled))
-        acts = acts_scaled / dec_norm
+        acts, _ = inference.jumprelu_feature_acts(pre, thr, dec_norm)
         recon = acts @ W_D + b_D  # (V, d)
         ss_res = (x - recon).pow(2).sum().item()
         ev = 1.0 - ss_res / max(ss_tot, 1e-12)
@@ -219,7 +213,7 @@ def eval_final_snapshot(
         rows.append(
             {"step": s, "ev": ev, "l0": l0, "dead_rate": dead, "kind": "final-snap"}
         )
-        del W_raw, x, pre, acts_scaled, acts, recon
+        del W_raw, x, pre, acts, recon
     return rows
 
 

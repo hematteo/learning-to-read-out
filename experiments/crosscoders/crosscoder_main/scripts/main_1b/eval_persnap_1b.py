@@ -24,6 +24,7 @@ import torch
 from safetensors import safe_open
 
 from readout.core.paths import ssd_root
+from readout.crosscoder import inference  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[5]
 SSD = ssd_root()
@@ -105,9 +106,7 @@ def eval_one(d_sae: int, seed: int = 0, device: str = "cpu", verbose: bool = Tru
             x_k = (W_raw - means[k]) / scales[k]
             ss_tot = (x_k - x_k.mean(dim=0, keepdim=True)).pow(2).sum().item()
 
-            scaled = joint_pre * dec_norm[k]
-            acts_scaled = torch.where(scaled > thr, scaled, torch.zeros_like(scaled))
-            acts_k = acts_scaled / dec_norm[k]  # (V, D)
+            acts_k, _ = inference.jumprelu_feature_acts(joint_pre, thr, dec_norm[k])  # (V, D)
 
             # recon = acts_k @ W_D[k] in V-chunks to bound memory.
             recon = torch.empty_like(x_k)
@@ -130,7 +129,7 @@ def eval_one(d_sae: int, seed: int = 0, device: str = "cpu", verbose: bool = Tru
                     "dead_rate": dead,
                 }
             )
-            del wd_k, W_raw, x_k, scaled, acts_scaled, acts_k, recon
+            del wd_k, W_raw, x_k, acts_k, recon
             if verbose:
                 print(
                     f"  phase2 k={k:2d} step={s} fvu={fvu:.4f} l0={l0:.1f} ({time.time() - t0:.1f}s)",

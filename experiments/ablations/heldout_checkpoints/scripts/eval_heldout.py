@@ -39,6 +39,7 @@ import torch
 
 from readout.core.data import center_scale_stats, explained_variance
 from readout.core.model_specs import DEFAULT_STEPS_32
+from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import load_checkpoint
 from readout.crosscoder.snapshots import load_snapshot_at
 
@@ -123,9 +124,7 @@ def decode_with_head(
     out = torch.empty(V, d, dtype=accumulated.dtype, device=accumulated.device)
     for start in range(0, V, batch_size):
         end = min(start + batch_size, V)
-        a = accumulated[start:end] * dn  # (B, D)
-        gated = torch.where(a > threshold, a, torch.zeros_like(a))
-        feature_acts = gated / dn.clamp_min(1e-12)
+        feature_acts, _ = inference.jumprelu_feature_acts(accumulated[start:end], threshold, dn)
         out[start:end] = feature_acts @ head_W_D + head_b_D
     return out
 

@@ -33,6 +33,8 @@ from pathlib import Path
 import torch
 from safetensors.torch import load_file
 
+from readout.crosscoder import inference
+
 
 def reconstruct_preprocess_stats_streaming(snap_paths, slug):
     """Compute per-snap (mean, scale) without loading all K at once.
@@ -144,14 +146,12 @@ def evaluate_jumprelu(sd, snap_paths, training_batch_size, dev, vchunk=4096):
         feat_qq = torch.empty(c, K, D, device=dev, dtype=torch.float32)
         for k in range(K):
             dn_k = dec_norm[k].to(dev)
-            scaled = pj_b * dn_k
-            fires = scaled > thr
-            acts = pj_b * fires.float()
+            acts, fires = inference.jumprelu_feature_acts(pj_b, thr, dn_k)
             feat_qq[:, k, :] = acts
             W_D_k = W_D[k].to(dev)
             b_D_k = b_D[k].to(dev)
             recon[:, k, :] = acts @ W_D_k + b_D_k
-            del W_D_k, b_D_k, dn_k, scaled
+            del W_D_k, b_D_k, dn_k
             # Canonical SS
             diff_k = x_b[:, k, :] - recon[:, k, :]
             ss_res[k] += diff_k.pow(2).sum().float().cpu().double()

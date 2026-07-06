@@ -20,6 +20,7 @@ import numpy as np
 import torch
 
 from readout.core.paths import ssd_path
+from readout.crosscoder import inference  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[4]
 from readout.crosscoder.wu_adapter import (  # noqa: E402
@@ -96,9 +97,7 @@ def crosscoder_persnap_recovery(ckpt_path: Path) -> dict[int, dict]:
         ss_tot += (x_chunk - snap_mean).pow(2).sum(dim=(1, 2))
 
         for k in range(K):
-            scaled = pre_joint * dec_norm[k]
-            acts_scaled = torch.where(scaled > thr, scaled, torch.zeros_like(scaled))
-            acts = acts_scaled / dec_norm[k]
+            acts, _ = inference.jumprelu_feature_acts(pre_joint, thr, dec_norm[k])
             recon = acts @ W_D[k] + b_D[k]
             ss_res[k] += (x_chunk[k] - recon).pow(2).sum()
             l0_sum[k] += (acts > 0).float().sum()
@@ -152,9 +151,7 @@ def persnap_sae_recovery(persnap_dir: Path, steps: list[int]) -> dict[int, dict]
             v1 = min(V, v0 + chunk)
             x_c = x[v0:v1]  # (chunk, d)
             pre = x_c @ W_E[0] + b_E[0]  # (chunk, D)
-            scaled = pre * dec_norm[0]
-            acts_scaled = torch.where(scaled > thr, scaled, torch.zeros_like(scaled))
-            acts = acts_scaled / dec_norm[0]
+            acts, _ = inference.jumprelu_feature_acts(pre, thr, dec_norm[0])
             recon = acts @ W_D[0] + b_D[0]
             ss_res = ss_res + (x_c - recon).pow(2).sum()
             ss_tot = ss_tot + (x_c - x_mean).pow(2).sum()

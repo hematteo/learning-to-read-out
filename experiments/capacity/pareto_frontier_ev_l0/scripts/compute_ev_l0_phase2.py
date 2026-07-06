@@ -30,6 +30,7 @@ from pathlib import Path
 import torch
 
 from readout.core.paths import ssd_path
+from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import unwrap_ckpt
 
 SSD = ssd_path()
@@ -178,11 +179,11 @@ def compute_arm(arm: Arm, device: torch.device) -> dict:
     # ---- Compute feature_acts via arch-specific rule ----
     print(f"  arch={arch}: computing feature_acts", flush=True)
     if arch == "jumprelu":
-        thr = sd["activation_function.log_jumprelu_threshold"].exp().to(device)  # (D,)
-        # feature_acts = joint_pre * (joint_pre > thr)  (no per-head correction
-        # in the activation step — that's the rate convention. For
-        # reconstruction we use the JumpReLU function applied to joint_pre.)
-        feature_acts = torch.where(joint_pre > thr, joint_pre, torch.zeros_like(joint_pre))
+        thr = inference.jumprelu_threshold(sd, device=device)  # (D,)
+        # dec_norm_k=None: no per-head correction in the activation step —
+        # that's the rate convention. For reconstruction we use the JumpReLU
+        # function applied to joint_pre.
+        feature_acts, _ = inference.jumprelu_feature_acts(joint_pre, thr)
     elif arch == "batchtopk":
         cfg = ck.get("config", {})
         k_topk = (
