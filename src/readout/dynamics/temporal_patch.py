@@ -176,9 +176,6 @@ CORPUS_TOKENS_PYTHIA = SSD / "hf_release/parameter-trajectory-crosscoders/evalua
 # (this is that builder's default --output). Selected by temporal_patch_grid.py
 # for --model olmo-2-7b.
 CORPUS_TOKENS_OLMO = _REPO / "results/experiments/causal/temporal_localization_patching/eval_tokens_olmo.pt"
-# Alias read by the library call sites; main() (and temporal_patch_grid.py)
-# reassigns it per run.
-CORPUS_TOKENS = CORPUS_TOKENS_PYTHIA
 OUT_DIR_DEFAULT = _REPO / "results/temporal_patch_metrics"
 
 
@@ -354,24 +351,29 @@ CFG_OLMO_2_7B = ModelCfg(
     ],
 )
 
-# Resolved at run start. All loaders read from this. Defaults to 160M
-# so existing CLI invocations stay backwards-compatible.
-ACTIVE_CFG: ModelCfg = CFG_PYTHIA_160M
-ACTIVE_D_SAE: int = 8192
+@dataclass(frozen=True)
+class PatchContext:
+    """Explicit run configuration, threaded through every config-reading call.
 
-# Aliases that read from the active config so all the per-step indexing code
-# in select_feature_subset / build_temporal_patch / build_matched_random_control
-# keeps working unchanged.
-GE_STEPS_32 = ACTIVE_CFG.steps_canonical  # backwards-compat name
-MODEL_NAME = ACTIVE_CFG.model_name  # backwards-compat name
-RNG_SEED = 0
+    Replaces the historical mutable module globals (ACTIVE_CFG, ACTIVE_D_SAE,
+    GE_STEPS_32, MODEL_NAME, CORPUS_TOKENS, RNG_SEED) that drivers used to
+    reassign before calling in. Construct one per run:
 
+        ctx = PatchContext(cfg=CFG_PYTHIA_1B, d_sae=24576)
+    """
 
-def _refresh_aliases():
-    """Re-bind GE_STEPS_32 / MODEL_NAME after ACTIVE_CFG is reassigned."""
-    global GE_STEPS_32, MODEL_NAME
-    GE_STEPS_32 = ACTIVE_CFG.steps_canonical
-    MODEL_NAME = ACTIVE_CFG.model_name
+    cfg: ModelCfg
+    d_sae: int
+    corpus_tokens: Path = CORPUS_TOKENS_PYTHIA
+    rng_seed: int = 0
+
+    @property
+    def steps(self) -> list[int]:
+        return self.cfg.steps_canonical
+
+    @property
+    def model_name(self) -> str:
+        return self.cfg.model_name
 
 
 # Recovery denominator floors (per-metric). Values below trigger a low_denom flag.
@@ -929,19 +931,19 @@ def build_concept_null(
 
 
 # ---------------------------------------------------------------------------
-# Loading (config-driven; uses ACTIVE_CFG)
+# Loading (config-driven via PatchContext)
 # ---------------------------------------------------------------------------
-def load_tokenizer():
+def load_tokenizer(ctx: PatchContext):
     from transformers import AutoTokenizer
 
-    return AutoTokenizer.from_pretrained(ACTIVE_CFG.model_name)
+    return AutoTokenizer.from_pretrained(ctx.model_name)
 
 
-def load_snapshot(step: int) -> torch.Tensor:
-    return _load_canonical_snapshot(ACTIVE_CFG.model_name, step)
+def load_snapshot(ctx: PatchContext, step: int) -> torch.Tensor:
+    return _load_canonical_snapshot(ctx.model_name, step)
 
 
-def load_crosscoder(seed: int) -> tuple[dict, dict, list[int]]:
+def load_crosscoder(ctx: PatchContext, seed: int) -> tuple[dict, dict, list[int]]:
     """Returns (state_dict, preprocess_stats, steps).
 
     For 1B (run5_pythia1b_capsweep) the stats live in the aggregates sidecar
@@ -951,13 +953,13 @@ def load_crosscoder(seed: int) -> tuple[dict, dict, list[int]]:
     (bitwise means, ulp-level scales — see
     readout.crosscoder.inference.reconstruct_preprocess_stats).
     """
-    ckpt_path = Path(ACTIVE_CFG.ckpt_template.format(seed=seed, d_sae=ACTIVE_D_SAE))
+    ckpt_path = Path(ctx.cfg.ckpt_template.format(seed=seed, d_sae=ctx.d_sae))
     cp = load_checkpoint(ckpt_path)
-    if ACTIVE_CFG.aggregates_template is not None:
+    if ctx.cfg.aggregates_template is not None:
         agg_path = Path(
-            ACTIVE_CFG.aggregates_template.format(
+            ctx.cfg.aggregates_template.format(
                 seed=seed,
-                d_sae=ACTIVE_D_SAE,
+                d_sae=ctx.d_sae,
             )
         )
         if not agg_path.exists():
@@ -965,29 +967,29 @@ def load_crosscoder(seed: int) -> tuple[dict, dict, list[int]]:
                 f"Aggregates sidecar missing: {agg_path}. The per-model "
                 f"aggregates are distributed as released artifacts; see docs/DATA.md "
                 f"to obtain "
-                f"derived/aggregates/aggregates_*_d{ACTIVE_D_SAE}_seed{seed}.pt."
+                f"derived/aggregates/aggregates_*_d{ctx.d_sae}_seed{seed}.pt."
             )
         agg = torch.load(agg_path, map_location="cpu", weights_only=False)
         return cp.state_dict, agg["preprocess_stats"], list(agg["steps"])
     ps = cp.preprocess_stats
-    steps = cp.steps or ACTIVE_CFG.steps_canonical
+    steps = cp.steps or ctx.steps
     if ps is None:
-        ps = inference.reconstruct_preprocess_stats(load_snapshot(s) for s in steps)
+        ps = inference.reconstruct_preprocess_stats(load_snapshot(ctx, s) for s in steps)
     return cp.state_dict, ps, steps
 
 
-def load_aggregate_stats(seed: int) -> dict:
+def load_aggregate_stats(ctx: PatchContext, seed: int) -> dict:
     """Per-feature lifecycle statistics used by select_feature_subset:
     rates (K, D), decoder_norms (K, D), cusum_max (D,), peak_steps (D,).
 
     For 160M these come from the per-seed *_all_seeds.npy fan-out (loaded
     once across all seeds; we slice [seed]). For 1B from the sidecar.
     """
-    if ACTIVE_CFG.aggregates_template is not None:
+    if ctx.cfg.aggregates_template is not None:
         agg_path = Path(
-            ACTIVE_CFG.aggregates_template.format(
+            ctx.cfg.aggregates_template.format(
                 seed=seed,
-                d_sae=ACTIVE_D_SAE,
+                d_sae=ctx.d_sae,
             )
         )
         agg = torch.load(agg_path, map_location="cpu", weights_only=False)
@@ -997,7 +999,7 @@ def load_aggregate_stats(seed: int) -> dict:
             "cusum": agg["cusum_max"].numpy(),
             "peak_steps": agg["peak_steps"].numpy(),
         }
-    npy = ACTIVE_CFG.npy_dir
+    npy = ctx.cfg.npy_dir
     return {
         "rates": np.load(npy / "firing_rates_all_seeds.npy")[seed],
         "norms": np.load(npy / "decoder_norms_all_seeds.npy")[seed],
@@ -1047,30 +1049,30 @@ def _cache_hidden_generic(model, ids_seqs: torch.Tensor) -> torch.Tensor:
 _resolve_revision = resolve_revision  # canonical resolver: readout.core.hf_revisions
 
 
-def cache_or_build_hLN(step: int, ids_seqs: torch.Tensor) -> dict:
+def cache_or_build_hLN(ctx: PatchContext, step: int, ids_seqs: torch.Tensor) -> dict:
     """Load cached h_LN at this step; if missing, run the model forward and save.
 
     Generic over Pythia (embed_out / step<N>) and OLMo (lm_head /
     stage1-step<N>-tokens<T>B). The revision-resolution map is cached per
     process to keep HF API hits to one per model."""
-    cache_dir = ACTIVE_CFG.hLN_cache_dir
+    cache_dir = ctx.cfg.hLN_cache_dir
     cache_dir.mkdir(parents=True, exist_ok=True)
     p = cache_dir / f"hLN_step{step}.pt"
     if p.exists():
         return torch.load(p, map_location="cpu", weights_only=False)
-    revision = _resolve_revision(ACTIVE_CFG.model_name, step)
+    revision = _resolve_revision(ctx.model_name, step)
     print(
-        f"  [h_LN cache] forwarding {ACTIVE_CFG.model_name} {revision} -> {p.name}",
+        f"  [h_LN cache] forwarding {ctx.model_name} {revision} -> {p.name}",
         flush=True,
     )
     from transformers import AutoModelForCausalLM
 
     t0 = time.time()
     # OLMo-2-7B at fp32 is ~28 GB — load in bf16 on CUDA, fp32 on MPS/CPU.
-    use_bf16 = "olmo" in ACTIVE_CFG.model_name.lower() and torch.cuda.is_available()
+    use_bf16 = "olmo" in ctx.model_name.lower() and torch.cuda.is_available()
     dtype = torch.bfloat16 if use_bf16 else torch.float32
     model = AutoModelForCausalLM.from_pretrained(
-        ACTIVE_CFG.model_name,
+        ctx.model_name,
         revision=revision,
         dtype=dtype,
         low_cpu_mem_usage=True,
@@ -1091,8 +1093,8 @@ def cache_or_build_hLN(step: int, ids_seqs: torch.Tensor) -> dict:
 
 
 # Back-compat alias used by older callers.
-def load_hLN_cache(step: int) -> dict:
-    p = ACTIVE_CFG.hLN_cache_dir / f"hLN_step{step}.pt"
+def load_hLN_cache(ctx: PatchContext, step: int) -> dict:
+    p = ctx.cfg.hLN_cache_dir / f"hLN_step{step}.pt"
     if not p.exists():
         raise FileNotFoundError(
             f"Hidden-state cache missing: {p}. Either pre-populate via "
@@ -1130,7 +1132,7 @@ def decode_subset_at(feat_acts: torch.Tensor, pieces: dict, subset_idx: list[int
     return (a @ d) * pieces["scale_i"]  # (V, d_model), scale_t-rescaled
 
 
-def extract_pieces_for_steps(seed: int, needed_steps: list[int]) -> dict[int, dict]:
+def extract_pieces_for_steps(ctx: PatchContext, seed: int, needed_steps: list[int]) -> dict[int, dict]:
     """Load the crosscoder, slice out only the per-snapshot pieces we will use,
     CLONE so they're independent of the parent state_dict, then drop the rest.
 
@@ -1139,8 +1141,8 @@ def extract_pieces_for_steps(seed: int, needed_steps: list[int]) -> dict[int, di
     worth of pieces in practice. Returns {step: pieces_dict}."""
     import gc
 
-    sd, ps, _ = load_crosscoder(seed)
-    canonical = ACTIVE_CFG.steps_canonical
+    sd, ps, _ = load_crosscoder(ctx, seed)
+    canonical = ctx.steps
     out: dict[int, dict] = {}
     log_thr = sd["activation_function.log_jumprelu_threshold"].exp().float().clone()
     for s in needed_steps:
@@ -1193,6 +1195,7 @@ def build_temporal_patch(
 # Pre-registered feature subsets
 # ---------------------------------------------------------------------------
 def select_feature_subset(
+    ctx: PatchContext,
     name: str,
     top_k: int,
     base_step: int,
@@ -1212,8 +1215,8 @@ def select_feature_subset(
     peak_steps_seed: (D,) the step at which each feature peaks (in step units)
     """
     excluded = excluded or set()
-    bi = GE_STEPS_32.index(base_step)
-    ti = GE_STEPS_32.index(target_step)
+    bi = ctx.steps.index(base_step)
+    ti = ctx.steps.index(target_step)
 
     if name == "transition_top_k":
         # Top-k by CUSUM magnitude, restricted to features whose peak step lies
@@ -1238,7 +1241,7 @@ def select_feature_subset(
     elif name == "late_specialist_top_k":
         # Peak at or after LATE_PEAK_CUTOFF; rank by terminal decoder norm.
         is_late = peak_steps_seed >= LATE_PEAK_CUTOFF
-        terminal = decoder_norms_seed[GE_STEPS_32.index(143000)]
+        terminal = decoder_norms_seed[ctx.steps.index(143000)]
         score = np.where(is_late, terminal, -np.inf)
         order = np.argsort(-score)
     elif name == "matched_random_top_k":
@@ -1260,6 +1263,7 @@ def select_feature_subset(
 
 
 def build_matched_random_control(
+    ctx: PatchContext,
     target_subset: list[int],
     top_k: int,
     rates_seed: np.ndarray,
@@ -1274,8 +1278,8 @@ def build_matched_random_control(
     firing rate) to `target_subset`, with NN fallback when bins are empty."""
     if not target_subset:
         return []
-    bi = GE_STEPS_32.index(base_step)
-    ti = GE_STEPS_32.index(143000)
+    bi = ctx.steps.index(base_step)
+    ti = ctx.steps.index(143000)
     norm = decoder_norms_seed[ti]
     rate = rates_seed[bi]
     D = len(norm)
@@ -1829,6 +1833,7 @@ class TransitionSpec:
 
 
 def run(
+    ctx: PatchContext,
     seed: int,
     transitions: list[TransitionSpec],
     concept_names: list[str],
@@ -1843,21 +1848,21 @@ def run(
 ):
     out_dir.mkdir(parents=True, exist_ok=True)
     print(
-        f"[seed {seed}] model={ACTIVE_CFG.model_name} d_sae={ACTIVE_D_SAE} loading aggregates",
+        f"[seed {seed}] model={ctx.model_name} d_sae={ctx.d_sae} loading aggregates",
         flush=True,
     )
-    agg = load_aggregate_stats(seed)
+    agg = load_aggregate_stats(ctx, seed)
     rates_seed, norms_seed = agg["rates"], agg["norms"]
     cusum_seed, peak_seed = agg["cusum"], agg["peak_steps"]
 
-    tok = load_tokenizer()
-    eval_data = torch.load(CORPUS_TOKENS, weights_only=False)
+    tok = load_tokenizer(ctx)
+    eval_data = torch.load(ctx.corpus_tokens, weights_only=False)
     ids = eval_data["ids"]
     n_full = (len(ids) // SEQ_LEN) * SEQ_LEN
     ids_seqs = ids[:n_full].view(-1, SEQ_LEN)
 
     # Vocab size from any snapshot.
-    V_explicit = load_snapshot(143000).shape[0]
+    V_explicit = load_snapshot(ctx, 143000).shape[0]
     print("  building token meta + concept registry...", flush=True)
     meta = build_token_meta(tok, ids[:n_full], V_explicit=V_explicit)
     concepts = build_concept_registry(meta)
@@ -1892,7 +1897,7 @@ def run(
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
     # Resolve subsets per transition (seeded RNG used for matched-random).
-    rng_root = np.random.default_rng(RNG_SEED + seed)
+    rng_root = np.random.default_rng(ctx.rng_seed + seed)
     resolved_subsets: dict[tuple[int, int], dict[str, list[int]]] = {}
     for ts in transitions:
         per_ts: dict[str, list[int]] = {}
@@ -1901,6 +1906,7 @@ def run(
             if name == "matched_random_top_k":
                 continue
             per_ts[name] = select_feature_subset(
+                ctx,
                 name,
                 k,
                 ts.base_step,
@@ -1918,6 +1924,7 @@ def run(
             if name != "matched_random_top_k":
                 continue
             per_ts[name] = build_matched_random_control(
+                ctx,
                 target_subset=union_real,
                 top_k=k,
                 rates_seed=rates_seed,
@@ -1940,7 +1947,7 @@ def run(
         summary_path.unlink()
 
     raw_records: list[dict] = []
-    rng = np.random.default_rng(RNG_SEED + 100 * seed)
+    rng = np.random.default_rng(ctx.rng_seed + 100 * seed)
 
     # Extract pieces only for the snapshots we will actually patch on, then
     # drop the full crosscoder state_dict — at d_sae=24576 it is ~13 GB.
@@ -1949,12 +1956,12 @@ def run(
         f"  extracting pieces for snapshots {needed_steps} (will drop full sd)",
         flush=True,
     )
-    pieces_by_step = extract_pieces_for_steps(seed, needed_steps)
-    W_U_by_step = {s: load_snapshot(s) for s in needed_steps}
+    pieces_by_step = extract_pieces_for_steps(ctx, seed, needed_steps)
+    W_U_by_step = {s: load_snapshot(ctx, s) for s in needed_steps}
 
     for ts in transitions:
         h_step = ts.target_step if h_step_for_eval == "target" else ts.base_step
-        cached = cache_or_build_hLN(h_step, ids_seqs)
+        cached = cache_or_build_hLN(ctx, h_step, ids_seqs)
         h_LN = cached["h_LN"]
         for name, _k in ts.subset_specs:
             S = resolved_subsets[(ts.base_step, ts.target_step)][name]

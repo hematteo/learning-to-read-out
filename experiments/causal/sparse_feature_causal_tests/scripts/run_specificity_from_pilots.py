@@ -63,17 +63,17 @@ def main() -> None:
             args.pilot_root / f"specificity_step{args.snapshot_step}_h{args.h_step}"
         )
 
-    PILOT.configure_tpm()
+    ctx = PILOT.make_ctx()
     pieces = PILOT.load_pieces(args.snapshot_step, args.device)
     step_idx = pieces.steps.index(args.snapshot_step)
     agg = torch.load(PILOT.AGG_PATH, map_location="cpu", weights_only=False)
     rates = agg["rates"].numpy()
     decoder_norms = agg["decoder_norms"].numpy()
 
-    ids, ids_seqs = PILOT.load_eval_sequences()
-    tok = PILOT.TPM.load_tokenizer()
-    W_snapshot = PILOT.TPM.load_snapshot(args.snapshot_step)
-    W_terminal = PILOT.TPM.load_snapshot(143000)
+    ids, ids_seqs = PILOT.load_eval_sequences(ctx)
+    tok = PILOT.TPM.load_tokenizer(ctx)
+    W_snapshot = PILOT.TPM.load_snapshot(ctx, args.snapshot_step)
+    W_terminal = PILOT.TPM.load_snapshot(ctx, 143000)
     meta = PILOT.TPM.build_token_meta(tok, ids, V_explicit=W_snapshot.shape[0])
     registry = PILOT.TPM.build_concept_registry(meta)
     pool = PILOT.TPM.build_pools(meta, W_terminal)

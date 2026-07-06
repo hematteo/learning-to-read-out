@@ -160,28 +160,19 @@ def main():
     )
     args = ap.parse_args()
 
-    if args.model == "pythia-160m":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_160M
-        TPM.ACTIVE_D_SAE = 8192
-    elif args.model == "pythia-1b":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_1B
-        TPM.ACTIVE_D_SAE = args.d_sae
-    elif args.model == "pythia-6.9b":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_6_9B
-        TPM.ACTIVE_D_SAE = args.d_sae
-    elif args.model == "olmo-2-7b":
-        TPM.ACTIVE_CFG = TPM.CFG_OLMO_2_7B
-        TPM.ACTIVE_D_SAE = args.d_sae
-    else:
+    cfg_by_model = {
+        "pythia-160m": (TPM.CFG_PYTHIA_160M, 8192),
+        "pythia-1b": (TPM.CFG_PYTHIA_1B, args.d_sae),
+        "pythia-6.9b": (TPM.CFG_PYTHIA_6_9B, args.d_sae),
+        "olmo-2-7b": (TPM.CFG_OLMO_2_7B, args.d_sae),
+    }
+    if args.model not in cfg_by_model:
         raise ValueError(f"Unknown --model {args.model}")
+    model_cfg, d_sae = cfg_by_model[args.model]
     # OLMo uses its own tokenized eval corpus; Pythia models share one.
-    TPM.CORPUS_TOKENS = (
-        TPM.CORPUS_TOKENS_OLMO
-        if args.model == "olmo-2-7b"
-        else TPM.CORPUS_TOKENS_PYTHIA
-    )
-    TPM._refresh_aliases()
-    cfg = TPM.ACTIVE_CFG
+    corpus = TPM.CORPUS_TOKENS_OLMO if args.model == "olmo-2-7b" else TPM.CORPUS_TOKENS_PYTHIA
+    ctx = TPM.PatchContext(cfg=model_cfg, d_sae=d_sae, corpus_tokens=corpus)
+    cfg = ctx.cfg
 
     snap_steps = args.steps if args.steps is not None else list(cfg.steps_canonical)
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -194,7 +185,7 @@ def main():
     )
 
     # Eval corpus + tokenizer + concepts.
-    eval_data = torch.load(TPM.CORPUS_TOKENS, weights_only=False)
+    eval_data = torch.load(ctx.corpus_tokens, weights_only=False)
     ids = eval_data["ids"]
     n_full = (len(ids) // TPM.SEQ_LEN) * TPM.SEQ_LEN
     ids_seqs = ids[:n_full].view(-1, TPM.SEQ_LEN)
@@ -205,9 +196,9 @@ def main():
         f"  loading terminal W_U (step={terminal_step}) + token meta + concept registry...",
         flush=True,
     )
-    W_U_terminal = TPM.load_snapshot(terminal_step)
+    W_U_terminal = TPM.load_snapshot(ctx, terminal_step)
     V = W_U_terminal.shape[0]
-    tok = TPM.load_tokenizer()
+    tok = TPM.load_tokenizer(ctx)
     meta = TPM.build_token_meta(tok, ids[:n_full], V_explicit=V)
     concepts = TPM.build_concept_registry(meta)
     pool = TPM.build_pools(meta, W_U_terminal)
@@ -235,7 +226,7 @@ def main():
     print(f"  unassigned targets: {int((target_concept_ix == -1).sum()):,}", flush=True)
 
     # Pre-build per-concept context-mass evaluation sets, fixed across all cells.
-    rng = np.random.default_rng(TPM.RNG_SEED + args.seed)
+    rng = np.random.default_rng(ctx.rng_seed + args.seed)
     print("  building per-concept candidate sets (fixed across cells)...", flush=True)
     concept_sets: dict[str, dict] = {}
     for cn, c in concepts.items():
@@ -277,7 +268,7 @@ def main():
     # Outer loop: h_t. Load h_LN once per h_t.
     for h_step in args.h_eval_steps:
         print(f"\n=== h_t = {h_step} ===", flush=True)
-        cached = TPM.cache_or_build_hLN(h_step, ids_seqs)
+        cached = TPM.cache_or_build_hLN(ctx, h_step, ids_seqs)
         h_LN = cached["h_LN"]
         W_U_native = cached["W_U_orig"]
 
@@ -297,7 +288,7 @@ def main():
 
         for snap_step in snap_steps:
             t0 = time.time()
-            W = TPM.load_snapshot(snap_step)
+            W = TPM.load_snapshot(ctx, snap_step)
             m = per_cell_metrics(
                 h_LN,
                 W,

@@ -55,16 +55,10 @@ def main():
     )
     args = ap.parse_args()
 
-    tpl.CORPUS_TOKENS = args.eval_tokens
-
-    # Resolve the active model config (library-module state, as in the grid driver).
     if args.model == "pythia-160m":
-        tpl.ACTIVE_CFG = tpl.CFG_PYTHIA_160M
-        tpl.ACTIVE_D_SAE = 8192
+        ctx = tpl.PatchContext(cfg=tpl.CFG_PYTHIA_160M, d_sae=8192, corpus_tokens=args.eval_tokens)
     elif args.model == "pythia-1b":
-        tpl.ACTIVE_CFG = tpl.CFG_PYTHIA_1B
-        tpl.ACTIVE_D_SAE = args.d_sae
-    tpl._refresh_aliases()
+        ctx = tpl.PatchContext(cfg=tpl.CFG_PYTHIA_1B, d_sae=args.d_sae, corpus_tokens=args.eval_tokens)
 
     K = args.top_k
     if args.smoke:
@@ -105,6 +99,7 @@ def main():
         concepts = tpl.DEFAULT_CONCEPTS
 
     tpl.run(
+        ctx,
         seed=args.seed,
         transitions=transitions,
         concept_names=concepts,

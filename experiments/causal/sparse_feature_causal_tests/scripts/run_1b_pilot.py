@@ -74,10 +74,8 @@ def device_default() -> str:
     return "cpu"
 
 
-def configure_tpm() -> None:
-    TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_1B
-    TPM.ACTIVE_D_SAE = 24576
-    TPM._refresh_aliases()
+def make_ctx() -> TPM.PatchContext:
+    return TPM.PatchContext(cfg=TPM.CFG_PYTHIA_1B, d_sae=24576)
 
 
 def load_pieces(step: int, device: str) -> CrosscoderPieces:
@@ -101,8 +99,8 @@ def load_pieces(step: int, device: str) -> CrosscoderPieces:
         )
 
 
-def load_eval_sequences() -> tuple[torch.Tensor, torch.Tensor]:
-    data = torch.load(TPM.CORPUS_TOKENS, map_location="cpu", weights_only=False)
+def load_eval_sequences(ctx: TPM.PatchContext) -> tuple[torch.Tensor, torch.Tensor]:
+    data = torch.load(ctx.corpus_tokens, map_location="cpu", weights_only=False)
     ids = data["ids"]
     n_full = (len(ids) // TPM.SEQ_LEN) * TPM.SEQ_LEN
     return ids[:n_full], ids[:n_full].view(-1, TPM.SEQ_LEN)
@@ -153,7 +151,7 @@ def concept_rows(
     return in_C.astype(np.int64), null_C.astype(np.int64)
 
 
-def encode_reconstruct_rows(row_ids: np.ndarray, pieces: CrosscoderPieces, device: str) -> RowRecon:
+def encode_reconstruct_rows(ctx: TPM.PatchContext, row_ids: np.ndarray, pieces: CrosscoderPieces, device: str) -> RowRecon:
     """Canonical cross-snapshot encode for a small row subset.
 
     The crosscoder encoder first sums preactivations from every snapshot head.
@@ -168,7 +166,7 @@ def encode_reconstruct_rows(row_ids: np.ndarray, pieces: CrosscoderPieces, devic
         for head_idx, step in enumerate(pieces.steps):
             W_E = f.get_slice("W_E")[head_idx].float().to(device)
             b_E = f.get_slice("b_E")[head_idx].float().to(device)
-            W_rows = TPM.load_snapshot(step)[row_ids].to(device)
+            W_rows = TPM.load_snapshot(ctx, step)[row_ids].to(device)
             mean_h = pieces.mean[head_idx].squeeze(0)
             scale_h = pieces.scale[head_idx].squeeze()
             x_proc = (W_rows - mean_h) / scale_h
@@ -192,6 +190,7 @@ def encode_reconstruct_rows(row_ids: np.ndarray, pieces: CrosscoderPieces, devic
 
 
 def collect_h_splits(
+    ctx: TPM.PatchContext,
     h_step: int,
     ids_seqs: torch.Tensor,
     concept: TPM.ConceptDef,
@@ -199,7 +198,7 @@ def collect_h_splits(
     seed: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     rng = np.random.default_rng(seed + h_step)
-    cached = TPM.cache_or_build_hLN(h_step, ids_seqs)
+    cached = TPM.cache_or_build_hLN(ctx, h_step, ids_seqs)
     h, _target_ids = TPM.collect_concept_contexts(
         cached["h_LN"], ids_seqs, concept, max_per_concept=max_contexts, rng=rng
     )
@@ -333,7 +332,7 @@ def main() -> None:
     args = ap.parse_args()
 
     t0 = time.time()
-    configure_tpm()
+    ctx = make_ctx()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     print(
         f"[pilot] device={args.device} snapshot={args.snapshot_step} concept={args.concept}",
@@ -346,10 +345,10 @@ def main() -> None:
     rates = agg["rates"].numpy()
     decoder_norms = agg["decoder_norms"].numpy()
 
-    ids, ids_seqs = load_eval_sequences()
-    tok = TPM.load_tokenizer()
-    W_snapshot = TPM.load_snapshot(args.snapshot_step)
-    W_terminal = TPM.load_snapshot(143000)
+    ids, ids_seqs = load_eval_sequences(ctx)
+    tok = TPM.load_tokenizer(ctx)
+    W_snapshot = TPM.load_snapshot(ctx, args.snapshot_step)
+    W_terminal = TPM.load_snapshot(ctx, 143000)
     meta = TPM.build_token_meta(tok, ids, V_explicit=W_snapshot.shape[0])
     concepts = TPM.build_concept_registry(meta)
     concept = concepts[args.concept]
@@ -362,10 +361,10 @@ def main() -> None:
         flush=True,
     )
 
-    row_recon = encode_reconstruct_rows(row_ids, pieces, args.device)
+    row_recon = encode_reconstruct_rows(ctx, row_ids, pieces, args.device)
     h_splits: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
     for h_step in sorted(set([args.rank_h_step] + args.eval_h_steps)):
-        h_splits[h_step] = collect_h_splits(h_step, ids_seqs, concept, args.max_contexts, args.seed)
+        h_splits[h_step] = collect_h_splits(ctx, h_step, ids_seqs, concept, args.max_contexts, args.seed)
         print(
             f"[pilot] h{h_step}: select={h_splits[h_step][0].shape[0]} eval={h_splits[h_step][1].shape[0]}",
             flush=True,

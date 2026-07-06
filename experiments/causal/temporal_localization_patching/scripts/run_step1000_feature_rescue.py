@@ -244,15 +244,12 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    if args.model == "pythia-1b":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_1B
-    elif args.model == "pythia-160m":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_160M
-    elif args.model == "pythia-6.9b":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_6_9B
-    TPM.ACTIVE_D_SAE = args.d_sae
-    TPM.CORPUS_TOKENS = TPM.CORPUS_TOKENS_PYTHIA
-    TPM._refresh_aliases()
+    cfg_by_model = {
+        "pythia-1b": TPM.CFG_PYTHIA_1B,
+        "pythia-160m": TPM.CFG_PYTHIA_160M,
+        "pythia-6.9b": TPM.CFG_PYTHIA_6_9B,
+    }
+    ctx = TPM.PatchContext(cfg=cfg_by_model[args.model], d_sae=args.d_sae)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     shard_dir = args.out_dir / "shards"
@@ -400,11 +397,11 @@ def main() -> None:
     for item in iter_undone(items, shard_path, label="cell"):
         h_step, sname, mode_ev = item
         if h_step not in h_LN_cache:
-            h_LN_cache[h_step] = TPM.cache_or_build_hLN(h_step, ids_seqs)
+            h_LN_cache[h_step] = TPM.cache_or_build_hLN(ctx, h_step, ids_seqs)
         h_LN = h_LN_cache[h_step]["h_LN"]
         W_native_at_h = h_LN_cache[h_step].get("W_U_orig")
         if W_native_at_h is None:
-            W_native_at_h = TPM.load_snapshot(h_step).float()
+            W_native_at_h = TPM.load_snapshot(ctx, h_step).float()
 
         if mode_ev == "baseline_native":
             W = W_native_at_h

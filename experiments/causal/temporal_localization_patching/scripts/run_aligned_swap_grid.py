@@ -156,18 +156,14 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    if args.model == "pythia-160m":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_160M
-        TPM.ACTIVE_D_SAE = 8192
-    elif args.model == "pythia-1b":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_1B
-        TPM.ACTIVE_D_SAE = args.d_sae
-    elif args.model == "pythia-6.9b":
-        TPM.ACTIVE_CFG = TPM.CFG_PYTHIA_6_9B
-        TPM.ACTIVE_D_SAE = args.d_sae
-    TPM.CORPUS_TOKENS = TPM.CORPUS_TOKENS_PYTHIA
-    TPM._refresh_aliases()
-    cfg = TPM.ACTIVE_CFG
+    cfg_by_model = {
+        "pythia-160m": (TPM.CFG_PYTHIA_160M, 8192),
+        "pythia-1b": (TPM.CFG_PYTHIA_1B, args.d_sae),
+        "pythia-6.9b": (TPM.CFG_PYTHIA_6_9B, args.d_sae),
+    }
+    model_cfg, d_sae = cfg_by_model[args.model]
+    ctx = TPM.PatchContext(cfg=model_cfg, d_sae=d_sae)
+    cfg = ctx.cfg
 
     snap_steps = args.snap_steps or list(cfg.steps_canonical)
     bad = sorted(set(args.alignments) - set(ALIGNMENTS))
@@ -178,7 +174,7 @@ def main() -> None:
     shard_dir = args.out_dir / "shards"
     shard_dir.mkdir(parents=True, exist_ok=True)
 
-    eval_data = torch.load(TPM.CORPUS_TOKENS, weights_only=False)
+    eval_data = torch.load(ctx.corpus_tokens, weights_only=False)
     ids = eval_data["ids"]
     n_full = (len(ids) // TPM.SEQ_LEN) * TPM.SEQ_LEN
     ids_seqs = ids[:n_full].view(-1, TPM.SEQ_LEN)
@@ -220,17 +216,17 @@ def main() -> None:
     for item in iter_undone(items, shard_path, label="cell"):
         al, h_step, snap_step = item
         if h_step not in h_LN_cache:
-            cached = TPM.cache_or_build_hLN(h_step, ids_seqs)
+            cached = TPM.cache_or_build_hLN(ctx, h_step, ids_seqs)
             h_LN_cache[h_step] = cached
         h_LN = h_LN_cache[h_step]["h_LN"]
         # Older caches from build_hln_cache.py omit W_U_orig; fall back to the
         # snapshot W_U at h_step (which IS the native readout for Pythia models).
         W_native = h_LN_cache[h_step].get("W_U_orig")
         if W_native is None:
-            W_native = TPM.load_snapshot(h_step).float()
+            W_native = TPM.load_snapshot(ctx, h_step).float()
 
         if snap_step not in W_cache:
-            W_cache[snap_step] = TPM.load_snapshot(snap_step).float()
+            W_cache[snap_step] = TPM.load_snapshot(ctx, snap_step).float()
         W_s = W_cache[snap_step]
 
         W_aligned = align(W_s, W_native, al)
