@@ -146,6 +146,19 @@ def test_extract_wu_from_model_raises_on_unknown():
         extract_wu_from_model(FakeModel())
 
 
+def test_get_device_priority_cuda_over_mps(monkeypatch):
+    """get_device() is the single device picker; README documents cuda > mps > cpu."""
+    from src.core.data import get_device
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: True)
+    assert get_device() == "cuda"
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    assert get_device() == "mps"
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
+    assert get_device() == "cpu"
+
+
 # ── models.py ────────────────────────────────────────────────
 
 

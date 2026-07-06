@@ -80,9 +80,7 @@ PYTHIA_1B = ModelSpec("EleutherAI/pythia-1b", "pythia-1b", 2048, 50304)
 PYTHIA_6_9B = ModelSpec("EleutherAI/pythia-6.9b", "pythia-6.9b", 4096, 50432)
 OLMO_2_7B = ModelSpec("allenai/OLMo-2-1124-7B", "olmo-2-7b", 4096, 100352)
 
-SPECS: dict[str, ModelSpec] = {
-    s.label: s for s in (PYTHIA_160M, PYTHIA_1B, PYTHIA_6_9B, OLMO_2_7B)
-}
+SPECS: dict[str, ModelSpec] = {s.label: s for s in (PYTHIA_160M, PYTHIA_1B, PYTHIA_6_9B, OLMO_2_7B)}
 
 # label -> HF name; useful for scripts keyed on short labels.
 MODEL_HF_NAMES: dict[str, str] = {label: spec.name for label, spec in SPECS.items()}
@@ -111,10 +109,7 @@ def spec_for(model: str) -> ModelSpec:
         if s.name == model:
             return s
     known = sorted(SPECS) + sorted(s.name for s in SPECS.values())
-    raise KeyError(
-        f"unknown model {model!r}; register a ModelSpec in "
-        f"src/core/model_specs.py. Known: {known}"
-    )
+    raise KeyError(f"unknown model {model!r}; register a ModelSpec in src/core/model_specs.py. Known: {known}")
 
 
 # ---- snapshot path / load helpers ------------------------------------------
@@ -172,9 +167,7 @@ def iter_snapshots(
     for s in steps:
         yield (
             s,
-            load_snapshot_at(
-                snap_path_for(spec.name, s, matrix=matrix, snap_dir=snap_dir)
-            ),
+            load_snapshot_at(snap_path_for(spec.name, s, matrix=matrix, snap_dir=snap_dir)),
         )
 
 
@@ -205,12 +198,3 @@ def auto_steps_for(
             if m:
                 candidates.append(int(m.group(1)))
     return sorted(set(candidates))
-
-
-def device(prefer_mps: bool = True) -> torch.device:
-    """Pick a torch device: MPS > CUDA > CPU (CUDA > CPU if ``prefer_mps=False``)."""
-    if prefer_mps and torch.backends.mps.is_available():
-        return torch.device("mps")
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    return torch.device("cpu")

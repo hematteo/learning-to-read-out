@@ -32,27 +32,29 @@ from src.crosscoder.wu_adapter import (  # noqa: E402
     DEFAULT_CACHE,
     DEFAULT_MODEL,
     DEFAULT_STEPS,
-    extract_wu,
+    load_wu_snapshot,
 )
 
-DEV = torch.device(
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
+DEV = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
 R3_CKPT = Path(
-    str(ssd_path("hf_release", "parameter-trajectory-crosscoders", "pythia-160m", "W_U", "cross-snapshot-32", "d8192", "seed0.safetensors"))
+    str(
+        ssd_path(
+            "hf_release",
+            "parameter-trajectory-crosscoders",
+            "pythia-160m",
+            "W_U",
+            "cross-snapshot-32",
+            "d8192",
+            "seed0.safetensors",
+        )
+    )
 )
 PERSNAP_DIR = ssd_path("wu_crosscoder", "per_snap_sae")
 
 
 def load_snapshots_for_steps(steps: list[int]) -> torch.Tensor:
-    arrs = [
-        extract_wu(DEFAULT_MODEL, s, DEFAULT_CACHE, dtype=torch.float32) for s in steps
-    ]
+    arrs = [load_wu_snapshot(DEFAULT_MODEL, s, DEFAULT_CACHE, dtype=torch.float32) for s in steps]
     return torch.stack(arrs, dim=0)  # (K, V, d)
 
 
@@ -111,9 +113,7 @@ def crosscoder_persnap_recovery(ckpt_path: Path) -> dict[int, dict]:
 
     recovery = (1.0 - ss_res / ss_tot).cpu().numpy()
     l0 = (l0_sum / n_seen).cpu().numpy()
-    return {
-        steps[k]: {"recovery": float(recovery[k]), "l0": float(l0[k])} for k in range(K)
-    }
+    return {steps[k]: {"recovery": float(recovery[k]), "l0": float(l0[k])} for k in range(K)}
 
 
 def persnap_sae_recovery(persnap_dir: Path, steps: list[int]) -> dict[int, dict]:
@@ -142,9 +142,7 @@ def persnap_sae_recovery(persnap_dir: Path, steps: list[int]) -> dict[int, dict]
         dec_norm = W_D.pow(2).sum(dim=2).sqrt().clamp_min(1e-8)  # (1, D)
         thr = torch.exp(log_thr)
 
-        x_raw = extract_wu(
-            DEFAULT_MODEL, s, DEFAULT_CACHE, dtype=torch.float32
-        )  # (V, d)
+        x_raw = load_wu_snapshot(DEFAULT_MODEL, s, DEFAULT_CACHE, dtype=torch.float32)  # (V, d)
         mean = pp["mean"].squeeze()  # (d,)
         scale = pp["scale"].squeeze()  # scalar
         x = ((x_raw - mean) / scale).to(DEV)  # (V, d) in center_scale space
@@ -183,23 +181,16 @@ def main() -> int:
     args = parser.parse_args()
 
     if not args.crosscoder.exists():
-        raise FileNotFoundError(
-            f"Run 3 seed 0 crosscoder not found at {args.crosscoder}"
-        )
+        raise FileNotFoundError(f"Run 3 seed 0 crosscoder not found at {args.crosscoder}")
 
     print(f"Device: {DEV}")
     cc = crosscoder_persnap_recovery(args.crosscoder)
-    print(
-        f"Crosscoder persnap recovery: mean R={np.mean([v['recovery'] for v in cc.values()]):.4f}"
-    )
+    print(f"Crosscoder persnap recovery: mean R={np.mean([v['recovery'] for v in cc.values()]):.4f}")
 
     steps = list(args.steps) if args.steps else list(DEFAULT_STEPS)
     sae = persnap_sae_recovery(args.persnap_dir, steps)
     if not sae:
-        raise RuntimeError(
-            f"No persnap SAEs found in {args.persnap_dir}. "
-            f"Run scripts/train_persnap_saes.py first."
-        )
+        raise RuntimeError(f"No persnap SAEs found in {args.persnap_dir}. Run scripts/train_persnap_saes.py first.")
 
     print("\nstep        | cc R    | sae R   | cc L0  | sae L0")
     for s in sorted(set(cc) | set(sae)):

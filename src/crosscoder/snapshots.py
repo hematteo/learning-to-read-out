@@ -5,7 +5,7 @@ the ``{"W_U": ...}``-style dict-unwrapping and SSD path resolution, and other
 modules should route their snapshot reads through it.
 
 Use this for analysis. For training (which extracts on cache miss),
-``src.crosscoder.wu_adapter.extract_wu`` / ``load_snapshots`` is the right entry.
+``src.crosscoder.wu_adapter.load_wu_snapshot`` / ``load_snapshots`` is the right entry.
 
 Files are resolved through ``src.core.paths.snapshot_path`` so all callers go
 through the same SSD layout (``UM_SSD_ROOT``-aware).
@@ -20,9 +20,7 @@ import torch
 from src.core.paths import snapshot_path
 
 
-def load_snapshot_at(
-    p: Path | str, *, dtype: torch.dtype | None = None
-) -> torch.Tensor:
+def load_snapshot_at(p: Path | str, *, dtype: torch.dtype | None = None) -> torch.Tensor:
     """Load a snapshot tensor from a known path. Unwraps ``{"W_U": ...}`` style dicts."""
     p = Path(p)
     if not p.exists():
@@ -66,11 +64,6 @@ def load_snapshots(
 ) -> torch.Tensor:
     """Stack snapshots in the given step order. Returns ``(K, V, d_model)``."""
     return torch.stack(
-        [
-            load_snapshot(
-                model_name, s, kind=kind, dtype=dtype, dir_override=dir_override
-            )
-            for s in steps
-        ],
+        [load_snapshot(model_name, s, kind=kind, dtype=dtype, dir_override=dir_override) for s in steps],
         dim=0,
     )

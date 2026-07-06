@@ -33,7 +33,8 @@ from src.core.paths import snapshot_dir as _snapshot_dir  # noqa: E402
 DEFAULT_CACHE = Path(os.environ.get("WU_CACHE_DIR", str(_snapshot_dir(DEFAULT_MODEL))))
 
 
-def extract_wu(model_name, step, cache_dir, dtype=torch.float32):
+def load_wu_snapshot(model_name, step, cache_dir, dtype=torch.float32):
+    """Return the (V, d_model) W_U snapshot for ``step``, from cache or extracted on miss."""
     slug = model_name.replace("/", "_")
     cache_path = cache_dir / f"{slug}_step{step}_wu.pt"
     if cache_path.exists():
@@ -44,7 +45,7 @@ def extract_wu(model_name, step, cache_dir, dtype=torch.float32):
     if not model_name.lower().startswith("eleutherai/pythia"):
         raise FileNotFoundError(
             f"Snapshot {cache_path} missing and model {model_name!r} is not Pythia. "
-            f"wu_adapter.extract_wu only knows the Pythia 'step{{N}}' revision format "
+            f"wu_adapter.load_wu_snapshot only knows the Pythia 'step{{N}}' revision format "
             f"and the `embed_out.weight` unembedding path. Pre-extract via the "
             f"family-specific extractor (e.g. experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py "
             f"for OLMo) and re-run."
@@ -65,7 +66,7 @@ def extract_wu(model_name, step, cache_dir, dtype=torch.float32):
 
 def load_snapshots(model_name=DEFAULT_MODEL, steps=None, cache_dir=DEFAULT_CACHE, dtype=torch.float32):
     steps = list(steps) if steps is not None else list(DEFAULT_STEPS)
-    snapshots = [extract_wu(model_name, s, cache_dir, dtype=dtype) for s in steps]
+    snapshots = [load_wu_snapshot(model_name, s, cache_dir, dtype=dtype) for s in steps]
     # (K, V, d)
     return torch.stack(snapshots, dim=0), steps
 

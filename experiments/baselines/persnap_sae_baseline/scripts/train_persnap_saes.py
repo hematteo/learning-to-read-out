@@ -35,7 +35,7 @@ from src.crosscoder.wu_adapter import (  # noqa: E402
     DEFAULT_CACHE,
     DEFAULT_MODEL,
     DEFAULT_STEPS,
-    extract_wu,
+    load_wu_snapshot,
     preprocess_snapshots,
     quick_quality,
     train,
@@ -59,8 +59,7 @@ def require_external_ssd(path: Path) -> None:
     mount = ssd_root()
     if str(path).startswith(str(mount)) and not mount.exists():
         raise RuntimeError(
-            f"External SSD {mount} is not mounted. Attach the drive (T1.3 requires"
-            f" persistent storage at {path})."
+            f"External SSD {mount} is not mounted. Attach the drive (T1.3 requires persistent storage at {path})."
         )
 
 
@@ -89,22 +88,18 @@ def train_one_snapshot(
 ) -> dict:
     output_path = output_dir / f"wu_sae_dsae8192_step{step}.pt"
     if output_path.exists() and not overwrite:
-        print(
-            f"[step {step}] exists, skipping ({output_path.name}); use --overwrite to retrain"
-        )
+        print(f"[step {step}] exists, skipping ({output_path.name}); use --overwrite to retrain")
         return {"step": step, "skipped": True, "path": str(output_path)}
 
     print(f"[step {step}] loading W_U from {cache_dir}")
-    W_U = extract_wu(model_name, step, cache_dir, dtype=torch.float32)  # (V, d)
+    W_U = load_wu_snapshot(model_name, step, cache_dir, dtype=torch.float32)  # (V, d)
     snap = W_U.unsqueeze(0)  # (1, V, d)  — K=1 single-snapshot adapter
     snap_proc, preprocess_stats = preprocess_snapshots(snap, mode="center_scale")
 
     if preprocess_stats is not None:
         mean_norm = preprocess_stats["mean"].norm(dim=-1).item()
         scale = preprocess_stats["scale"].item()
-        print(
-            f"[step {step}] preprocess center_scale: mean-shift={mean_norm:.3f} scale={scale:.4f}"
-        )
+        print(f"[step {step}] preprocess center_scale: mean-shift={mean_norm:.3f} scale={scale:.4f}")
 
     t0 = time.perf_counter()
     sae = train(
@@ -131,9 +126,7 @@ def train_one_snapshot(
     elapsed = time.perf_counter() - t0
 
     metrics = quick_quality(sae, snap_proc, batch_size=batch_size, device=device)
-    print(
-        f"[step {step}] EV={metrics['explained_variance']:.4f} L0={metrics['mean_l0']:.1f} ({elapsed:.1f}s)"
-    )
+    print(f"[step {step}] EV={metrics['explained_variance']:.4f} L0={metrics['mean_l0']:.1f} ({elapsed:.1f}s)")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     torch.save(
@@ -215,9 +208,7 @@ def main() -> int:
     parser.add_argument("--lr-warmup-fraction", type=float, default=0.1)
     parser.add_argument("--lr-decay-fraction", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument(
-        "--device", default="cuda" if torch.cuda.is_available() else "cpu"
-    )
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--log-every", type=int, default=50)
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument(

@@ -10,8 +10,8 @@ import cost of ``wu_adapter``.
 
 __all__ = [
     "build_crosscoder",
-    "extract_wu",
     "load_snapshots",
+    "load_wu_snapshot",
     "preprocess_snapshots",
     "quick_quality",
     "train",

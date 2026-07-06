@@ -89,7 +89,7 @@ reproducibility appendix records the exact step lists.
 ## Reproducing the inputs
 
 1. **W_U snapshots** (`$UM_SSD_ROOT/snapshots/<model>/`): produced on demand by
-   the trajectory trainer. On a cache miss `src.crosscoder.wu_adapter.extract_wu`
+   the trajectory trainer. On a cache miss `src.crosscoder.wu_adapter.load_wu_snapshot`
    downloads each Pythia `step{N}` revision, saves its `embed_out.weight`
    unembedding as `{slug}_step{N}_wu.pt`, and reuses it thereafter — so simply
    running the trainer populates them:

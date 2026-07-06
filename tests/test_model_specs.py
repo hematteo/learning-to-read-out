@@ -19,7 +19,6 @@ from src.core.model_specs import (
     SPECS,
     auto_steps_for,
     default_snap_dir,
-    device,
     iter_snapshots,
     snap_path_for,
 )
@@ -64,9 +63,7 @@ def test_default_steps_by_model_covers_all_specs():
 
 
 def test_model_spec_is_frozen():
-    with pytest.raises(
-        (AttributeError, Exception)
-    ):  # FrozenInstanceError or AttributeError
+    with pytest.raises((AttributeError, Exception)):  # FrozenInstanceError or AttributeError
         PYTHIA_1B.d_model = 9999  # type: ignore[misc]
 
 
@@ -176,7 +173,7 @@ def test_iter_snapshots_yields_step_tensor_pairs(tmp_path: Path):
     assert all(t.dtype == torch.float32 for _, t in pairs)
 
 
-# ── default_snap_dir / device ───────────────────────────────────
+# ── default_snap_dir ────────────────────────────────────────────
 
 
 def test_default_snap_dir_honours_wu_snap_dir_env(monkeypatch, tmp_path):
@@ -188,9 +185,3 @@ def test_default_snap_dir_falls_back_to_ssd_root(monkeypatch):
     monkeypatch.delenv("WU_SNAP_DIR", raising=False)
     monkeypatch.setenv("UM_SSD_ROOT", "/tmp/fake-ssd")
     assert default_snap_dir() == Path("/tmp/fake-ssd/snapshots")
-
-
-def test_device_returns_torch_device():
-    d = device(prefer_mps=False)
-    assert isinstance(d, torch.device)
-    assert d.type in ("cuda", "cpu")

@@ -112,7 +112,7 @@ The pipeline has three stages (see the `Makefile`):
 
 1. **Extract** snapshots from public Hugging Face checkpoints. Pythia `W_U`
    snapshots are auto-extracted on cache miss by the trainer
-   (`src.crosscoder.wu_adapter.extract_wu`); OLMo-2 is pre-extracted with
+   (`src.crosscoder.wu_adapter.load_wu_snapshot`); OLMo-2 is pre-extracted with
    `experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py`;
    `scripts/extract/` holds the remaining extraction helpers (W_E, h_LN,
    firing rates, the OLMo eval corpus). Network + disk; CPU is fine for 160M.
