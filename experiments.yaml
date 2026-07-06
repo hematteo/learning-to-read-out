@@ -14,7 +14,8 @@
 #   description:      one sentence — what this experiment investigates
 #   paper_intent:     what part of the paper claim this supports (semantic, not section number;
 #                     "Section 5.x" tags are descriptive only, sections may renumber)
-#   scripts_dir:      where the runnable code lives
+#   scripts_dir:      where the runnable code lives; always the experiment's
+#                     scripts/ dir (experiments/<topic>/<id>/scripts/, audit-enforced)
 #   figures_dir:      where figure outputs are written
 #   results_dir:      where numerical outputs are written (gitignored)
 #   NB: when an experiment runs, its metrics land under experiments/<topic>/<id>/derived/
@@ -64,7 +65,7 @@ experiments:
     paper_intent: |
       Sections 5.1 (multimodel validation), 5.2 (sparse lifecycle), 5.3 (temporal localization
       near step 1k), 5.4 (vocabulary family emergence), and Appendix A (instrument validation).
-    scripts_dir: experiments/crosscoders/crosscoder_main/
+    scripts_dir: experiments/crosscoders/crosscoder_main/scripts/
     figures_dir: figures/crosscoder_main/
     results_dir: results/experiments/crosscoders/crosscoder_main/
     inputs:
@@ -153,7 +154,7 @@ experiments:
       Pythia-160M WordNet lexicographer-file probe timing audit for
       vocabulary-family availability in W_U. The paper treats this as
       corroborating timing evidence, not a fully controlled semantic-probe study.
-    scripts_dir: experiments/probes/concept_evolution_validation/
+    scripts_dir: experiments/probes/concept_evolution_validation/scripts/
     figures_dir: figures/concept_evolution_validation/
     results_dir: results/experiments/probes/concept_evolution_validation/
     inputs:
@@ -184,7 +185,7 @@ experiments:
       Appendix dense-readout validation: shows centered W_U remains high-dimensional
       across Pythia and OLMo, and motivates sparse trajectory dictionaries over
       simple SVD/PCA summaries.
-    scripts_dir: experiments/baselines/dense_readout_diagnostics/
+    scripts_dir: experiments/baselines/dense_readout_diagnostics/scripts/
     figures_dir: figures/dense_readout_diagnostics/
     results_dir: results/experiments/dense_readout_diagnostics/
     inputs:
@@ -213,7 +214,7 @@ experiments:
       Validates the crosscoder generalizes off the training-snapshot grid.
     paper_intent: |
       Appendix A.4 (Held-out Checkpoint Reconstruction).
-    scripts_dir: experiments/ablations/heldout_checkpoints/
+    scripts_dir: experiments/ablations/heldout_checkpoints/scripts/
     figures_dir: figures/heldout_checkpoints/
     results_dir: results/experiments/ablations/heldout_checkpoints/
     inputs:
@@ -235,7 +236,7 @@ experiments:
       Pythia-1B W_U late-start checkpoint-window ablation matching the OLMo
       constraint that no sub-step-150 snapshots are available.
     paper_intent: Appendix scope check for the OLMo PCA lifecycle geometry.
-    scripts_dir: experiments/ablations/olmo_matched_checkpoint_window/
+    scripts_dir: experiments/ablations/olmo_matched_checkpoint_window/scripts/
     figures_dir: figures/olmo_matched_checkpoint_window/
     results_dir: results/experiments/olmo_matched_checkpoint_window/
     inputs:
@@ -265,7 +266,7 @@ experiments:
       claim. Not cited in the paper; produces W_U readout geometry across
       conditions x token-milestone checkpoints (downstream lag-probe analysis
       pending).
-    scripts_dir: experiments/ablations/pretraining_recipe_control/
+    scripts_dir: experiments/ablations/pretraining_recipe_control/scripts/
     figures_dir: figures/pretraining_recipe_control/
     results_dir: results/experiments/ablations/pretraining_recipe_control/
     inputs:
@@ -289,7 +290,7 @@ experiments:
       Multi-seed pilot establishing W_E vs W_U asymmetry.
     paper_intent: |
       Lead-lag analysis (W_E vs W_U); referenced in Discussion / read-write asymmetry.
-    scripts_dir: experiments/crosscoders/crosscoder_we/
+    scripts_dir: experiments/crosscoders/crosscoder_we/scripts/
     figures_dir: figures/crosscoder_we/
     results_dir: results/experiments/crosscoder_we/
     inputs:
@@ -332,7 +333,7 @@ experiments:
       Cross-family validation point in the main instrument table, lifecycle
       panels, and timing appendix. OLMo is treated as cross-family context rather
       than a matched Pythia scaling comparison.
-    scripts_dir: experiments/crosscoders/crosscoder_olmo/
+    scripts_dir: experiments/crosscoders/crosscoder_olmo/scripts/
     figures_dir: figures/crosscoder_olmo/
     results_dir: results/experiments/crosscoders/crosscoder_olmo/
     inputs:

@@ -46,6 +46,8 @@ Checks:
               may import readout and its own siblings, never another experiment's
               tree (path reach-ins are caught by 13; package-style
               `import experiments.*` is caught here).
+  15. [ERROR] Manifest shape: every experiments.yaml entry's scripts_dir is exactly
+              experiments/<topic>/<id>/scripts/ for its own id.
 
 Run:
     uv run python scripts/audit/check_layout.py            # warnings + errors
@@ -254,6 +256,24 @@ def check_sys_path_hygiene() -> list[str]:
                         f"{p.relative_to(REPO)}:{lineno} edits sys.path beyond a same-dir "
                         f"insert (the readout package is installed; import it): {line.strip()}"
                     )
+    return issues
+
+
+def check_scripts_dir_shape() -> list[str]:
+    """scripts_dir points at the entry's own scripts/ dir, uniformly (check 15)."""
+    data = _load_experiments_yaml()
+    if data is None:
+        return []
+    issues: list[str] = []
+    dir_by_id = {p.name: p for p in _experiment_dirs()}
+    for e in data.get("experiments") or []:
+        eid = e.get("id", "<no-id>")
+        sd = e.get("scripts_dir")
+        if not isinstance(sd, str) or eid not in dir_by_id:
+            continue  # orphans are check 7's job
+        expected = f"{dir_by_id[eid].relative_to(REPO)}/scripts/"
+        if sd.rstrip("/") + "/" != expected:
+            issues.append(f"experiment {eid!r}: scripts_dir {sd!r} != {expected!r}")
     return issues
 
 
@@ -554,6 +574,7 @@ def main() -> int:
     errors += check_scripts_imports()
     errors += check_sys_path_hygiene()
     errors += check_no_cross_experiment_imports()
+    errors += check_scripts_dir_shape()
     resolve_errors, resolve_warnings = check_committed_paths_resolve()
     errors += resolve_errors
     warnings += check_src_no_main()
