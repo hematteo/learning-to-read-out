@@ -131,20 +131,6 @@ def aggregate_path(run_id: str) -> Path:
     return ssd_root() / "derived" / "aggregates" / f"aggregates_{run_id}.pt"
 
 
-def derived_root() -> Path:
-    """Root of the committed in-repo derived-metrics tree (``<repo>/data/derived``).
-
-    Holds small CSV/JSON metrics that let paper figures render without the
-    external SSD; mirrored by experiment id (see ``data/README.md``).
-    """
-    return repo_root() / "data" / "derived"
-
-
-def derived_path(*parts: str) -> Path:
-    """Join ``parts`` under :func:`derived_root` (e.g. ``derived_path("concept_evolution_validation")``)."""
-    return derived_root().joinpath(*parts)
-
-
 def crosscoder_main_derived_dir() -> Path:
     """In-repo dir holding per-run aggregates produced by the main analysis.
 
@@ -153,13 +139,3 @@ def crosscoder_main_derived_dir() -> Path:
     """
     return PROJECT / "experiments" / "crosscoders" / "crosscoder_main" / "derived"
 
-
-def concept_evolution_derived_dir() -> Path:
-    """In-repo dir holding the committed WordNet probe / matched-control metrics.
-
-    Co-located under ``experiments/probes/concept_evolution_validation/derived/``
-    (Option B); centralised here so call sites don't hardcode the path.
-    """
-    return (
-        PROJECT / "experiments" / "probes" / "concept_evolution_validation" / "derived"
-    )

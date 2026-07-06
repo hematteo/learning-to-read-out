@@ -65,4 +65,4 @@ the first run, download the corpus once with
 ## Layout
 | path | role |
 |---|---|
-| `derived/` | emergence tables / probe trajectories written here on run, resolved via `src.core.paths.concept_evolution_derived_dir` (gitignored; not shipped in this code-only release) |
+| `derived/` | emergence tables / probe trajectories written here on run (gitignored; not shipped in this code-only release) |

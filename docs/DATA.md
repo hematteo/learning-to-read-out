@@ -155,8 +155,7 @@ experiment that owns them** (and gitignored), under:
     experiments/<...>/<experiment_id>/derived/...
 
 For example, the WordNet probe / matched-control tables are written under
-`experiments/probes/concept_evolution_validation/derived/`, resolved via
-`src.core.paths.concept_evolution_derived_dir(...)` rather than a hardcoded path.
+`experiments/probes/concept_evolution_validation/derived/`.
 Regenerate them by running that experiment's scripts (see `REPRODUCE.md`).
 
 ## Not redistributed

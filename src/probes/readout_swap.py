@@ -21,8 +21,6 @@ forward-pre-hook on the readout module (Pythia: embed_out, OLMo/LLaMA: lm_head).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import numpy as np
 import torch
 
@@ -138,32 +136,6 @@ def align_readout(W_s: torch.Tensor, W_t: torch.Tensor, mode: str) -> torch.Tens
 # ---------------------------------------------------------------------------
 # Heatmap evaluation
 # ---------------------------------------------------------------------------
-@dataclass
-class GridResult:
-    h_step: int
-    s_step: int
-    alignment: str
-    family: str
-    n: int
-    mean_margin: float
-    accuracy: float
-    delta_margin: float  # vs (t,t) cell
-    delta_accuracy: float  # vs (t,t) cell
-
-    def to_row(self) -> dict:
-        return {
-            "h_step": self.h_step,
-            "s_step": self.s_step,
-            "alignment": self.alignment,
-            "family": self.family,
-            "n": self.n,
-            "mean_margin": self.mean_margin,
-            "accuracy": self.accuracy,
-            "delta_margin": self.delta_margin,
-            "delta_accuracy": self.delta_accuracy,
-        }
-
-
 def evaluate_swap_cell(
     h: torch.Tensor,
     W_s: torch.Tensor,

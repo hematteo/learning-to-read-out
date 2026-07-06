@@ -21,7 +21,6 @@ from __future__ import annotations
 import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
 
 from src.core.model_specs import DEFAULT_STEPS_32 as GE_STEPS_32
 from src.core.paths import ssd_path
@@ -91,10 +90,6 @@ class RunRow:
         # Plan §2 names this field decoder_norms_path; expose both for back-compat.
         d["decoder_norms_path"] = d["norms_path"]
         return d
-
-
-def _exists(p: Path | None) -> bool:
-    return p is not None and p.exists()
 
 
 # 32-snapshot Ge schedule used by Run 3 / T1.3 / T1.5 / T3.x.
@@ -467,6 +462,3 @@ def _t2_1_rows() -> list[RunRow]:
         )
     return rows
 
-
-def rows_by_id(rows: Iterable[RunRow], run_id: str) -> list[RunRow]:
-    return [r for r in rows if r.run_id == run_id]

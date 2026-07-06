@@ -28,7 +28,7 @@ Checks:
   12. [ERROR] Path-resolution guard: every *committed input* an experiment declares in
               experiments.yaml (entry-script paths, scripts_dir, and committed DATA
               files/dirs named in paper_figures:) actually resolves on disk. Only paths
-              that are genuinely committed inputs — under data/derived/**, scripts/**, or
+              that are genuinely committed inputs — under scripts/** or
               experiments/** — are asserted. Regenerable gitignored output trees
               (figures/, results/, paper/, reports/), the external SSD root
               (${UM_SSD_ROOT}/local_snapshots/$VAR), globbed/placeholder paths, and
@@ -66,7 +66,7 @@ REGENERABLE_OUTPUT_ROOTS = {"figures", "results"}
 RESOLUTION_EXEMPT_ROOTS = REGENERABLE_OUTPUT_ROOTS | {"paper", "reports"}
 
 # Top-level dirs that DO hold committed inputs we can assert the existence of.
-COMMITTED_INPUT_ROOTS = {"data", "scripts", "experiments"}
+COMMITTED_INPUT_ROOTS = {"scripts", "experiments"}
 
 # Suffixes of gitignored output artefacts that live under committed-input trees but
 # are regenerated, not shipped (.gitignore: experiments/**/*.pt etc., **/derived/**/*).
@@ -92,7 +92,6 @@ ALLOWED_TOP_LEVEL = {
     "experiments",
     "examples",  # CPU-only runnable library-reuse demos
     "notebooks",  # Colab-ready guided tours of the paper's core analyses
-    "data",  # committed small derived inputs (data/derived/**) that drive figures
     "figures",
     "results",
     "logs",  # runtime job logs (gitignored; created by Makefile / launch scripts)

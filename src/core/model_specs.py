@@ -50,18 +50,6 @@ OLMO_STEPS_32: list[int] = [
 ]  # fmt: skip
 
 
-def get_steps(variant: str = "default") -> list[int]:
-    """Return a step schedule by name. ``"default"`` is the canonical
-    :data:`DEFAULT_STEPS_32` Pythia cross-snap-32 schedule.
-
-    Prefer this (or a direct ``DEFAULT_STEPS_32`` import) over re-typing the
-    step list in a script; this module is the single source of truth.
-    """
-    if variant == "default":
-        return DEFAULT_STEPS_32
-    raise KeyError(f"unknown step-schedule variant {variant!r}; known: ['default']")
-
-
 # ---- model specs ------------------------------------------------------------
 
 
@@ -92,24 +80,6 @@ DEFAULT_STEPS_BY_MODEL: dict[str, list[int]] = {
     "pythia-6.9b": DEFAULT_STEPS_32,
     "olmo-2-7b": OLMO_STEPS_32,
 }
-
-
-def spec_for(model: str) -> ModelSpec:
-    """Resolve a :class:`ModelSpec` from a short label (``"pythia-1b"``) or a
-    full HF name (``"EleutherAI/pythia-1b"``).
-
-    This is the single lookup the model-agnostic core uses; to run the
-    instrument on a new model, register a ``ModelSpec`` above (and, if its
-    checkpoint grid differs, a ``DEFAULT_STEPS_BY_MODEL`` entry) rather than
-    hardcoding ``d_model``/``vocab`` in a script.
-    """
-    if model in SPECS:
-        return SPECS[model]
-    for s in SPECS.values():
-        if s.name == model:
-            return s
-    known = sorted(SPECS) + sorted(s.name for s in SPECS.values())
-    raise KeyError(f"unknown model {model!r}; register a ModelSpec in src/core/model_specs.py. Known: {known}")
 
 
 # ---- snapshot path / load helpers ------------------------------------------
