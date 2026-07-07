@@ -12,6 +12,8 @@ help:  ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
+# Plain sync (may re-resolve) so developers can pick up dependency changes;
+# CI uses `uv sync --locked --extra dev` to validate the committed lockfile.
 install:  ## Create the environment (uv sync with dev tools; builds the vendored SAE lib)
 	uv sync --extra dev
 

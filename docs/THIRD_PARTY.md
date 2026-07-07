@@ -43,6 +43,16 @@ explicit.
   editable wheel; the `llamascopium` / `lm-saes` console-script entry points in
   `pyproject.toml` still resolve to `llamascopium.cli`, which is kept.
 
+- **Provenance and verification:** the vendored tree corresponds to the PyPI
+  release `llamascopium==2.0.0b34` plus the local patch documented above; the
+  upstream git commit SHA was **not** recorded at vendoring time. To verify the
+  correspondence, fetch the upstream source with
+  `pip download llamascopium==2.0.0b34 --no-deps` and diff it against
+  `lib/Language-Model-SAEs/`, excluding the trimmed components and the patched
+  encoder-init function listed above. The dependency-pin changes in the vendored
+  `pyproject.toml` were not individually recorded; diffing that file against the
+  downloaded release's `pyproject.toml` recovers them.
+
 This library is cited in the thesis as the crosscoder architecture the trajectory
 dictionaries follow (`\citet{ge2026crosscoder}`).
 

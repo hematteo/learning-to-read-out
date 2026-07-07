@@ -19,7 +19,7 @@ __pycache__/
 checkpoints/
 outputs/
 wandb/
-# Default UM_SSD_ROOT output root (W_U snapshots, releases) — see src/core/paths.py
+# Default UM_SSD_ROOT output root (W_U snapshots, releases) — see src/readout/core/paths.py
 local_snapshots/
 snapshots/
 hf_release/

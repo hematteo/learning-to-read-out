@@ -8,7 +8,8 @@ future researcher can still reproduce and extend the published analyses.
 ```bash
 make install   # uv sync --extra dev (installs the readout package editable,
                # builds the vendored SAE lib)
-make test      # pytest — CPU-only, no data, no downloads (~20 s)
+make test      # pytest — CPU-only, no data (~20 s); first networked run fetches
+               # one small tokenizer (cached; those tests skip offline)
 make lint      # ruff, same check as CI
 make audit     # layout contract (scripts/audit/check_layout.py)
 ```

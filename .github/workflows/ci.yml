@@ -27,6 +27,11 @@ jobs:
           # of that in CI (Apple-Silicon runner, PyPI torch wheels).
           - os: macos-latest
             python-version: "3.12"
+          # The README claims the CPU test suite runs on Windows; prove one leg
+          # of that in CI. uv and pytest are invoked directly (never via make:
+          # GNU make is not guaranteed on the Windows image).
+          - os: windows-latest
+            python-version: "3.12"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -36,8 +41,21 @@ jobs:
           # interpreter (a bare --python on sync alone would be undone by the
           # next `uv run`, which re-reads .python-version).
           python-version: ${{ matrix.python-version }}
+      # Persist the HF hub cache so the pythia-160m tokenizer that
+      # tests/test_contrastive_tasks.py needs is downloaded once per lockfile,
+      # not on every run.
+      - name: Cache the Hugging Face hub
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-cache-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          restore-keys: hf-cache-${{ runner.os }}-
       - name: Install dependencies (builds the vendored SAE lib)
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
+      # Fetch the tokenizer before pytest so a cache miss is one visible
+      # download step here, not a hidden network dependency inside the tests.
+      - name: Pre-fetch the pythia-160m tokenizer (used by tests/test_contrastive_tasks.py)
+        run: uv run python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('EleutherAI/pythia-160m')"
       - name: Run tests
         run: uv run --extra dev pytest -q
       - name: Run the minimal example (quickstart smoke test)
@@ -52,7 +70,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
       - name: Lint
         run: uv run --extra dev ruff check .
 
@@ -65,7 +83,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
       - name: Validate layout contract
         run: uv run --extra dev python scripts/audit/check_layout.py
       - name: Figure index in sync with experiments.yaml

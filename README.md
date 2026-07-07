@@ -18,7 +18,9 @@ load-bearing during pretraining. This is the code release for the paper
 
 ## Quickstart
 
-CPU-only; no GPU, data, or model downloads needed for the test suite.
+CPU-only; no GPU, data, or model weights needed for the test suite. The
+contrastive-task tests fetch one small tokenizer (Pythia-160m) on the first
+networked run — cached afterwards, and skipped when offline.
 
 ```bash
 make install   # uv sync --extra dev (also builds the vendored SAE lib)
@@ -65,10 +67,14 @@ vocabulary families. See [`notebooks/README.md`](notebooks/README.md).
 
 - **Python** 3.11 or 3.12; environment managed with [`uv`](https://docs.astral.sh/uv/).
 - **Test suite** (`make install && make test`) runs CPU-only on **Linux, macOS,
-  or Windows** — no GPU, data, or downloads.
+  or Windows** — all three OSes are CI-tested (`.github/workflows/ci.yml`). No
+  GPU, data, or model weights needed; the contrastive-task tests fetch one small
+  tokenizer on the first networked run (cached; skipped offline).
 - **GPU training** beyond 160M targets **Linux + CUDA 11.8** (torch is pinned
   to cu118 wheels on Linux for broad driver compatibility; see
-  `pyproject.toml`). On other platforms torch installs from PyPI.
+  `pyproject.toml`). On other platforms torch installs from PyPI. Note the
+  cu118 index also caps the torch version on Linux: the lockfile resolves
+  torch 2.7.1+cu118 there vs. a newer PyPI torch on macOS/Windows.
 - **Device selection is automatic** at runtime — CUDA > MPS > CPU — so small
   models also run on Apple Silicon (MPS) or on CPU anywhere.
 
@@ -126,6 +132,8 @@ Shorthand recurring in module, experiment, and figure names:
 | `sva` | Subject-verb agreement |
 | `persnap` | Per-snapshot SAE (one SAE per checkpoint, a baseline) |
 | `cc` | Crosscoder |
+| `ev` | Explained variance (reconstruction quality, higher is better) |
+| `l0` | Mean number of active dictionary features per row |
 
 ## Related repository
 

@@ -25,7 +25,8 @@ auto-selects cuda/mps/cpu), mirroring `tests/test_crosscoder_smoke.py`.
 
 ## How to run
 
-From the repo root (the script puts the repo root on `sys.path` itself):
+From the repo root (the script imports the installed `readout` package —
+`make install` / `uv sync` provides it; no `sys.path` edits):
 
 ```bash
 uv run python examples/minimal_crosscoder.py

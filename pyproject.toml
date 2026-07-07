@@ -27,7 +27,9 @@ dependencies = [
     "scikit-learn>=1.5,<2",
     "datasets>=4.8.4,<5",
     "einops>=0.8,<1",
-    "llamascopium",
+    # Pinned so non-uv installers (plain `pip install .`, which ignores
+    # [tool.uv.sources]) get at least the PyPI version the local patch targets.
+    "llamascopium==2.0.0b34",
     "safetensors>=0.4,<1",
     "requests>=2,<3",
     "huggingface-hub>=0.30,<2",
