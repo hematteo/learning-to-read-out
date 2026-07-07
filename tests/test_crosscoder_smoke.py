@@ -37,13 +37,9 @@ def tiny_checkpoint(tmp_path_factory) -> Path:
     # dead_rate is part of paper §6 post-eval; wu_adapter doesn't yet write it,
     # but the manifest writer expects it under quality["dead_rate"].
     with torch.no_grad():
-        l0_per = (
-            cc.encode(
-                cc.prepare_input(
-                    {hp: snaps[i] for i, hp in enumerate(cc.cfg.hook_points)}
-                )[0]
-            )
-        ).reshape(-1, D_SAE)
+        l0_per = (cc.encode(cc.prepare_input({hp: snaps[i] for i, hp in enumerate(cc.cfg.hook_points)})[0])).reshape(
+            -1, D_SAE
+        )
         fired_any = (l0_per > 0).any(dim=0)
         dead_rate = float(1.0 - fired_any.float().mean().item())
     metrics["dead_rate"] = dead_rate
@@ -109,9 +105,7 @@ def test_checkpoint_roundtrips(tiny_checkpoint: Path):
 
 
 def test_state_dict_keys_match_adapter_expectations(tiny_checkpoint: Path):
-    sd = torch.load(tiny_checkpoint, map_location="cpu", weights_only=False)[
-        "state_dict"
-    ]
+    sd = torch.load(tiny_checkpoint, map_location="cpu", weights_only=False)["state_dict"]
     expected = {
         "W_E",
         "b_E",
@@ -119,32 +113,28 @@ def test_state_dict_keys_match_adapter_expectations(tiny_checkpoint: Path):
         "b_D",
         "activation_function.log_jumprelu_threshold",
     }
-    assert expected.issubset(set(sd.keys())), (
-        f"expected subset, got {sorted(sd.keys())}"
-    )
+    assert expected.issubset(set(sd.keys())), f"expected subset, got {sorted(sd.keys())}"
     # Shapes used by extract_rates.compute_rates.
     assert sd["W_E"].shape == (K, D_MODEL, D_SAE)
     assert sd["b_E"].shape == (K, D_SAE)
     assert sd["activation_function.log_jumprelu_threshold"].shape == (D_SAE,)
 
 
-def test_extract_rates_direct_path_finite(tiny_checkpoint: Path):
-    """Mirrors the direct-tensor path in extract_rates.compute_rates."""
-    ck = torch.load(tiny_checkpoint, map_location="cpu", weights_only=False)
-    sd = ck["state_dict"]
-    W_E = sd["W_E"]
-    b_E = sd["b_E"]
-    thr = sd["activation_function.log_jumprelu_threshold"].exp()
-    assert torch.isfinite(W_E).all()
-    assert torch.isfinite(b_E).all()
-    assert torch.isfinite(thr).all()
-    # Tiny synthetic batch instead of loading from /Volumes.
+def test_extract_rates_direct_path_finite(tiny_checkpoint: Path, tmp_path: Path):
+    """Exercises the REAL extract_rates.compute_rates on the tiny checkpoint
+    (previously this test re-implemented the 4-line direct-tensor path, so the
+    function itself had no coverage)."""
+    from readout.crosscoder.extract_rates import compute_rates
+
+    # Tiny synthetic snapshot cache instead of loading from /Volumes.
     torch.manual_seed(1)
-    x = torch.randn(V, D_MODEL)
-    pre = x @ W_E[0] + b_E[0]
-    rates = (pre > thr).float().mean(dim=0)
-    assert torch.isfinite(pre).all()
-    assert rates.shape == (D_SAE,)
+    for s in (0, 1000, 143000):
+        torch.save(torch.randn(V, D_MODEL), tmp_path / f"EleutherAI_pythia-160m_step{s}_wu.pt")
+
+    rates, steps = compute_rates(tiny_checkpoint, tmp_path)
+    assert steps == [0, 1000, 143000]
+    assert rates.shape == (K, D_SAE)
+    assert torch.isfinite(rates).all()
     assert (rates >= 0).all() and (rates <= 1).all()
 
 
@@ -169,9 +159,7 @@ def test_forward_pass_finite_via_class(tiny_checkpoint: Path):
 
 
 def test_quality_fields_present_and_sane(tiny_checkpoint: Path):
-    quality = torch.load(tiny_checkpoint, map_location="cpu", weights_only=False)[
-        "quality"
-    ]
+    quality = torch.load(tiny_checkpoint, map_location="cpu", weights_only=False)["quality"]
     for k in ("explained_variance", "mean_l0", "dead_rate"):
         assert k in quality, f"missing quality field: {k}"
     ev = quality["explained_variance"]
@@ -182,12 +170,60 @@ def test_quality_fields_present_and_sane(tiny_checkpoint: Path):
     assert math.isfinite(dr) and 0.0 <= dr <= 1.0 + 1e-6
 
 
+# --- quick_quality -----------------------------------------------------------
+
+
+def test_quick_quality_exact_reconstruction_gives_ev_one():
+    """A crosscoder wired as an exact autoencoder (identity encode/decode,
+    every feature firing) must score EV ~= 1.0 and ~zero MSE."""
+    d = 8
+    cc = build_crosscoder(1, d, expansion_factor=1.0, device="cpu")
+    c = 10.0
+    with torch.no_grad():
+        cc.load_state_dict(
+            {
+                "W_E": torch.eye(d).unsqueeze(0),  # (1, d, d)
+                "b_E": torch.full((1, d), c),
+                "W_D": torch.eye(d).unsqueeze(0),  # (1, d, d)
+                "b_D": torch.full((1, d), -c),
+                "activation_function.log_jumprelu_threshold": torch.full((d,), math.log(1e-3)),
+            }
+        )
+    g = torch.Generator().manual_seed(0)
+    snaps = torch.rand(1, V, d, generator=g)  # positive: pre = x + c fires everywhere
+
+    q = quick_quality(cc, snaps, batch_size=16, device="cpu")
+    assert q["explained_variance"] == pytest.approx(1.0, abs=1e-6)
+    assert q["reconstruction_mse"] == pytest.approx(0.0, abs=1e-9)
+    assert q["mean_l0"] == pytest.approx(float(d))  # every feature fires on every row
+    assert q["dead_rate"] == 0.0
+
+
+def test_quick_quality_batch_size_invariant():
+    """EV/MSE/L0/dead_rate must not depend on eval batch size (the old
+    variance-of-batch estimator was batch-size dependent)."""
+    torch.manual_seed(3)
+    cc = build_crosscoder(K, D_MODEL, expansion_factor=D_SAE / D_MODEL, device="cpu")
+    snaps = torch.randn(K, V, D_MODEL)  # V=64: batch 7 leaves a ragged tail batch
+
+    q_small = quick_quality(cc, snaps, batch_size=7, device="cpu")
+    q_full = quick_quality(cc, snaps, batch_size=V, device="cpu")
+    assert q_small["mean_l0"] == q_full["mean_l0"]
+    assert q_small["dead_rate"] == q_full["dead_rate"]
+    assert q_small["explained_variance"] == pytest.approx(q_full["explained_variance"], rel=1e-6)
+    assert q_small["reconstruction_mse"] == pytest.approx(q_full["reconstruction_mse"], rel=1e-6)
+
+
 # --- manifest writer ---------------------------------------------------------
 
 
 def test_infer_row_has_all_header_columns(tiny_checkpoint: Path):
     row = infer_row_from_checkpoint(tiny_checkpoint, notes="smoke")
     assert set(row.keys()) == set(MANIFEST_HEADER)
+    # Column rename regression: the step-count column is n_steps, not the old
+    # ambiguous 'steps' name (manifests are regenerated artifacts).
+    assert "steps" not in MANIFEST_HEADER
+    assert row["n_steps"] == "3"
     assert row["d_sae"] == str(D_SAE)
     assert row["d_model"] == str(D_MODEL)
     assert row["seed"] == "0"

@@ -72,6 +72,7 @@ def test_align_modes_smoke():
 def test_align_unknown_mode_raises():
     from readout.probes.readout_swap import align_readout
 
+    torch.manual_seed(0)
     W = torch.randn(4, 3)
     with pytest.raises(ValueError, match="unknown alignment mode"):
         align_readout(W, W, "no_such_mode")

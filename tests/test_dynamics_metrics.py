@@ -73,3 +73,20 @@ def test_lifecycle_rejects_bad_terminal_direction_shape():
     rates = np.ones((4, 2), dtype=np.float64)
     with pytest.raises(ValueError, match="direction_to_terminal"):
         lifecycle(rates, direction_to_terminal=np.ones((3, 2)))
+
+
+def test_cusum_max_abs_hand_value_and_deprecated_alias():
+    """cusum_max was renamed cusum_max_abs (the old name collided with the
+    different signed statistic in readout.baselines.permutation_test_fast);
+    the deprecated module-level alias must keep old imports working."""
+    from readout.dynamics import metrics
+
+    assert metrics.cusum_max is metrics.cusum_max_abs
+
+    # Hand value: x = [0, 0, 1, 1] -> centered [-.5, -.5, .5, .5],
+    # cumsum [-.5, -1, -.5, 0] -> max |.| = 1. Flat feature -> 0.
+    x = np.array([[0.0, 3.0], [0.0, 3.0], [1.0, 3.0], [1.0, 3.0]])
+    out = metrics.cusum_max_abs(x)
+    assert out.shape == (2,)
+    assert out[0] == pytest.approx(1.0)
+    assert out[1] == pytest.approx(0.0)

@@ -46,6 +46,7 @@ def test_load_npy_or_pt_reads_npy(tmp_path: Path):
 
 
 def test_load_npy_or_pt_reads_pt(tmp_path: Path):
+    torch.manual_seed(0)
     payload = {"rates_per_seed": {"foo": torch.randn(K, D)}}
     p = tmp_path / "a.pt"
     torch.save(payload, p)
@@ -65,6 +66,7 @@ def test_load_npy_or_pt_rejects_unknown_extension(tmp_path: Path):
 
 
 def _make_ckpt(tmp_path: Path, *, with_steps: bool = True) -> Path:
+    torch.manual_seed(0)
     W_D = torch.randn(K, D, D_MODEL)
     payload = {
         "state_dict": {"W_D": W_D},
@@ -111,6 +113,7 @@ def test_decoder_norms_from_ckpt_rejects_wrong_length_fallback(tmp_path: Path):
 
 def test_decoder_norms_from_per_snap_dir_stacks_files(tmp_path: Path):
     """Per-snap SAE layout: one .pt per snapshot, decoder shape (D, d)."""
+    torch.manual_seed(0)
     for s in STEPS:
         torch.save(
             {"state_dict": {"W_D": torch.randn(D, D_MODEL)}},
@@ -124,6 +127,7 @@ def test_decoder_norms_from_per_snap_dir_stacks_files(tmp_path: Path):
 
 def test_decoder_norms_from_per_snap_dir_skips_missing(tmp_path: Path):
     """Some steps may be absent on disk; loader returns the available subset."""
+    torch.manual_seed(0)
     for s in (STEPS[0], STEPS[-1]):
         torch.save(
             {"state_dict": {"W_D": torch.randn(D, D_MODEL)}},
@@ -145,6 +149,7 @@ def test_decoder_norms_from_per_snap_dir_raises_when_empty(tmp_path: Path):
 @pytest.fixture
 def synthetic_run(tmp_path: Path):
     """Build a checkpoint + matching rates/norms cache files."""
+    torch.manual_seed(0)
     W_D = torch.randn(K, D, D_MODEL)
     ckpt = tmp_path / "run.pt"
     torch.save(

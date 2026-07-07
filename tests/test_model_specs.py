@@ -162,6 +162,7 @@ def test_iter_snapshots_yields_step_tensor_pairs(tmp_path: Path):
     layout = tmp_path / "pythia-160m"
     layout.mkdir()
     # Real .pt with a small tensor so load_snapshot_at can read it.
+    torch.manual_seed(0)
     for step in (0, 1000):
         torch.save(
             torch.randn(8, PYTHIA_160M.d_model, dtype=torch.float32),

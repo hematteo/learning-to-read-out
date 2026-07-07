@@ -14,6 +14,7 @@ import torch
 from readout.baselines.permutation_test_fast import (
     cusum_max_feature_batched,
     cusum_max_feature_single,
+    fisher_combine,
     permutation_test_vectorized,
 )
 from readout.core.resume import (
@@ -99,7 +100,8 @@ def test_load_snapshot_at_missing_raises(tmp_path):
 
 
 def _sd():
-    return {"W_D": torch.randn(2, 3, 4), "b_D": torch.randn(2, 4)}
+    g = torch.Generator().manual_seed(0)
+    return {"W_D": torch.randn(2, 3, 4, generator=g), "b_D": torch.randn(2, 4, generator=g)}
 
 
 def test_load_checkpoint_legacy_flat_pt(tmp_path):
@@ -133,6 +135,41 @@ def test_unwrap_ckpt_new_format_nested_config():
     # old-format checkpoints (metadata already at top level) pass through
     old = {"state_dict": _sd(), "steps": [0], "model_name": "m", "config": {"sae_type": "crosscoder"}}
     assert unwrap_ckpt(old) is old
+
+
+def test_load_checkpoint_wrapper_format_roundtrips_metadata(tmp_path):
+    """New-format ('wrapper') .pt checkpoints nest metadata under 'config';
+    load_checkpoint must surface model_name, quality AND preprocess_stats
+    (previously dropped as None) through the typed fields."""
+    stats = {
+        "mean": torch.zeros(2, 1, 4),
+        "scale": torch.full((2, 1, 1), 2.0),
+        "mode": "center_scale",
+    }
+    p = tmp_path / "wrapper.pt"
+    torch.save(
+        {
+            "state_dict": _sd(),
+            "config": {
+                "steps": [0, 143000],
+                "model_name": "EleutherAI/pythia-1b",
+                "quality": {"explained_variance": 0.8},
+                "preprocess_stats": stats,
+                "training": {"lr": 5e-5},
+                "config": {"d_sae": 8},
+            },
+        },
+        p,
+    )
+    ck = load_checkpoint(p)
+    assert ck.model_name == "EleutherAI/pythia-1b"
+    assert ck.steps == [0, 143000]
+    assert ck.quality == {"explained_variance": 0.8}
+    assert ck.training == {"lr": 5e-5}
+    assert ck.preprocess_stats is not None, "wrapper preprocess_stats must round-trip, not default to None"
+    assert ck.preprocess_stats["mode"] == "center_scale"
+    assert torch.equal(ck.preprocess_stats["scale"], stats["scale"])
+    assert set(ck.state_dict) == {"W_D", "b_D"}
 
 
 def test_load_checkpoint_safetensors_with_sidecar(tmp_path):
@@ -197,8 +234,44 @@ def test_cusum_rejects_degenerate_snapshot_count():
     # For K<=8 the 2-sample MAD baseline is identically zero and the statistic
     # would be NaN; the guard turns that into a loud error. The shipped
     # schedules' smallest K is 9.
+    torch.manual_seed(0)
     with pytest.raises(ValueError, match="K >= 9"):
         cusum_max_feature_batched(torch.rand(3, 8, 16))
+
+
+def test_fisher_combine_tiny_p_values_do_not_underflow_to_zero():
+    """chi2.sf (not 1-cdf) keeps the combined p strictly positive for the
+    ~1e-6 per-seed p-values this pipeline produces."""
+    from scipy.stats import chi2
+
+    p = fisher_combine([1e-6] * 5)
+    assert p > 0.0, "Fisher-combined p underflowed to exactly zero"
+    assert p < 1e-15  # five p=1e-6 must combine to overwhelming evidence
+    # Exact reference: stat = -2 * sum(log p), df = 2n.
+    import numpy as np
+
+    assert p == pytest.approx(float(chi2.sf(-2.0 * np.log(1e-6) * 5, 10)), rel=1e-12)
+    # Single moderate p passes through (Fisher with n=1 is the identity).
+    assert fisher_combine([0.5]) == pytest.approx(0.5, rel=1e-12)
+    # Exact zeros are clipped, never log(0) -> nan/-inf.
+    assert 0.0 < fisher_combine([0.0, 1e-6]) < 1.0
+
+
+def test_permutation_cli_main_is_wired():
+    """`python -m readout.baselines.permutation_test_fast --help` exits 0 with
+    usage text — pinning the __main__ / main() wiring of the production null."""
+    import subprocess
+    import sys
+
+    r = subprocess.run(
+        [sys.executable, "-m", "readout.baselines.permutation_test_fast", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert r.returncode == 0, r.stderr[-1500:]
+    assert "usage" in r.stdout.lower()
+    assert "--rates" in r.stdout and "--seed-average" in r.stdout
 
 
 def test_cusum_batched_matches_single_and_is_batch_invariant():
