@@ -40,9 +40,7 @@ import torch
 
 def _atomic_replace(path: Path, write_to_tmp: Callable[[Path], None]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_str = tempfile.mkstemp(
-        prefix=path.name + ".", suffix=".tmp", dir=str(path.parent)
-    )
+    fd, tmp_str = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
     os.close(fd)
     tmp = Path(tmp_str)
     try:
@@ -83,8 +81,7 @@ def iter_undone(
     if done:
         first_todo = todo[0] if todo else None
         print(
-            f"[resume] {len(done)}/{len(items_list)} {label}s already done; "
-            f"starting at {label}={first_todo}",
+            f"[resume] {len(done)}/{len(items_list)} {label}s already done; starting at {label}={first_todo}",
             flush=True,
         )
     else:
@@ -93,15 +90,41 @@ def iter_undone(
 
 
 def append_manifest(manifest_path: Path, row: dict) -> None:
-    """Append-only CSV manifest. Writes header on first append."""
+    """Append-only CSV manifest. Writes header on first append.
+
+    Schema-safe across rows with differing keys: rows are always written
+    under the existing header (missing fields as ""); a row that introduces
+    new keys triggers an atomic rewrite with the union header, so columns
+    never silently misalign.
+    """
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    new_file = not manifest_path.exists()
-    fieldnames = list(row.keys())
+    header: list[str] = []
+    if manifest_path.exists() and manifest_path.stat().st_size > 0:
+        with manifest_path.open("r", newline="") as f:
+            header = next(csv.reader(f), []) or []
+    new_keys = [k for k in row.keys() if k not in header]
+    fieldnames = header + new_keys
+
+    if header and new_keys:
+        with manifest_path.open("r", newline="") as f:
+            old_rows = list(csv.DictReader(f))
+
+        def _rewrite(tmp: Path) -> None:
+            with tmp.open("w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames, restval="")
+                writer.writeheader()
+                for r in old_rows:
+                    writer.writerow({k: r.get(k) or "" for k in fieldnames})
+                writer.writerow({k: row.get(k, "") for k in fieldnames})
+
+        _atomic_replace(manifest_path, _rewrite)
+        return
+
     with manifest_path.open("a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        if new_file:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, restval="")
+        if not header:
             writer.writeheader()
-        writer.writerow({k: row.get(k) for k in fieldnames})
+        writer.writerow({k: row.get(k, "") for k in fieldnames})
 
 
 def aggregate_json_shards(

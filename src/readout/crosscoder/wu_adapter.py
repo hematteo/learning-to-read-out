@@ -16,8 +16,10 @@ from llamascopium.models.crosscoder import Crosscoder, CrosscoderConfig
 from transformers import AutoModelForCausalLM
 
 from readout.core.data import get_device
-from readout.core.model_specs import DEFAULT_STEPS_32
+from readout.core.model_specs import DEFAULT_STEPS_32, DEFAULT_STEPS_BY_MODEL, SPECS
+from readout.core.paths import snapshot_dir as _snapshot_dir
 from readout.core.repro import git_commit, log_run_provenance, seed_everything
+from readout.core.resume import atomic_write_torch
 
 from ._schedules import lr_multiplier as _lr_multiplier
 
@@ -28,9 +30,15 @@ DEFAULT_STEPS = DEFAULT_STEPS_32
 DEFAULT_MODEL = "EleutherAI/pythia-160m"
 # Default to the canonical SSD layout (per readout.core.paths.snapshot_dir).
 # Override via WU_CACHE_DIR for non-canonical caches (e.g. W_E extraction).
-from readout.core.paths import snapshot_dir as _snapshot_dir  # noqa: E402
-
 DEFAULT_CACHE = Path(os.environ.get("WU_CACHE_DIR", str(_snapshot_dir(DEFAULT_MODEL))))
+
+
+def _terminal_step_for(model_name):
+    """Last step of the model's canonical snapshot schedule (Pythia: 143000)."""
+    for label, spec in SPECS.items():
+        if spec.name == model_name:
+            return DEFAULT_STEPS_BY_MODEL[label][-1]
+    return DEFAULT_STEPS[-1]
 
 
 def load_wu_snapshot(model_name, step, cache_dir, dtype=torch.float32):
@@ -56,8 +64,8 @@ def load_wu_snapshot(model_name, step, cache_dir, dtype=torch.float32):
         dtype=torch.float32,
     )
     W_U = model.embed_out.weight.detach().clone().cpu()
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    torch.save(W_U, cache_path)
+    # Atomic write: a kill mid-save must not leave a corrupt .pt in the cache.
+    atomic_write_torch(cache_path, W_U)
     del model
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -222,6 +230,51 @@ def _load_full_state_into_distributed_model(model, full_state_dict):
         print(f"[resume] WARN: missing keys (using init values): {missing}", flush=True)
 
 
+def _optimizer_state_to_cpu(optimizer):
+    """CPU copy of ``optimizer.state_dict()`` with DTensor states gathered full.
+
+    Collective under device_mesh: every rank must call this (same contract as
+    ``_gather_state_dict_to_cpu``).
+    """
+    from torch.distributed.tensor import DTensor as _DTensor
+
+    sd = optimizer.state_dict()
+    state_cpu = {}
+    for idx, st in sd["state"].items():
+        state_cpu[idx] = {
+            k: (
+                v.full_tensor().detach().cpu()
+                if isinstance(v, _DTensor)
+                else (v.detach().cpu() if isinstance(v, torch.Tensor) else v)
+            )
+            for k, v in st.items()
+        }
+    return {"state": state_cpu, "param_groups": sd["param_groups"]}
+
+
+def _load_optimizer_state_dict(optimizer, opt_sd):
+    """Restore optimizer state saved by ``_optimizer_state_to_cpu``.
+
+    ``Optimizer.load_state_dict`` moves state tensors to each param's device but
+    never re-wraps them as DTensors, which would later mix plain moments with
+    DTensor grads in step(); redistribute to each param's placements first.
+    """
+    from torch.distributed.tensor import DTensor as _DTensor
+    from torch.distributed.tensor import distribute_tensor
+
+    # Saved state keys index the concatenation of param_groups' params, the
+    # same order torch.optim.Optimizer.state_dict uses.
+    live_params = [p for g in optimizer.param_groups for p in g["params"]]
+    for idx, st in opt_sd.get("state", {}).items():
+        p = live_params[idx]
+        if not isinstance(p, _DTensor):
+            continue
+        for k, v in st.items():
+            if isinstance(v, torch.Tensor) and v.shape == p.shape:
+                st[k] = distribute_tensor(v.to(p.dtype), p.device_mesh, list(p.placements))
+    optimizer.load_state_dict(opt_sd)
+
+
 def train(
     snapshots,
     expansion_factor=8.0,
@@ -306,13 +359,11 @@ def train(
 
     # Resume logic. If `resume_from` is given, use it. Otherwise auto-detect:
     # if ckpt_every_epochs > 0 and the rolling ckpt exists, resume from it.
-    from pathlib import Path as _Path
-
     _resume_path = None
     if resume_from is not None:
-        _resume_path = _Path(resume_from)
-    elif ckpt_every_epochs > 0 and ckpt_path is not None and _Path(ckpt_path).exists():
-        _resume_path = _Path(ckpt_path)
+        _resume_path = Path(resume_from)
+    elif ckpt_every_epochs > 0 and ckpt_path is not None and Path(ckpt_path).exists():
+        _resume_path = Path(ckpt_path)
 
     if _resume_path is not None and _resume_path.exists():
         print(f"[resume] Loading checkpoint from {_resume_path}", flush=True)
@@ -320,6 +371,14 @@ def train(
         _load_full_state_into_distributed_model(crosscoder, _ckpt["state_dict"])
         step_count = int(_ckpt.get("step_count", 0))
         start_epoch = int(_ckpt.get("epoch", -1)) + 1  # resume on the NEXT epoch
+        if _ckpt.get("optimizer") is not None:
+            _load_optimizer_state_dict(optimizer, _ckpt["optimizer"])
+        else:
+            print(
+                "[resume] WARNING: checkpoint has no optimizer state (old format); "
+                "Adam moments restart from zero — resume is NOT exact.",
+                flush=True,
+            )
         if "gen_state" in _ckpt:
             try:
                 gen.set_state(_ckpt["gen_state"])
@@ -396,16 +455,42 @@ def train(
                     k_aux = min(auxk_k, n_dead)
                     # Rank dead latents by |hidden_pre|; keep original sign, clamp to non-negative
                     # for the JumpReLU-style activation passed to decode.
-                    pre_flat = hidden_pre.float().reshape(-1, d_sae)
+                    pre = hidden_pre.float()
+                    # Head-parallel DTensor mode: dead_mask is a plain tensor, so
+                    # `pre_flat * dead_mask` would hit the mixed Tensor/DTensor
+                    # failure the firing tracker below documents. Materialize
+                    # hidden_pre first (collective; runs on all ranks) —
+                    # full_tensor is differentiable so l_aux still trains the
+                    # encoder rows of dead latents.
+                    _pre_is_dtensor = hasattr(pre, "full_tensor")
+                    if _pre_is_dtensor:
+                        pre = pre.full_tensor()
+                    pre_flat = pre.reshape(-1, d_sae)
                     rank = pre_flat.abs() * dead_mask.float()
                     _, topk_idx = rank.topk(k_aux, dim=-1)
                     orig = pre_flat.gather(-1, topk_idx).clamp_min(0)
                     aux_acts_flat = torch.zeros_like(pre_flat)
                     aux_acts_flat.scatter_(-1, topk_idx, orig)
                     aux_acts = aux_acts_flat.reshape(feature_acts.shape).to(feature_acts.dtype)
+                    if _pre_is_dtensor:
+                        # decode() under device_mesh requires a DTensor input.
+                        # aux_acts is identical on every rank (built from the
+                        # materialized pre + replicated dead_mask), so wrap as
+                        # Replicate then slice down to feature_acts' head-sharded
+                        # placements (both steps communication-free).
+                        from torch.distributed.tensor import DTensor as _DTensor
+                        from torch.distributed.tensor import Replicate as _Replicate
+
+                        _mesh = feature_acts.device_mesh
+                        aux_acts = _DTensor.from_local(aux_acts, _mesh, [_Replicate()] * _mesh.ndim).redistribute(
+                            _mesh, list(feature_acts.placements)
+                        )
                     aux_recon = crosscoder.decode(aux_acts, **dec_kw)
                     residual = (x - recon).detach().float()
                     l_aux = (aux_recon.float() - residual).pow(2).sum(dim=-1).mean()
+                    # Same Replicate/Partial mismatch as l_rec/l_s above.
+                    if hasattr(l_aux, "full_tensor"):
+                        l_aux = l_aux.full_tensor()
                     loss = loss + auxk_coefficient * l_aux
 
             # Apply LR warmup + decay schedule (Ge §A.4) before stepping.
@@ -426,12 +511,13 @@ def train(
             # ("aten.where.self: got mixed torch.Tensor and DTensor").
             if auxk_coefficient > 0:
                 with torch.no_grad():
-                    fired = (feature_acts.reshape(-1, d_sae) > 0).any(dim=0)
-                    # In DTensor head-parallel mode, materialize to a plain
-                    # boolean over the global d_sae axis (sharded on heads not
-                    # features, so this is a small all-reduce/all-gather).
-                    if hasattr(fired, "full_tensor"):
-                        fired = fired.full_tensor()
+                    # In DTensor head-parallel mode, materialize BEFORE the
+                    # reshape: flattening (B, K) crosses the head-sharded dim,
+                    # which DTensor reshape rejects.
+                    fa = feature_acts
+                    if hasattr(fa, "full_tensor"):
+                        fa = fa.full_tensor()
+                    fired = (fa.reshape(-1, d_sae) > 0).any(dim=0)
                     last_fired_step = torch.where(
                         fired,
                         torch.full_like(last_fired_step, float(step_count)),
@@ -454,10 +540,11 @@ def train(
                     )
                 else:
                     with torch.no_grad():
-                        fa = feature_acts.reshape(-1, d_sae)
+                        # Materialize before reshape (see firing tracker above).
+                        fa = feature_acts
                         if hasattr(fa, "full_tensor"):
                             fa = fa.full_tensor()
-                        n_dead_log = int((~(fa > 0).any(dim=0)).sum().item())
+                        n_dead_log = int((~(fa.reshape(-1, d_sae) > 0).any(dim=0)).sum().item())
                 print(
                     f"[epoch {epoch} step {step_count}] "
                     f"loss {loss.item():.4f} l_rec {l_rec.item():.4f} l_s {l_s.item():.4f} "
@@ -469,14 +556,14 @@ def train(
         # does not corrupt the previous good checkpoint.
         if ckpt_every_epochs > 0 and ckpt_path is not None and (epoch + 1) % ckpt_every_epochs == 0:
             sd_cpu = _gather_state_dict_to_cpu(crosscoder)
+            opt_cpu = _optimizer_state_to_cpu(optimizer)  # collective: all ranks
             if is_rank_0:
-                from pathlib import Path as _Path
-
-                _path = _Path(ckpt_path)
+                _path = Path(ckpt_path)
                 _path.parent.mkdir(parents=True, exist_ok=True)
                 _tmp = _path.with_suffix(_path.suffix + ".tmp")
                 _payload = {
                     "state_dict": sd_cpu,
+                    "optimizer": opt_cpu,
                     "step_count": step_count,
                     "epoch": epoch,
                     "gen_state": gen.get_state(),
@@ -488,7 +575,7 @@ def train(
                     f"[ckpt] epoch={epoch} step={step_count} -> {_path}",
                     flush=True,
                 )
-            del sd_cpu
+            del sd_cpu, opt_cpu
             import gc as _gc
 
             _gc.collect()
@@ -504,10 +591,11 @@ def quick_quality(crosscoder, snapshots, batch_size=2048, device=None, dead_eps=
     snapshots = snapshots.cpu()
     K, V, _ = snapshots.shape
     d_sae = crosscoder.cfg.d_sae
-    total_rec, total_var, total_l0 = 0.0, 0.0, 0.0
-    n_batches = 0
-    # Per-feature firing rate accumulated over the full pass (V rows total),
-    # so dead_rate uses every snapshot row not just one batch.
+    # Exact (batch-size invariant) accumulation: EV = 1 - SSE/SStot with SSE
+    # summed over every element and SStot around the global mean of the full
+    # eval tensor; L0 and dead_rate are row-weighted over all V rows.
+    sse = 0.0
+    l0_active = 0.0
     feature_fires = torch.zeros(d_sae, dtype=torch.float64)
     n_seen = 0
     with torch.no_grad():
@@ -515,13 +603,14 @@ def quick_quality(crosscoder, snapshots, batch_size=2048, device=None, dead_eps=
             x, enc_kwargs, dec_kwargs = crosscoder.prepare_input(batch)
             feature_acts, _ = crosscoder.encode(x, return_hidden_pre=True, **enc_kwargs)
             recon = crosscoder.decode(feature_acts, **dec_kwargs)
-            rec_mse = (recon - x).pow(2).mean().item()
-            var = x.var().item()
-            l0 = (feature_acts > 0).float().sum(dim=-1).mean().item()
-            total_rec += rec_mse
-            total_var += var
-            total_l0 += l0
-            n_batches += 1
+            # In the head-parallel DTensor path, x and recon are head-sharded;
+            # materialize both (collective; runs on all ranks) before the
+            # residual math, same pattern as feature_acts below.
+            if hasattr(x, "full_tensor"):
+                x = x.full_tensor()
+            if hasattr(recon, "full_tensor"):
+                recon = recon.full_tensor()
+            sse += (recon.float() - x.float()).pow(2).sum().item()
             # feature_acts is (B, d_sae) or (B, K, d_sae); collapse all but d_sae.
             # In the head-parallel DTensor path, feature_acts is sharded on the
             # head axis; .reshape(-1, d_sae) on a DTensor returns a local view
@@ -531,18 +620,30 @@ def quick_quality(crosscoder, snapshots, batch_size=2048, device=None, dead_eps=
             if hasattr(fa_raw, "full_tensor"):
                 fa_raw = fa_raw.full_tensor()
             fa = fa_raw.reshape(-1, d_sae).cpu().to(torch.float64)
-            feature_fires += (fa > 0).sum(dim=0).to(torch.float64)
+            fired = fa > 0
+            feature_fires += fired.sum(dim=0).to(torch.float64)
+            l0_active += float(fired.sum().item())
             n_seen += fa.shape[0]
-    ev = 1.0 - (total_rec / total_var) if total_var > 0 else 0.0
+    # SStot around the global elementwise mean of the full eval tensor (already
+    # in memory); fp64 accumulation, sliced over K to bound temp memory at one
+    # (V, d) fp32 tensor.
+    x_bar = snapshots.mean(dtype=torch.float64).item()
+    sstot = 0.0
+    for k_i in range(K):
+        sstot += (snapshots[k_i] - x_bar).pow(2).sum(dtype=torch.float64).item()
+    n_elem = float(snapshots.numel())
+    ev = 1.0 - (sse / sstot) if sstot > 0 else 0.0
     if n_seen > 0:
         per_feature_rate = (feature_fires / n_seen).numpy()
         dead_rate = float((per_feature_rate <= dead_eps).mean())
+        mean_l0 = l0_active / n_seen
     else:
         dead_rate = float("nan")
+        mean_l0 = float("nan")
     return {
         "explained_variance": ev,
-        "reconstruction_mse": total_rec / n_batches,
-        "mean_l0": total_l0 / n_batches,
+        "reconstruction_mse": sse / n_elem,
+        "mean_l0": mean_l0,
         "dead_rate": dead_rate,
         "d_sae": d_sae,
         "n_snapshots": K,
@@ -659,7 +760,7 @@ def main():
     optimizer_name = "sparse_adam" if args.use_sparse_adam else "adam"
 
     if args.smoke:
-        steps = [args.steps[0] if args.steps else 0, 143000]
+        steps = [args.steps[0] if args.steps else 0, _terminal_step_for(args.model)]
         n_epochs = 1
         print(f"Smoke test: steps={steps}, 1 epoch")
     else:
@@ -713,8 +814,13 @@ def main():
     metrics = quick_quality(crosscoder, snapshots, batch_size=args.batch_size, device=args.device)
     print(f"Quality: {metrics}")
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
+    # weights_only=True loaders reject str subclasses (e.g. TorchVersion from
+    # torch.__version__); normalize provenance values to plain builtins.
+    provenance = {k: str(v) if isinstance(v, str) else v for k, v in log_run_provenance(seed=args.seed).items()}
+
+    # Atomic write: hours of training must not be lost to a kill mid-save.
+    atomic_write_torch(
+        args.output,
         {
             "state_dict": crosscoder.state_dict(),
             "config": crosscoder.cfg.model_dump(),
@@ -745,10 +851,9 @@ def main():
                 "dead_window_steps": args.dead_window_steps,
             },
             "preprocess_stats": preprocess_stats,
-            "provenance": log_run_provenance(seed=args.seed),
+            "provenance": provenance,
             "git_commit": git_commit(),
         },
-        args.output,
     )
     print(f"Saved to {args.output}")
 

@@ -5,6 +5,15 @@ N concepts' probes in parallel on the GPU. Matches sklearn's
 ``LogisticRegression(solver='liblinear', class_weight='balanced')`` to
 within a few thousandths of balanced accuracy.
 
+Caveat: the batched fit optimizes all N concepts' (W, b) as ONE flattened
+LBFGS problem, so the shared curvature (Hessian history and line search)
+couples nominally independent probes — step sizes for one concept are
+influenced by the loss landscape of the others, and per-concept solutions
+can differ slightly from fitting each probe alone. The "within a few
+thousandths" match to sklearn above is an empirical observation on the
+concept sets tested, not a structural guarantee; re-verify it when applying
+to new concept sets or much larger N.
+
 Procedure mirrors `wu_probes.probe_balanced_accuracy`: a single stratified
 2/3–1/3 train/test split per concept, inner n_folds stratified CV on the
 train split to pick best C, refit best-C model on full train, report
@@ -79,9 +88,7 @@ def _pack_concept_folds(
         n_neg = V - n_pos
         if n_pos < min_per_class or n_neg < min_per_class:
             continue
-        train_idx, test_idx, inner = _build_splits(
-            y_c.astype(np.int64), n_folds, seed, test_size=test_size
-        )
+        train_idx, test_idx, inner = _build_splits(y_c.astype(np.int64), n_folds, seed, test_size=test_size)
         outer_train_mask[ci, train_idx] = 1.0
         outer_test_mask[ci, test_idx] = 1.0
         # Outer balanced sample weights on the train split.
@@ -129,11 +136,17 @@ def _fit_lr_batched(
     C: float,
     max_iter: int = 500,
     tol: float = 1e-8,
+    concept_names: list[str] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Fit N independent L2-regularised logistic regressions jointly via LBFGS.
 
     Loss (matches sklearn's liblinear L2-LR with class_weight='balanced'):
         (1/(2C)) ||w||^2 + sum_i sw_i * bce(x_i @ w + b, y_i)
+
+    The N problems share one LBFGS state (curvature history, line search), so
+    they are only independent at the exact optimum; see the module docstring.
+    ``concept_names`` (parallel to Y's rows) is used only to name concepts in
+    the non-finite-parameter error.
     """
     V, d = X.shape
     N = Y.shape[0]
@@ -156,9 +169,7 @@ def _fit_lr_batched(
         Y_T = Y.T
         mask_T = train_mask.T
         sw_T = train_sw.T
-        bce = torch.nn.functional.binary_cross_entropy_with_logits(
-            logits, Y_T, reduction="none"
-        )
+        bce = torch.nn.functional.binary_cross_entropy_with_logits(logits, Y_T, reduction="none")
         data_loss = (bce * mask_T * sw_T).sum()
         l2 = (W * W).sum()
         loss = data_loss + (1.0 / (2.0 * C)) * l2
@@ -166,7 +177,16 @@ def _fit_lr_batched(
         return loss
 
     opt.step(closure)
-    return W.detach(), b.detach()
+    W_out, b_out = W.detach(), b.detach()
+    bad = ~(torch.isfinite(W_out).all(dim=-1) & torch.isfinite(b_out))  # (N,)
+    if bad.any():
+        idx = bad.nonzero(as_tuple=True)[0].tolist()
+        labels = [concept_names[i] for i in idx] if concept_names is not None else [str(i) for i in idx]
+        raise RuntimeError(
+            f"_fit_lr_batched: non-finite fitted parameters at C={C} for "
+            f"{len(idx)}/{N} concepts in this batch: {labels[:20]}"
+        )
+    return W_out, b_out
 
 
 def _balanced_accuracy_batched(
@@ -234,15 +254,9 @@ def probe_balanced_accuracy_batched(
             for i, name in enumerate(concept_names)
         }
     Y = torch.from_numpy(y_np).to(device=device, dtype=torch.float32)
-    outer_train_mask = torch.from_numpy(outer_train_mask_np).to(
-        device=device, dtype=torch.float32
-    )
-    outer_test_mask = torch.from_numpy(outer_test_mask_np).to(
-        device=device, dtype=torch.float32
-    )
-    outer_train_sw = torch.from_numpy(outer_train_sw_np).to(
-        device=device, dtype=torch.float32
-    )
+    outer_train_mask = torch.from_numpy(outer_train_mask_np).to(device=device, dtype=torch.float32)
+    outer_test_mask = torch.from_numpy(outer_test_mask_np).to(device=device, dtype=torch.float32)
+    outer_train_sw = torch.from_numpy(outer_train_sw_np).to(device=device, dtype=torch.float32)
 
     # Inner-CV C selection: pick best C per concept by mean val balanced acc.
     best_inner = torch.full((N,), -1.0, device=device)
@@ -251,16 +265,10 @@ def probe_balanced_accuracy_batched(
     for C in C_grid:
         fold_accs = torch.zeros(n_folds, N, device=device)
         for fi in range(n_folds):
-            tm = torch.from_numpy(inner_train_mask_np[:, fi, :]).to(
-                device=device, dtype=torch.float32
-            )
-            vm = torch.from_numpy(inner_val_mask_np[:, fi, :]).to(
-                device=device, dtype=torch.float32
-            )
-            sw = torch.from_numpy(inner_train_sw_np[:, fi, :]).to(
-                device=device, dtype=torch.float32
-            )
-            W, b = _fit_lr_batched(X, Y, tm, sw, C, max_iter=max_iter)
+            tm = torch.from_numpy(inner_train_mask_np[:, fi, :]).to(device=device, dtype=torch.float32)
+            vm = torch.from_numpy(inner_val_mask_np[:, fi, :]).to(device=device, dtype=torch.float32)
+            sw = torch.from_numpy(inner_train_sw_np[:, fi, :]).to(device=device, dtype=torch.float32)
+            W, b = _fit_lr_batched(X, Y, tm, sw, C, max_iter=max_iter, concept_names=concept_names)
             with torch.no_grad():
                 logits = X @ W.T + b[None, :]
                 fold_accs[fi] = _balanced_accuracy_batched(logits, Y, vm)
@@ -274,15 +282,13 @@ def probe_balanced_accuracy_batched(
     test_acc = torch.full((N,), float("nan"), device=device)
     unique_Cs = [c for c in C_grid if np.any(best_C_cpu == float(c))]
     for C in unique_Cs:
-        active = torch.from_numpy((best_C_cpu == float(C)).astype(np.float32)).to(
-            device=device
-        )  # (N,)
+        active = torch.from_numpy((best_C_cpu == float(C)).astype(np.float32)).to(device=device)  # (N,)
         if active.sum() == 0:
             continue
         # Zero out inactive concepts' loss contribution by zeroing their masks.
         tm = outer_train_mask * active[:, None]
         sw = outer_train_sw * active[:, None]
-        W, b = _fit_lr_batched(X, Y, tm, sw, float(C), max_iter=max_iter)
+        W, b = _fit_lr_batched(X, Y, tm, sw, float(C), max_iter=max_iter, concept_names=concept_names)
         with torch.no_grad():
             logits = X @ W.T + b[None, :]
             acc = _balanced_accuracy_batched(logits, Y, outer_test_mask)

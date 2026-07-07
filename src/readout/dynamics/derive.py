@@ -10,7 +10,9 @@ in plan §2:
                           stabilized_step, drift_score, never_active_mask
   - cusum.npz:            per-feature CUSUM-max on rates / norms / rotation
   - cusum_null.pt:        signed-CUSUM permutation null on rates (existing
-                          100k caches preferred; otherwise 10k computed here)
+                          100k caches preferred; otherwise 10k computed here).
+                          Payload format differs between the two provenances;
+                          read it back via load_cusum_null().
 
 Artifacts live under <DERIVED_ROOT>/<run_id>__seed{S}/. Each file is
 content-addressable enough for a downstream reader: present means computed
@@ -52,6 +54,8 @@ class DerivedPaths:
     direction_to_terminal: str | None = None
     lifecycle: str | None = None
     cusum: str | None = None
+    # Payload format varies (per-row 10k null vs multi-seed 100k cache);
+    # read it back via load_cusum_null().
     cusum_null: str | None = None
 
     def as_dict(self) -> dict:
@@ -84,12 +88,52 @@ _KNOWN_NULL_CACHES: dict[str, Callable[[int], Path | None]] = {
 
 
 def known_null_cache(row: RunRow) -> Path | None:
-    """Return the existing 100k null cache for a row, if one is known to exist."""
+    """Return the existing 100k null cache for a row, if one is known to exist.
+
+    These caches use the multi-seed payload format; read them (and the flat
+    per-row format derive_row writes) via :func:`load_cusum_null`.
+    """
     factory = _KNOWN_NULL_CACHES.get(row.run_id)
     if factory is None:
         return None
     p = factory(row.seed)
     return p if p is not None and Path(p).exists() else None
+
+
+def load_cusum_null(path: str | Path, seed: int | None = None) -> dict:
+    """Load a ``cusum_null_path`` artifact, normalized to one flat dict shape.
+
+    Two provenances write to that field:
+      1. Per-row 10k nulls from :func:`derive_row`: a flat dict with keys
+         ``observed``, ``p_value``, ``n_permutations``, ``null_mean``, ... and
+         ``stat_kind == "signed_cusum_max_feature"``.
+      2. Multi-seed 100k caches from ``readout.baselines.permutation_test_fast``
+         (registered in ``_KNOWN_NULL_CACHES``): ``{seed_label: <flat dict>,
+         ...}`` plus ``"__"``-prefixed aggregate keys (``__fisher_combined_p``,
+         ``__shuffle_seed``, ...).
+
+    Returns the flat per-run dict in both cases. For the multi-seed format,
+    ``seed`` selects the entry whose label matches (``"seed<N>"``, ``"<N>"``,
+    or a label ending in ``"seed<N>"``); a payload with a single per-seed
+    entry (e.g. the ``--seed-average`` output) is returned as-is.
+    """
+    blob = torch.load(Path(path), weights_only=False)
+    if not isinstance(blob, dict):
+        raise ValueError(f"unexpected cusum_null payload type {type(blob).__name__} in {path}")
+    if "observed" in blob:  # format 1: already flat
+        return blob
+    entries = {str(k): v for k, v in blob.items() if not str(k).startswith("__") and isinstance(v, dict)}
+    if not entries:
+        raise ValueError(f"no per-seed entries in multi-seed cusum_null payload {path}")
+    if seed is not None:
+        for label, payload in entries.items():
+            if label in (f"seed{seed}", str(seed)) or label.endswith(f"seed{seed}"):
+                return payload
+    if len(entries) == 1:
+        return next(iter(entries.values()))
+    if seed is not None:
+        raise KeyError(f"cusum_null payload {path} has no entry for seed={seed}; available: {sorted(entries)}")
+    raise KeyError(f"cusum_null payload {path} holds entries {sorted(entries)}; pass seed= to select one")
 
 
 def _row_dir(row: RunRow, root: Path) -> Path:
@@ -231,12 +275,12 @@ def derive_row(
 
     if need_cusum:
         if have_rates:
-            cusum_rates = metrics.cusum_max(rates).astype(np.float32)
+            cusum_rates = metrics.cusum_max_abs(rates).astype(np.float32)
         else:
             cusum_rates = np.full(D, np.nan, dtype=np.float32)
-        cusum_norms = metrics.cusum_max(norms).astype(np.float32)
+        cusum_norms = metrics.cusum_max_abs(norms).astype(np.float32)
         if rotation is not None:
-            cusum_rotation = metrics.cusum_max(rotation).astype(np.float32)
+            cusum_rotation = metrics.cusum_max_abs(rotation).astype(np.float32)
         else:
             cusum_rotation = np.full(D, np.nan, dtype=np.float32)
         np.savez_compressed(

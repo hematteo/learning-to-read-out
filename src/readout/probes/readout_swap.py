@@ -50,9 +50,6 @@ def extract_final_hidden(
     batch of 1 (no padding or batching), so the final token of every example
     is at position -1. ``pad_token_id`` is accepted for API symmetry but unused.
     """
-    if pad_token_id is None:
-        pad_token_id = 0  # Pythia/OLMo have no pad; safe filler since we mask by length.
-
     captured: list[torch.Tensor] = []
 
     def hook(module, inputs):

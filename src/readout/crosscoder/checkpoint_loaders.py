@@ -37,7 +37,7 @@ def _load_npy_or_pt(path: Path) -> np.ndarray | dict | None:
     if path.suffix == ".npy":
         return np.load(path, allow_pickle=False)
     if path.suffix == ".pt":
-        return torch.load(path, map_location="cpu", weights_only=False)
+        return torch.load(path, map_location="cpu", weights_only=True)
     raise ValueError(f"unsupported cache file extension: {path}")
 
 
@@ -57,7 +57,7 @@ def _decoder_norms_from_ckpt(
     capacity sweep) drop the `steps` key. Pass `steps_fallback` from the
     discovery row to recover; lengths must match the W_D leading axis.
     """
-    ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    ck = torch.load(ckpt_path, map_location="cpu", weights_only=True)
     sd = ck["state_dict"]
     W_D = sd["W_D"].float()  # (K, D, d)
     if "steps" in ck:
@@ -66,8 +66,7 @@ def _decoder_norms_from_ckpt(
         steps = list(steps_fallback)
     else:
         raise KeyError(
-            f"checkpoint {ckpt_path} missing 'steps' and no compatible "
-            f"steps_fallback (W_D K={W_D.shape[0]})"
+            f"checkpoint {ckpt_path} missing 'steps' and no compatible steps_fallback (W_D K={W_D.shape[0]})"
         )
     norms = torch.linalg.norm(W_D, dim=-1).numpy().astype(np.float32)
     return norms, W_D.numpy().astype(np.float32), steps
@@ -97,7 +96,7 @@ def _decoder_norms_from_per_snap_dir(
         ck_path = next((c for c in candidates if c.exists()), None)
         if ck_path is None:
             continue
-        ck = torch.load(ck_path, map_location="cpu", weights_only=False)
+        ck = torch.load(ck_path, map_location="cpu", weights_only=True)
         sd = ck["state_dict"] if "state_dict" in ck else ck
         # Per-snap SAE stores a single snapshot's decoder; promote to (1, D, d).
         wd = sd["W_D"].float()
@@ -107,8 +106,7 @@ def _decoder_norms_from_per_snap_dir(
         actual_steps.append(s)
     if not stacked:
         raise FileNotFoundError(
-            f"no per-snap SAE checkpoints found under {ckpt_dir} matching "
-            f"wu_sae_dsae{d_sae}_step*.pt"
+            f"no per-snap SAE checkpoints found under {ckpt_dir} matching wu_sae_dsae{d_sae}_step*.pt"
         )
     W_D = torch.cat(stacked, dim=0)  # (K, D, d)
     norms = torch.linalg.norm(W_D, dim=-1).numpy().astype(np.float32)
@@ -162,21 +160,17 @@ def load_run(
                 rates = rates_obj.astype(np.float32)
             else:
                 raise ValueError(
-                    f"rates cache {rates_cache} has shape {rates_obj.shape}; "
-                    f"need seed_index_in_cache for 3D"
+                    f"rates cache {rates_cache} has shape {rates_obj.shape}; need seed_index_in_cache for 3D"
                 )
         elif isinstance(rates_obj, dict):
-            # extract_rates.py output: {"rates_per_seed": {stem: tensor}, "steps": [...]}
+            # extract_rates.py output: {"rates_per_seed": {stem: tensor}, "steps": [...]}.
+            # Keys are the ckpt stems at extraction time; require a match so a
+            # single-entry cache from another seed is never silently served.
             rps = rates_obj.get("rates_per_seed")
-            if rps is not None and len(rps) == 1:
-                rates = next(iter(rps.values())).numpy().astype(np.float32)
-            else:
-                stem = ckpt_path.stem
-                if rps is None or stem not in rps:
-                    raise KeyError(
-                        f"rates cache {rates_cache} missing key {stem}; have {list(rps or [])}"
-                    )
-                rates = rps[stem].numpy().astype(np.float32)
+            stem = ckpt_path.stem
+            if rps is None or stem not in rps:
+                raise KeyError(f"rates cache {rates_cache} missing key {stem}; have {list(rps or [])}")
+            rates = rps[stem].numpy().astype(np.float32)
 
     norms = None
     if norms_cache is not None:
@@ -186,27 +180,27 @@ def load_run(
                 norms = norms_obj[seed_index_in_cache].astype(np.float32)
             elif norms_obj.ndim == 2:
                 norms = norms_obj.astype(np.float32)
+            else:
+                raise ValueError(
+                    f"norms cache {norms_cache} has shape {norms_obj.shape}; need seed_index_in_cache for 3D"
+                )
 
     decoder_weights = None
     steps: list[int] = []
     need_ckpt = (rates is None) or (norms is None) or keep_decoder_weights
     if need_ckpt:
         if not ckpt_path.exists():
-            raise FileNotFoundError(
-                f"checkpoint {ckpt_path} not found; cached arrays do not cover the request"
-            )
+            raise FileNotFoundError(f"checkpoint {ckpt_path} not found; cached arrays do not cover the request")
         if is_dir_ckpt:
             assert steps_fallback is not None, (
                 f"directory ckpt {ckpt_path} requires steps_fallback (the row's steps list)"
             )
-            norms_from_ckpt, decoder_weights_from_ckpt, steps = (
-                _decoder_norms_from_per_snap_dir(
-                    ckpt_path, steps=steps_fallback, d_sae=d_sae
-                )
+            norms_from_ckpt, decoder_weights_from_ckpt, steps = _decoder_norms_from_per_snap_dir(
+                ckpt_path, steps=steps_fallback, d_sae=d_sae
             )
         else:
-            norms_from_ckpt, decoder_weights_from_ckpt, steps = (
-                _decoder_norms_from_ckpt(ckpt_path, steps_fallback=steps_fallback)
+            norms_from_ckpt, decoder_weights_from_ckpt, steps = _decoder_norms_from_ckpt(
+                ckpt_path, steps_fallback=steps_fallback
             )
         if norms is None:
             norms = norms_from_ckpt
@@ -230,21 +224,29 @@ def load_run(
                     f"compute_rates_canonical does not support directory ckpts"
                 )
     else:
-        # Pull steps lazily from checkpoint metadata only (cheap header read).
-        ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-        if "steps" in ck:
-            steps = list(ck["steps"])
-        elif steps_fallback is not None:
+        if is_dir_ckpt:
+            # Per-snap SAE dirs carry no aggregate metadata file to read steps from.
+            if steps_fallback is None:
+                raise KeyError(
+                    f"per-snap SAE dir {ckpt_path} has no aggregate metadata; "
+                    f"pass steps_fallback (the row's steps list)"
+                )
             steps = list(steps_fallback)
         else:
-            raise KeyError(f"checkpoint {ckpt_path} missing 'steps' and no fallback")
+            # Steps only; torch.load still deserializes the full payload, so this
+            # is cheap only relative to re-deriving rates/norms.
+            ck = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+            if "steps" in ck:
+                steps = list(ck["steps"])
+            elif steps_fallback is not None:
+                steps = list(steps_fallback)
+            else:
+                raise KeyError(f"checkpoint {ckpt_path} missing 'steps' and no fallback")
 
     K = norms.shape[0]
     if rates is not None:
         if rates.shape != norms.shape:
-            raise ValueError(
-                f"shape mismatch: rates {rates.shape} vs norms {norms.shape} for {run_id} seed {seed}"
-            )
+            raise ValueError(f"shape mismatch: rates {rates.shape} vs norms {norms.shape} for {run_id} seed {seed}")
     D = norms.shape[1]
     if D != d_sae:
         raise ValueError(f"d_sae mismatch: cache D={D} vs row d_sae={d_sae}")
@@ -274,8 +276,7 @@ def _resolve_wu_cache_dir(ckpt_path: Path) -> Path:
 
     candidates = [
         ssd_path("wu_crosscoder", "snapshots"),
-        Path(os.environ.get("CLUSTER_SCRATCH", str(Path.home() / "scratch")))
-        / "wu_crosscoder/snapshots",
+        Path(os.environ.get("CLUSTER_SCRATCH", str(Path.home() / "scratch"))) / "wu_crosscoder/snapshots",
         Path.cwd() / "cluster_data/wu_snapshots",
     ]
     for c in candidates:

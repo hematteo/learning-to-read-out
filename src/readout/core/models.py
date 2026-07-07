@@ -8,6 +8,17 @@ All architectures share a common interface:
   - normalize_decoder()
   - dictionary_vectors() -> (d_dict, d_input)
 
+sparsity_aux contract (third element of forward), per architecture:
+  - GatedSAE:                        sigmoid gate probabilities, (B, d_dict);
+                                     the trainer L1-penalizes sum(dim=1).mean()
+  - JumpReLUSAE:                     soft step probabilities, (B, d_dict); same L1 path
+  - VanillaL1SAE:                    |codes|, (B, d_dict); same L1 path
+  - TopKSAE / TiedTopKSAE:           AuxK dead-feature loss, shape (1,)
+  - BatchTopKSAE / TiedBatchTopKSAE: zeros, shape (1,) (no penalty)
+  - Matryoshka variants
+    (train_groups=True, training):   stacked per-level recon MSE, shape
+                                     (n_levels,); the trainer takes .mean()
+
 Architectures:
   - GatedSAE              (Rajamanoharan et al., 2024)
   - JumpReLUSAE           (Rajamanoharan et al., 2024)
@@ -40,6 +51,11 @@ class GatedSAE(nn.Module):
     Reconstruction: x_hat = W_dec . c + b_dec
 
     L1 penalty applies only to gate probabilities, eliminating shrinkage bias.
+
+    VARIANT of Rajamanoharan et al. (2024): sparsity_aux is the sigmoid gate
+    probabilities (the paper L1-penalizes ReLU(gate_pre) scaled by decoder
+    norms), and the paper's auxiliary reconstruction loss through a frozen
+    decoder copy (Eq. 5) is omitted entirely.
     """
 
     def __init__(self, d_input: int, d_dict: int):
@@ -128,9 +144,7 @@ class JumpReLUSAE(nn.Module):
         self.encoder = nn.Linear(d_input, d_dict)
         self.W_dec = nn.Parameter(torch.empty(d_input, d_dict))
         self.b_dec = nn.Parameter(torch.zeros(d_input))
-        self.log_threshold = nn.Parameter(
-            torch.full((d_dict,), math.log(initial_threshold))
-        )
+        self.log_threshold = nn.Parameter(torch.full((d_dict,), math.log(initial_threshold)))
 
         self._init_weights()
 
@@ -182,6 +196,30 @@ class JumpReLUSAE(nn.Module):
 # ──────────────────────────────────────────────────────────────
 
 
+def _auxk_loss(
+    x: torch.Tensor,
+    x_hat: torch.Tensor,
+    pre_acts: torch.Tensor,
+    W_dec: torch.Tensor,
+    dead_mask: torch.Tensor | None,
+    k_aux: int,
+    training: bool,
+) -> torch.Tensor:
+    """AuxK loss: reconstruct the residual using dead features only (Gao et al., 2024)."""
+    auxk_loss = torch.zeros(1, device=x.device)
+    if training and dead_mask is not None and dead_mask.any():
+        residual = x - x_hat.detach()
+        dead_pre = pre_acts[:, dead_mask]
+        k_aux = min(k_aux, dead_pre.shape[1])
+        if k_aux > 0:
+            aux_topk_vals, aux_topk_idx = dead_pre.topk(k_aux, dim=1)
+            aux_acts = torch.zeros_like(dead_pre)
+            aux_acts.scatter_(1, aux_topk_idx, F.relu(aux_topk_vals))
+            aux_recon = aux_acts @ W_dec[:, dead_mask].T
+            auxk_loss = (residual - aux_recon).pow(2).sum(dim=1).mean().unsqueeze(0)
+    return auxk_loss
+
+
 class TopKSAE(nn.Module):
     """TopK Sparse Autoencoder (Gao et al., 2024).
 
@@ -228,20 +266,7 @@ class TopKSAE(nn.Module):
         pre_acts = self.encoder(x_c)
         acts = self._topk(pre_acts, self.k)
         x_hat = self.decode(acts)
-
-        # AuxK: reconstruct residual using dead features only (Gao et al.)
-        auxk_loss = torch.zeros(1, device=x.device)
-        if self.training and self._dead_mask is not None and self._dead_mask.any():
-            residual = x - x_hat.detach()
-            dead_pre = pre_acts[:, self._dead_mask]
-            k_aux = min(self.k_aux, dead_pre.shape[1])
-            if k_aux > 0:
-                aux_topk_vals, aux_topk_idx = dead_pre.topk(k_aux, dim=1)
-                aux_acts = torch.zeros_like(dead_pre)
-                aux_acts.scatter_(1, aux_topk_idx, F.relu(aux_topk_vals))
-                aux_recon = aux_acts @ self.W_dec[:, self._dead_mask].T
-                auxk_loss = (residual - aux_recon).pow(2).sum(dim=1).mean().unsqueeze(0)
-
+        auxk_loss = _auxk_loss(x, x_hat, pre_acts, self.W_dec, self._dead_mask, self.k_aux, self.training)
         return x_hat, acts, auxk_loss
 
     @torch.no_grad()
@@ -300,20 +325,7 @@ class TiedTopKSAE(nn.Module):
         pre_acts = F.linear(x_c, self.W_dec.T, self.b_enc)
         acts = TopKSAE._topk(pre_acts, self.k)
         x_hat = self.decode(acts)
-
-        # AuxK: reconstruct residual using dead features only
-        auxk_loss = torch.zeros(1, device=x.device)
-        if self.training and self._dead_mask is not None and self._dead_mask.any():
-            residual = x - x_hat.detach()
-            dead_pre = pre_acts[:, self._dead_mask]
-            k_aux = min(self.k_aux, dead_pre.shape[1])
-            if k_aux > 0:
-                aux_topk_vals, aux_topk_idx = dead_pre.topk(k_aux, dim=1)
-                aux_acts = torch.zeros_like(dead_pre)
-                aux_acts.scatter_(1, aux_topk_idx, F.relu(aux_topk_vals))
-                aux_recon = aux_acts @ self.W_dec[:, self._dead_mask].T
-                auxk_loss = (residual - aux_recon).pow(2).sum(dim=1).mean().unsqueeze(0)
-
+        auxk_loss = _auxk_loss(x, x_hat, pre_acts, self.W_dec, self._dead_mask, self.k_aux, self.training)
         return x_hat, acts, auxk_loss
 
     @torch.no_grad()
@@ -341,6 +353,12 @@ class BatchTopKSAE(nn.Module):
     Instead of selecting top-k per token, selects top (batch_size * k)
     activations globally across the batch, allowing some tokens to use
     more features and others fewer.
+
+    WARNING: codes are batch-composition-dependent at inference — the
+    top-(batch_size * k) pool is shared across the batch, so the same row can
+    receive different codes depending on which rows it is batched with. For
+    consistent codes, encode the full dataset in one pass (see
+    ``readout.crosscoder.training.get_all_codes``).
     """
 
     def __init__(self, d_input: int, d_dict: int, k: int = 12):
@@ -402,7 +420,11 @@ class BatchTopKSAE(nn.Module):
 
 
 class TiedBatchTopKSAE(nn.Module):
-    """BatchTopK SAE with tied weights: W_enc = W_dec^T."""
+    """BatchTopK SAE with tied weights: W_enc = W_dec^T.
+
+    Codes inherit BatchTopKSAE's batch-composition dependence at inference
+    (see its docstring); use full-dataset encoding for consistent codes.
+    """
 
     def __init__(self, d_input: int, d_dict: int, k: int = 12):
         super().__init__()
@@ -444,11 +466,14 @@ class TiedBatchTopKSAE(nn.Module):
 
 
 class TiedMatryoshkaBatchTopKSAE(nn.Module):
-    """Matryoshka BatchTopK SAE with tied weights.
+    """Matryoshka BatchTopK SAE with tied weights (W_enc = W_dec^T).
 
     Per-prefix independent encoding: each prefix level gets its own top-k
     pass using only the first active_d encoder rows and decoder columns.
-    Loss = sum of per-level MSEs (divided by n_levels).
+    With ``train_groups=True`` in training mode, sparsity_aux is the stacked
+    per-level reconstruction MSE, shape (n_levels,); the trainer takes its
+    mean. Otherwise sparsity_aux is zeros, shape (1,). Codes inherit
+    BatchTopKSAE's batch-composition dependence at inference.
     """
 
     def __init__(
@@ -503,16 +528,17 @@ class TiedMatryoshkaBatchTopKSAE(nn.Module):
         x_c = x - self.b_dec
 
         if train_groups and self.training:
-            total_loss = torch.zeros(1, device=x.device)
+            nested_mses = []
             x_hat_full = None
             acts_full = None
             for m in self.nested_sizes:
                 x_hat_m, acts_m = self._forward_at_prefix(x_c, m)
-                total_loss = total_loss + (x - x_hat_m).pow(2).sum(dim=1).mean()
+                nested_mses.append((x - x_hat_m).pow(2).sum(dim=1).mean())
                 if m == self.d_dict:
                     x_hat_full = x_hat_m
                     acts_full = acts_m
-            return x_hat_full, acts_full, total_loss / len(self.nested_sizes)
+            # (n_levels,) per-level recon MSE — the trainer takes .mean()
+            return x_hat_full, acts_full, torch.stack(nested_mses)
         else:
             x_hat, acts = self._forward_at_prefix(x_c, self.d_dict)
             return x_hat, acts, torch.zeros(1, device=x.device)
@@ -532,6 +558,17 @@ class TiedMatryoshkaBatchTopKSAE(nn.Module):
 
 
 class MatryoshkaBatchTopKSAE(nn.Module):
+    """Matryoshka BatchTopK SAE (untied encoder).
+
+    Nested-prefix training: with ``train_groups=True`` in training mode, each
+    nested size m gets an independent BatchTopK encode/decode over the first
+    m features, and sparsity_aux is the stacked per-level reconstruction MSE,
+    shape (n_levels,); the trainer takes its mean. In eval mode (or with
+    ``train_groups=False``) a single full-dictionary pass is used and
+    sparsity_aux is zeros, shape (1,). Codes inherit BatchTopKSAE's
+    batch-composition dependence at inference.
+    """
+
     def __init__(
         self,
         d_input: int,
@@ -573,9 +610,7 @@ class MatryoshkaBatchTopKSAE(nn.Module):
     def _forward_at_prefix(self, x_c: torch.Tensor, active_d: int):
         """Encode and decode using only the first active_d features."""
         # Subset of encoder weights for this prefix
-        pre_acts = F.linear(
-            x_c, self.encoder.weight[:active_d], self.encoder.bias[:active_d]
-        )  # (batch, active_d)
+        pre_acts = F.linear(x_c, self.encoder.weight[:active_d], self.encoder.bias[:active_d])  # (batch, active_d)
         acts = BatchTopKSAE._batch_topk(pre_acts, self.k)
         x_hat = acts @ self.W_dec[:, :active_d].T + self.b_dec
         return x_hat, acts
@@ -667,85 +702,3 @@ class VanillaL1SAE(nn.Module):
     @torch.no_grad()
     def dictionary_vectors(self) -> torch.Tensor:
         return self.W_dec.data.T.clone()
-
-
-# ──────────────────────────────────────────────────────────────
-# K-SVD (classical dictionary learning via sklearn)
-# ──────────────────────────────────────────────────────────────
-
-
-def run_dict_learning(
-    data: torch.Tensor, n_components: int, sparsity: int, max_iter: int = 50
-) -> dict:
-    """Classical dictionary learning via sklearn (coordinate descent + OMP).
-
-    Returns dict with mse, l0, dead_features, elapsed, dictionary, codes.
-    """
-    import time
-
-    import numpy as np
-    from sklearn.decomposition import DictionaryLearning
-
-    data_np = data.cpu().numpy().astype(np.float64)
-
-    dl = DictionaryLearning(
-        n_components=n_components,
-        alpha=1.0,
-        transform_algorithm="omp",
-        transform_n_nonzero_coefs=sparsity,
-        max_iter=max_iter,
-        fit_algorithm="cd",
-        random_state=42,
-        verbose=0,
-    )
-
-    t0 = time.time()
-    dl.fit(data_np)
-    elapsed = time.time() - t0
-
-    codes = dl.transform(data_np)
-    recon = codes @ dl.components_
-    mse = np.mean(np.sum((data_np - recon) ** 2, axis=1))
-    l0 = np.mean(np.sum(np.abs(codes) > 1e-10, axis=1))
-    dead = np.sum(np.all(np.abs(codes) < 1e-10, axis=0))
-
-    return {
-        "mse": float(mse),
-        "l0": float(l0),
-        "dead_features": int(dead),
-        "elapsed": elapsed,
-        "dictionary": dl.components_,
-        "codes": codes,
-    }
-
-
-# ──────────────────────────────────────────────────────────────
-# Adapter for reusing analysis functions from proto_tokens_sae
-# ──────────────────────────────────────────────────────────────
-
-
-class _DecoderView:
-    """Mimics nn.Linear's .weight / .bias interface."""
-
-    def __init__(self, W_dec: nn.Parameter, b_dec: nn.Parameter):
-        self.weight = W_dec
-        self.bias = b_dec
-
-
-class SAEAdapter:
-    """Wraps any SAE so proto_tokens_sae analysis functions can access
-    .decoder.weight.data / .decoder.bias.data."""
-
-    def __init__(self, model: nn.Module):
-        self.model = model
-        self.d_input = model.d_input
-        self.d_dict = model.d_dict
-        self.decoder = _DecoderView(model.W_dec, model.b_dec)
-
-    def __call__(self, x):
-        x_hat, c, _ = self.model(x)
-        return x_hat, c
-
-    def eval(self):
-        self.model.eval()
-        return self

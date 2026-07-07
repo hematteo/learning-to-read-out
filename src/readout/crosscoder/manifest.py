@@ -1,7 +1,7 @@
 """Append/update rows in the crosscoder sweep manifest CSV.
 
 The manifest header is:
-    kind,model,matrix,d_sae,d_model,vocab,seed,steps,epochs,batch,lr,l1,
+    kind,model,matrix,d_sae,d_model,vocab,seed,n_steps,epochs,batch,lr,l1,
     jumprelu_lr_factor,tanh_stretch,input_preprocess,optimizer,amp_dtype,
     EV,L0,dead_rate,CUSUM_p,rate_rotation_r,path,notes
 
@@ -28,7 +28,7 @@ MANIFEST_HEADER = [
     "d_model",
     "vocab",
     "seed",
-    "steps",
+    "n_steps",
     "epochs",
     "batch",
     "lr",
@@ -87,12 +87,8 @@ def _read_existing(manifest_csv: Path) -> tuple[list[str], list[dict[str, str]]]
     return header, data
 
 
-def _atomic_write(
-    manifest_csv: Path, header: list[str], rows: list[dict[str, str]]
-) -> None:
-    fd, tmp_path = tempfile.mkstemp(
-        prefix=".manifest_", suffix=".csv", dir=str(manifest_csv.parent)
-    )
+def _atomic_write(manifest_csv: Path, header: list[str], rows: list[dict[str, str]]) -> None:
+    fd, tmp_path = tempfile.mkstemp(prefix=".manifest_", suffix=".csv", dir=str(manifest_csv.parent))
     try:
         with os.fdopen(fd, "w", newline="") as f:
             writer = csv.writer(f)
@@ -113,7 +109,7 @@ def infer_row_from_checkpoint(ckpt_path: Path, notes: str = "") -> dict[str, str
     ckpt_path = Path(ckpt_path)
     # Normalise new-format ("wrapper") checkpoints whose steps/training/model_name
     # are nested under "config" to the flat layout this function reads.
-    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=False))
+    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=True))
     cfg = ck.get("config", {}) or {}
     training = ck.get("training", {}) or {}
     quality = ck.get("quality", {}) or {}
@@ -130,17 +126,13 @@ def infer_row_from_checkpoint(ckpt_path: Path, notes: str = "") -> dict[str, str
             d_sae = int(we.shape[2])
     if d_sae is None:
         d_sae = training.get("d_sae") or (
-            int(cfg.get("d_model", 0) * cfg.get("expansion_factor", 0))
-            if cfg.get("d_model")
-            else None
+            int(cfg.get("d_model", 0) * cfg.get("expansion_factor", 0)) if cfg.get("d_model") else None
         )
     if d_model is None:
         d_model = cfg.get("d_model")
 
     steps = ck.get("steps", []) or []
-    matrix = (
-        "WU"  # wu_adapter is W_U-specific; downstream callers can override via notes
-    )
+    matrix = "WU"  # wu_adapter is W_U-specific; downstream callers can override via notes
 
     dead_rate = quality.get("dead_rate")
     if dead_rate is None:
@@ -154,7 +146,7 @@ def infer_row_from_checkpoint(ckpt_path: Path, notes: str = "") -> dict[str, str
         "d_model": d_model,
         "vocab": quality.get("n_rows"),
         "seed": ck.get("seed"),
-        "steps": len(steps) if steps else "",
+        "n_steps": len(steps) if steps else "",
         "epochs": training.get("n_epochs"),
         "batch": training.get("batch_size"),
         "lr": training.get("lr"),
@@ -188,6 +180,39 @@ def update_or_insert(
     return rows, "inserted"
 
 
+def _merge_header(header: list[str]) -> list[str]:
+    """MANIFEST_HEADER extended with any unknown columns already in the file."""
+    merged = list(MANIFEST_HEADER)
+    for c in header:
+        if c not in merged:
+            merged.append(c)
+    return merged
+
+
+def upsert_manifest_rows(
+    manifest_csv: Path,
+    new_rows: list[dict[str, Any]],
+    key: str = "path",
+    strict: bool = True,
+) -> list[str]:
+    """Merge rows into the manifest CSV keyed by ``key``; atomic and idempotent.
+
+    Values are formatted with the manifest conventions (lists join with ';',
+    None/NaN become empty). Unknown columns already in the file are preserved.
+    Returns one action per row ("updated" or "inserted").
+    """
+    manifest_csv = Path(manifest_csv)
+    _ensure_manifest_dir(manifest_csv, strict=strict)
+    header, rows = _read_existing(manifest_csv)
+    header = _merge_header(header)
+    actions: list[str] = []
+    for r in new_rows:
+        rows, action = update_or_insert(rows, {k: _fmt(v) for k, v in r.items()}, key=key)
+        actions.append(action)
+    _atomic_write(manifest_csv, header, rows)
+    return actions
+
+
 def append_manifest_row(
     ckpt_path: Path,
     manifest_csv: Path = DEFAULT_MANIFEST,
@@ -201,18 +226,8 @@ def append_manifest_row(
     Returns the row that was written.
     """
     manifest_csv = Path(manifest_csv)
+    # Fail fast on a missing parent dir before deserializing the checkpoint.
     _ensure_manifest_dir(manifest_csv, strict=strict)
     new_row = infer_row_from_checkpoint(ckpt_path, notes=notes)
-    header, rows = _read_existing(manifest_csv)
-    if header != MANIFEST_HEADER:
-        # Preserve unknown columns; reconcile by extending.
-        merged = list(MANIFEST_HEADER)
-        for c in header:
-            if c not in merged:
-                merged.append(c)
-        header = merged
-    else:
-        header = list(MANIFEST_HEADER)
-    rows, _action = update_or_insert(rows, new_row, key="path")
-    _atomic_write(manifest_csv, header, rows)
+    upsert_manifest_rows(manifest_csv, [new_row], key="path", strict=strict)
     return new_row

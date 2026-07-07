@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import csv
 import hashlib
-from collections.abc import Generator
 from pathlib import Path
 
 import torch
@@ -105,19 +104,6 @@ def extract_we(model_name: str, device: str = "cpu", **load_kwargs):
     return W_E.float().to(device), tokenizer
 
 
-def iter_checkpoints(
-    model_name: str,
-    steps: list[int],
-    device: str = "cpu",
-    extract: str = "wu",
-) -> Generator[tuple[int, torch.Tensor], None, None]:
-    extract_fn = {"wu": extract_wu, "we": extract_we}[extract]
-    for step in steps:
-        with torch.no_grad():
-            W, _tok = extract_fn(model_name, device=device, revision=f"step{step}")
-        yield step, W
-
-
 def center_and_project(
     W_U: torch.Tensor,
     svd_remove: int = 0,
@@ -159,9 +145,7 @@ def center_and_project(
     return data, centering
 
 
-def adaptive_center_and_project(
-    W: torch.Tensor, svd_remove: int = 2, device: str = "cpu"
-) -> tuple[torch.Tensor, dict]:
+def adaptive_center_and_project(W: torch.Tensor, svd_remove: int = 2, device: str = "cpu") -> tuple[torch.Tensor, dict]:
     return center_and_project(W, svd_remove=svd_remove, device=device)
 
 
@@ -227,9 +211,7 @@ def svd_baseline(data: torch.Tensor, rank: int) -> float:
         data_cpu = data.detach().cpu()
         U, S, Vt = torch.linalg.svd(data_cpu, full_matrices=False)
         _svd_cache.clear()
-        _svd_cache.update(
-            {"fingerprint": fp, "U": U, "S": S, "Vt": Vt, "data_cpu": data_cpu}
-        )
+        _svd_cache.update({"fingerprint": fp, "U": U, "S": S, "Vt": Vt, "data_cpu": data_cpu})
     U, S, Vt, data_cpu = (
         _svd_cache["U"],
         _svd_cache["S"],
@@ -240,9 +222,7 @@ def svd_baseline(data: torch.Tensor, rank: int) -> float:
     return (data_cpu - recon).pow(2).sum(dim=1).mean().item()
 
 
-def svd_baseline_from_centering(
-    centering: dict, rank: int, n_rows: int
-) -> float | None:
+def svd_baseline_from_centering(centering: dict, rank: int, n_rows: int) -> float | None:
     """Estimate rank-k SVD baseline MSE from stored singular values.
 
     WARNING: This is an approximation. The stored singular values are from
@@ -255,11 +235,7 @@ def svd_baseline_from_centering(
     S = centering.get("svd_S")
     if S is None:
         return None
-    svd_remove = (
-        centering["svd_components"].shape[0]
-        if centering.get("svd_components") is not None
-        else 0
-    )
+    svd_remove = centering["svd_components"].shape[0] if centering.get("svd_components") is not None else 0
     offset = svd_remove + rank
     if offset >= S.shape[0]:
         return 0.0

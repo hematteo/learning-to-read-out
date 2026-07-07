@@ -1,12 +1,18 @@
 """Snapshot-stacked SAE crosscoder trainer for the architecture sweep (T1.5).
 
 Path B (per the task plan): a minimal head-stacked SAE that mirrors the
-llamascopium Crosscoder layout but accepts swappable activation/sparsity heads
-(JumpReLU, BatchTopK, Gated). State-dict keys (``W_E``, ``b_E``, ``W_D``,
-``b_D``) match the wu_adapter format so ``extract_rates.py`` works on the
-JumpReLU output without modification, and the firing-rate extractor in
-``experiments/crosscoders/crosscoder_main/arch_sweep_rate_plot.py`` reads the same keys for the other
-two architectures.
+llamascopium Crosscoder LAYOUT (parameter shapes and state-dict keys) but NOT
+its JumpReLU gate semantics: ``_JumpReLUHead`` gates the raw summed
+pre-activation with a sigmoid-surrogate STE, with no per-snapshot
+decoder-norm scaling (see its docstring). State-dict keys (``W_E``, ``b_E``,
+``W_D``, ``b_D``) match the wu_adapter format, so ``extract_rates.py`` RUNS on
+the JumpReLU output without modification — but rates computed under its
+canonical decoder-norm rule (``compute_rates_canonical``) do NOT describe this
+model's firing, which is identical across snapshots. Checkpoints written by
+``scripts/train/train_arch_sweep.py`` carry ``config["jumprelu_gate"] =
+"raw_pre_shared_across_snapshots"`` so downstream tooling can detect them
+(kept out of the state dict so pre-existing sweep checkpoints still load
+with ``strict=True``).
 
 Encoding follows the crosscoder convention: per-head linear, then sum across
 heads to get a single (batch, d_sae) pre-activation, then activation/sparsity,
@@ -60,6 +66,9 @@ class HeadStackedSAE(nn.Module):
     Activation-specific parameters live in submodules so the state-dict keys
     are namespaced (``activation_function.log_jumprelu_threshold`` for
     JumpReLU, ``gated.*`` for Gated, no extra params for BatchTopK).
+    Gate-semantics provenance lives in the training script's checkpoint
+    ``config`` dict (``jumprelu_gate``), not the state dict, so pre-existing
+    sweep checkpoints load with ``strict=True``.
     """
 
     def __init__(self, cfg: ArchSweepConfig):
@@ -67,19 +76,16 @@ class HeadStackedSAE(nn.Module):
         self.cfg = cfg
         K, d, D = cfg.n_snapshots, cfg.d_model, cfg.d_sae
 
-        encoder_bound = 1.0 / math.sqrt(d)
         decoder_bound = 1.0 / math.sqrt(D)
 
-        self.W_E = nn.Parameter(
-            torch.empty(K, d, D).uniform_(-encoder_bound, encoder_bound)
-        )
+        self.W_E = nn.Parameter(torch.empty(K, d, D))
         self.b_E = nn.Parameter(torch.zeros(K, D))
-        self.W_D = nn.Parameter(
-            torch.empty(K, D, d).uniform_(-decoder_bound, decoder_bound)
-        )
+        self.W_D = nn.Parameter(torch.empty(K, D, d).uniform_(-decoder_bound, decoder_bound))
         self.b_D = nn.Parameter(torch.zeros(K, d))
 
-        # Init encoder ≈ decoder^T (matches wu_adapter default factor=1.0).
+        # Init encoder = decoder^T (matches wu_adapter default factor=1.0).
+        # W_E previously had a dead uniform draw before this copy; removing it
+        # changes RNG-stream alignment with pre-release sweep runs.
         with torch.no_grad():
             self.W_E.copy_(self.W_D.transpose(-1, -2))
 
@@ -108,9 +114,7 @@ class HeadStackedSAE(nn.Module):
 
     def forward(self, x_stacked: torch.Tensor):
         hidden_pre = self.encode_pre(x_stacked)
-        feature_acts, sparsity_aux = self.activation_function(
-            hidden_pre, self.decoder_norm()
-        )
+        feature_acts, sparsity_aux = self.activation_function(hidden_pre, self.decoder_norm())
         recon = self.decode(feature_acts)
         return recon, feature_acts, hidden_pre, sparsity_aux
 
@@ -121,19 +125,34 @@ class HeadStackedSAE(nn.Module):
 
 
 class _JumpReLUHead(nn.Module):
-    """Ge-exact JumpReLU: STE with rectangle pseudo-grad of width ``bandwidth``.
+    """Sigmoid-surrogate JumpReLU — NOT the Ge-exact / llamascopium gate.
 
-    Mirrors llamascopium activation_functions.JumpReLU. The state-dict key
-    ``activation_function.log_jumprelu_threshold`` matches Run 3 / wu_adapter,
-    so ``extract_rates.py`` works without modification.
+    Forward: hard step on the RAW summed pre-activation, ``pre > theta``.
+    Since ``pre`` is shared across heads, firing is identical across all K
+    snapshots — there is no per-snapshot decoder-norm scaling. The production
+    llamascopium crosscoder instead gates ``pre * ||W_D[k]|| > theta`` per
+    snapshot (lib/Language-Model-SAEs/src/llamascopium/models/crosscoder.py,
+    ``encode``).
+
+    Backward: soft, unwindowed sigmoid surrogate
+    ``sigmoid((pre - theta) / bandwidth)`` (default bandwidth 4.0) supplies
+    the gradient for BOTH the pre-activation and theta. llamascopium instead
+    uses a hard mask for the input gradient and a rectangle-window
+    pseudo-gradient (width ``jumprelu_threshold_window``) for theta
+    (activation_functions.STEFunction).
+
+    The state-dict key ``activation_function.log_jumprelu_threshold`` matches
+    Run 3 / wu_adapter, so ``extract_rates.py`` RUNS on these checkpoints —
+    but rates computed under its canonical decoder-norm rule
+    (``compute_rates_canonical``) do NOT describe this model's firing.
+    Checkpoints from the training script carry ``config["jumprelu_gate"] =
+    "raw_pre_shared_across_snapshots"`` so tooling can detect them.
     """
 
     def __init__(self, cfg: ArchSweepConfig):
         super().__init__()
         self.bandwidth = cfg.bandwidth
-        self.log_jumprelu_threshold = nn.Parameter(
-            torch.full((cfg.d_sae,), math.log(cfg.init_threshold))
-        )
+        self.log_jumprelu_threshold = nn.Parameter(torch.full((cfg.d_sae,), math.log(cfg.init_threshold)))
 
     @property
     def threshold(self) -> torch.Tensor:
@@ -142,8 +161,8 @@ class _JumpReLUHead(nn.Module):
     def forward(self, hidden_pre: torch.Tensor, decoder_norm: torch.Tensor):
         # decoder_norm: (K, d_sae) — used for sparsity scaling, not the gate.
         theta = self.threshold  # (d_sae,)
-        # STE: hard step on forward, rectangle pseudo-grad on backward via the
-        # step ≈ sigmoid((pre - theta)/bw) trick.
+        # STE: hard step on forward, sigmoid surrogate on backward (soft,
+        # unwindowed — see class docstring for how this differs from Ge).
         step_hard = (hidden_pre > theta).float()
         step_soft = torch.sigmoid((hidden_pre - theta) / self.bandwidth)
         step = step_hard - step_soft.detach() + step_soft
@@ -185,6 +204,11 @@ class _GatedHead(nn.Module):
     biases ``b_gate`` and ``b_mag`` and a per-feature scale ``r_mag`` give the
     two pathways independent affine offsets — the cheapest faithful adaptation
     of Rajamanoharan to the snapshot-summed setup.
+
+    VARIANT vs Rajamanoharan et al. (2024): the trainer's auxiliary
+    reconstruction loss (paper eq. 5) decodes ReLU(gate_pre) through the LIVE
+    decoder, whereas the paper uses a FROZEN decoder copy — L_aux gradients
+    here also flow into W_D / b_D.
     """
 
     def __init__(self, cfg: ArchSweepConfig):
@@ -221,7 +245,14 @@ def train_arch_sweep(
     seed: int = 0,
     device: str = "cuda",
     log_every: int = 50,
-    # JumpReLU hparams (mirror wu_adapter defaults for a fair comparison)
+    # JumpReLU hparams — NOT an exact mirror of the production wu_adapter
+    # defaults: lr / l1_coefficient / frequency_scale / init_threshold /
+    # jumprelu_lr_factor match, but tanh_stretch=1.0 (production
+    # tanh_stretch_coefficient=4.0), batch_size=1024 (production 2048),
+    # n_epochs=100 (production 20), and `bandwidth` is a sigmoid-surrogate
+    # width with no production counterpart (production uses a rectangle
+    # window, jumprelu_threshold_window=4.0). Defaults kept as-is — the
+    # published sweep used them.
     init_threshold: float = 0.1,
     bandwidth: float = 4.0,
     l1_coefficient: float = 0.3,
@@ -286,9 +317,7 @@ def train_arch_sweep(
         idx = torch.randperm(V, generator=gen)
         for start in range(0, V, batch_size):
             sel = idx[start : start + batch_size]
-            x_stacked = (
-                snapshots_cpu[:, sel, :].permute(1, 0, 2).contiguous().to(device)
-            )
+            x_stacked = snapshots_cpu[:, sel, :].permute(1, 0, 2).contiguous().to(device)
             # x_stacked: (B, K, d)
 
             recon, feature_acts, hidden_pre, sparsity_aux = model(x_stacked)
@@ -297,9 +326,7 @@ def train_arch_sweep(
 
             # LR schedule
             if lr_warmup_fraction > 0 or lr_decay_fraction > 0:
-                lr_mult = _lr_multiplier(
-                    step_count, total_steps, lr_warmup_fraction, lr_decay_fraction
-                )
+                lr_mult = _lr_multiplier(step_count, total_steps, lr_warmup_fraction, lr_decay_fraction)
                 for g in optimizer.param_groups:
                     g["lr"] = g["initial_lr"] * lr_mult
 
@@ -311,12 +338,14 @@ def train_arch_sweep(
 
             l_s = torch.zeros((), device=device)
             if arch == "jumprelu":
-                # Ge tanh-quad sparsity (eq. 9) on (feature_acts * decoder_norm).
+                # Ge tanh-quad sparsity (eq. 9). Deviation from llamascopium:
+                # there, per-head feature_acts are scaled by each head's OWN
+                # decoder norm inside the tanh and the frequency estimate is
+                # then averaged over batch AND heads; here a single shared
+                # feature_acts vector is scaled by the SUM of decoder norms
+                # across snapshots before the tanh. Kept as-is — the published
+                # sweep used this form.
                 decoder_norms = model.decoder_norm()  # (K, d_sae)
-                # decoder_norm scales per-feature; aggregate across snapshots by mean
-                # to match the crosscoder convention (decoder_norm is shape K, d_sae;
-                # llamascopium `sparsity_include_decoder_norm` multiplies feature_acts by
-                # the per-feature norm then sums across heads).
                 dn_sum = decoder_norms.sum(dim=0)  # (d_sae,)
                 score = torch.tanh(tanh_stretch * feature_acts * dn_sum)
                 approx_freq = score.mean(dim=0)  # (d_sae,)
@@ -326,16 +355,17 @@ def train_arch_sweep(
                 # No sparsity penalty — top-k is an exact constraint.
                 loss = l_rec
             elif arch == "gated":
-                # Rajamanoharan 2024: L1 on gate_pre after the gate sigmoid,
-                # weighted by the mean decoder norm across heads.
+                # Rajamanoharan 2024-style L1 on ReLU(gate_pre), weighted by
+                # the SUM of decoder norms across heads (per feature).
                 decoder_norms = model.decoder_norm()  # (K, d_sae)
                 dn_sum = decoder_norms.sum(dim=0)  # (d_sae,)
                 gate_relu = F.relu(sparsity_aux["gate_pre"])
                 l_s = (gate_relu * dn_sum).sum(dim=-1).mean()
                 loss = l_rec + gated_l1_coefficient * l1_scale * l_s
-                # Auxiliary reconstruction from gate_pre (Rajamanoharan eq. 5):
-                # ReLU(gate_pre) reconstructs x via a frozen decoder copy.
-                # We use the live decoder; this is the standard implementation.
+                # Auxiliary reconstruction from gate_pre (Rajamanoharan eq. 5).
+                # VARIANT: the paper reconstructs through a FROZEN copy of the
+                # decoder; we use the LIVE decoder, so L_aux gradients also
+                # flow into W_D / b_D.
                 aux_acts = F.relu(sparsity_aux["gate_pre"])
                 aux_recon = model.decode(aux_acts)
                 l_aux = (aux_recon - x_stacked.detach()).pow(2).sum(dim=-1).mean()
@@ -377,9 +407,7 @@ def quick_quality(
     with torch.no_grad():
         for start in range(0, V, batch_size):
             sel = slice(start, start + batch_size)
-            x_stacked = (
-                snapshots_cpu[:, sel, :].permute(1, 0, 2).contiguous().to(device)
-            )
+            x_stacked = snapshots_cpu[:, sel, :].permute(1, 0, 2).contiguous().to(device)
             recon, feature_acts, _, _ = model(x_stacked)
             total_rec += (recon - x_stacked).pow(2).mean().item()
             total_var += x_stacked.var().item()

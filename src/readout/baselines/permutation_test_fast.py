@@ -47,9 +47,7 @@ def cusum_max_feature_batched(rates_perm, variance_estimator_n=10):
     median = base.median(dim=1, keepdim=True).values  # (B, 1, D)
     mad = (base - median).abs().median(dim=1).values  # (B, D)
     sigma_raw = 1.4826 * mad  # (B, D)
-    sigma_masked = torch.where(
-        sigma_raw > 0, sigma_raw, torch.full_like(sigma_raw, float("nan"))
-    )
+    sigma_masked = torch.where(sigma_raw > 0, sigma_raw, torch.full_like(sigma_raw, float("nan")))
     floors = torch.nanquantile(sigma_masked, 0.25, dim=-1)  # (B,)
     floors = torch.clamp(floors, min=1e-8)
     sigma = torch.maximum(sigma_raw, floors.unsqueeze(-1))  # (B, D)
@@ -62,9 +60,7 @@ def cusum_max_feature_single(rates):
     return cusum_max_feature_batched(rates.unsqueeze(0))[0].item()
 
 
-def permutation_test_vectorized(
-    rates, n_permutations, batch=1000, seed=0, device="cpu"
-):
+def permutation_test_vectorized(rates, n_permutations, batch=1000, seed=0, device="cpu"):
     """Per-feature independent shuffle: each feature's K-step trajectory is
     shuffled independently. Sharing one snapshot permutation across all D
     features (the previous behavior) preserves cross-feature correlations and
@@ -98,9 +94,7 @@ def permutation_test_vectorized(
         b = min(effective_batch, n_permutations - n_done)
         # Per-feature independent shuffle: argsort of random scores generates
         # an independent permutation of K for each (batch, feature) slot.
-        perms = torch.argsort(torch.rand(b, K, D, generator=g, device="cpu"), dim=1).to(
-            device
-        )  # (B, K, D)
+        perms = torch.argsort(torch.rand(b, K, D, generator=g, device="cpu"), dim=1).to(device)  # (B, K, D)
         permuted = rates.unsqueeze(0).expand(b, K, D).gather(1, perms)
         stats = cusum_max_feature_batched(permuted)
         null[n_done : n_done + b] = stats.cpu()
@@ -116,9 +110,7 @@ def permutation_test_vectorized(
     return obs, p, null_np, obs_zsigma, effective_batch
 
 
-def permutation_test_seed_averaged(
-    rates_per_seed, n_permutations, batch=1000, seed=0, device="cpu"
-):
+def permutation_test_seed_averaged(rates_per_seed, n_permutations, batch=1000, seed=0, device="cpu"):
     """Single permutation test on the seed-averaged rate matrix.
 
     Training seeds share W_U snapshots (only SAE init differs), so per-seed
@@ -128,10 +120,7 @@ def permutation_test_seed_averaged(
     assumption.
     """
     stacked = torch.stack(
-        [
-            r if isinstance(r, torch.Tensor) else torch.as_tensor(r)
-            for r in rates_per_seed
-        ],
+        [r if isinstance(r, torch.Tensor) else torch.as_tensor(r) for r in rates_per_seed],
         dim=0,
     )  # (S, K, D)
     rates_mean = stacked.mean(dim=0)  # (K, D)
@@ -147,7 +136,9 @@ def permutation_test_seed_averaged(
 def fisher_combine(p_values):
     p = np.asarray(p_values, dtype=float).clip(min=1e-300)
     stat = -2.0 * np.log(p).sum()
-    return float(1.0 - chi2.cdf(stat, 2 * len(p)))
+    # sf, not 1 - cdf: the latter underflows to exactly 0 for the tiny
+    # p-values this pipeline produces.
+    return float(chi2.sf(stat, 2 * len(p)))
 
 
 def main():
@@ -198,11 +189,7 @@ def main():
         )
 
     blob = torch.load(args.rates, weights_only=False)
-    rates_per_seed = (
-        blob["rates_per_seed"]
-        if isinstance(blob, dict) and "rates_per_seed" in blob
-        else blob
-    )
+    rates_per_seed = blob["rates_per_seed"] if isinstance(blob, dict) and "rates_per_seed" in blob else blob
     results = {}
     p_values = []
     effective_batches = {}
@@ -294,8 +281,7 @@ def main():
         # would make the combined p anti-conservative.
         per_label_seed = args.shuffle_seed + seed_idx
         print(
-            f"[{label}] starting {args.n_perms} perms (batch {args.batch}, "
-            f"shuffle_seed={per_label_seed})...",
+            f"[{label}] starting {args.n_perms} perms (batch {args.batch}, shuffle_seed={per_label_seed})...",
             flush=True,
         )
         t0 = time.time()
@@ -370,11 +356,7 @@ def main():
             {
                 "fisher_combined_p": fisher_p,
                 "n_seeds": len(p_values),
-                "per_seed_p": {
-                    lbl: float(results[lbl]["p_value"])
-                    for lbl in results
-                    if not lbl.startswith("__")
-                },
+                "per_seed_p": {lbl: float(results[lbl]["p_value"]) for lbl in results if not lbl.startswith("__")},
                 "n_perms": args.n_perms,
                 "shuffle_seed": args.shuffle_seed,
                 "requested_batch": int(args.batch),
@@ -384,3 +366,7 @@ def main():
         )
     )
     print(f"Aggregate Fisher p mirrored to {args.aggregate_json}")
+
+
+if __name__ == "__main__":
+    main()

@@ -35,7 +35,7 @@ class Lifecycle:
     """
 
     first_active: np.ndarray  # int, K means never active
-    peak_step: np.ndarray  # int in [0, K-1]
+    peak_step: np.ndarray  # int in [0, K]; K is the never-active sentinel (peak rate 0)
     lifetime: np.ndarray  # float in [0, 1], fraction of snapshots above alpha*peak
     stabilized_step: np.ndarray  # int, K means drifting / never stabilized
     drift_score: np.ndarray  # float, mean rotation post-first-active (norm-weighted)
@@ -204,20 +204,28 @@ def terminal_direction_distance(
     return 1.0 - num / den
 
 
-def cusum_max(values: np.ndarray) -> np.ndarray:
-    """Max-feature CUSUM statistic (matches transition_metric_suite convention).
+def cusum_max_abs(values: np.ndarray) -> np.ndarray:
+    """Per-feature max of |mean-centered cumulative sum| (matches
+    transition_metric_suite convention).
 
     Input: (K, D), per-snapshot per-feature scalar (rate / norm / rotation).
-    Output: (D,), max over snapshots of the centered cumulative sum.
+    Output: (D,), max over snapshots of |cumsum(x - mean(x))|.
 
-    The temporal-permutation null is computed by phase scripts that need it;
-    permutation_test_fast.py in src/ already implements the production version
-    at 100k perms.
+    NOT the statistic tested by readout.baselines.permutation_test_fast: that
+    one is a SIGNED CUSUM of MAD-z-scores against an early-snapshot baseline,
+    reduced with a max over features. The two are different statistics and
+    their values (and nulls) are not comparable.
     """
     x = _to_np(values).astype(np.float64)
     centered = x - x.mean(axis=0, keepdims=True)
     cs = np.cumsum(centered, axis=0)
     return np.abs(cs).max(axis=0)
+
+
+# Deprecated alias. The old name collided with the different (signed,
+# MAD-z-scored) statistic in readout.baselines.permutation_test_fast; use
+# cusum_max_abs. Kept for older phase scripts; will be removed.
+cusum_max = cusum_max_abs
 
 
 def active_mask(

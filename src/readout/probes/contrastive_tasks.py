@@ -225,6 +225,10 @@ def _induction_token_pool(tokenizer, *, k: int = 200) -> list[int]:
 
     We use a static curated word list to avoid pulling massive frequency tables.
     """
+    # NOTE: the default k=200 is unreachable — this list has ~80 unique words
+    # (six duplicates: engine, river, anchor, hammer, needle, valley, deduped
+    # by the `tid not in ids` check below), and single-token filtering shrinks
+    # the pool further. Both quirks are kept as-is for dataset stability.
     words = [
         "apple",
         "river",
@@ -332,6 +336,11 @@ def build_induction(
 
     Each example uses two distinct single-tokens A, B from a pool. The
     contrastive distractor is another pool token of similar frequency class.
+
+    Caveat: the "{a}{b}{a}{b}{a}" prompt is re-encoded from decoded text and
+    only ``len(ids) >= 4`` is checked, so BPE merges across concatenation
+    boundaries can silently break the induction premise (the encoded prompt
+    need not contain the literal A B A B A token sequence) for some pairs.
     """
     pool = _induction_token_pool(tokenizer, k=200)
     if len(pool) < 4:
@@ -628,6 +637,8 @@ def build_relational_facts(
     Treated as exploratory: Pythia may or may not have these, and tokenization
     is fragile. Caller should treat low yield as expected.
     """
+    # NOTE: diverges from build_relational_facts_balanced, which drops the
+    # Mexico and Argentina rows — unintended, but frozen for dataset stability.
     pairs = [
         ("France", "Paris"),
         ("Germany", "Berlin"),
@@ -713,6 +724,8 @@ def build_relational_facts_balanced(
     pair to test whether the same K features generalize across distractors,
     or whether they specifically encode ``y+ - ' Paris'``-style steering.
     """
+    # NOTE: diverges from build_relational_facts, which also has Mexico and
+    # Argentina rows — unintended, but frozen for dataset stability.
     pairs = [
         ("France", "Paris"),
         ("Germany", "Berlin"),
@@ -935,13 +948,18 @@ def _build_mcq(
     deterministic wrong letter (first non-gold in alphabetical order). The
     "strongest wrong" variant requires per-row model scoring and is not built
     here — it can be derived offline from per-example margins (Step 6).
+
+    Caveat: because ``y_minus`` is the FIRST non-gold letter alphabetically,
+    it is " A" whenever the gold letter is not A (~75% of 4-option rows), so
+    per-family margins partly reflect the letter-A unembedding row rather
+    than task content. The label-permutation control
+    (``mcq_label_permutation_distractor_ids``) mitigates this downstream.
     """
     pairs = _mcq_letter_pairs(tokenizer, n_options=n_options, W_U_for_norm_match=W_U_for_norm_match)
     if not pairs:
         return []
     letter_to_tid = {L: tid for tid, L in pairs}
     letters = [L for _, L in pairs]
-    rng = np.random.default_rng(rng_seed)
     out: list[Example] = []
     for row in rows:
         if len(out) >= n_max:
@@ -962,8 +980,7 @@ def _build_mcq(
         if gold not in letter_to_tid:
             continue
         wrong_letters = [L for L in letters if L != gold]
-        # Deterministic wrong choice = first alphabetically; rng is held for
-        # downstream label-permutation control, kept seeded for reproducibility.
+        # Deterministic wrong choice = first non-gold letter alphabetically.
         wrong = wrong_letters[0]
         prompt = prompt_fn(row)
         ids = tokenizer.encode(prompt, add_special_tokens=False)
@@ -982,8 +999,6 @@ def _build_mcq(
                 },
             )
         )
-    # Touch rng so future shuffled-label controls remain deterministic.
-    _ = rng.random()
     return out
 
 
@@ -1099,7 +1114,7 @@ def _build_arc(
             gold = norm_labels[idx]
         rows.append({**r, "_label_norm": gold, "_labels_norm": norm_labels})
 
-    # Drop rows with 4 options only (ARC has some 3-option items).
+    # Keep only rows with exactly 4 options (ARC has some 3-option items).
     rows = [r for r in rows if len(r["choices"]["label"]) == 4]
 
     return _build_mcq(
@@ -1262,6 +1277,11 @@ def build_winogrande(
 
     Skips rows whose options are not both single tokens for the current
     tokenizer (this drops most multi-word names; expect yield < raw row count).
+
+    Caveat: the prompt truncates the sentence at the blank, but in most
+    WinoGrande items the clause that resolves the coreference comes AFTER the
+    blank, so the truncated prompt often does not determine the answer.
+    Treat this as an exploratory margin generator, not a benchmark eval.
     """
     ds = _load_hf_split("winogrande", "winogrande_xl", split="validation")
     if ds is None:
@@ -1308,8 +1328,6 @@ def build_winogrande(
                 },
             )
         )
-    # Silence the rng-unused linter for parity with other builders.
-    _ = np.random.default_rng(rng_seed).random()
     return out
 
 
@@ -1345,6 +1363,11 @@ def build_corruption(ex: Example, tokenizer) -> Example | None:
     For IOI: swap subject and recipient name in the prompt (entity-binding flip).
 
     For others, returns None (corruption not defined).
+
+    Caveat: for ``ioi_role_balanced`` this rebuilds the PLAIN IOI template,
+    dropping the "X waited." balancing sentence from the clean prompt — the
+    corrupt example is therefore not a minimal pair of its clean counterpart
+    (token bag and length both change) for that family.
     """
     if ex.family == "sva":
         # Subject swap: rebuild with the other number form. Caller can match on meta.
@@ -1419,13 +1442,15 @@ def mcq_label_permutation_distractor_ids(
     examples: list[Example],
     rng_seed: int = 0,
 ) -> list[int] | None:
-    """For MCQ-letter families: y_minus shuffled across the example set.
+    """For MCQ-letter families: a fresh uniformly random non-gold letter per row.
+
+    Not a permutation of the existing y_minus values — each row's control
+    distractor is drawn independently (seeded) from that row's non-gold
+    letters, so the marginal letter distribution differs from the originals'.
 
     Only emits a control list if EVERY example's gold letter is recorded in
     meta and every gold letter has a single-token id in the tokenizer.
     Returns None otherwise so the caller knows to skip writing the sidecar.
-
-    The shuffle is constrained: distractor letter != gold letter per row.
     """
     if not examples:
         return None

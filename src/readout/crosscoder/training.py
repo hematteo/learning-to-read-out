@@ -43,6 +43,7 @@ def get_all_codes(
         keep_device: If True, keep codes on the model's device (faster for
                      on-GPU metrics). If False, move to CPU (original behavior).
     """
+    was_training = model.training
     model.eval()
     device = next(model.parameters()).device
 
@@ -58,7 +59,7 @@ def get_all_codes(
     ):
         data_dev = data.to(device)
         c = model.encode(data_dev)
-        model.train()
+        model.train(was_training)
         return c if keep_device else c.cpu()
 
     codes = []
@@ -66,7 +67,7 @@ def get_all_codes(
         batch = data[i : i + batch_size].to(device)
         c = model.encode(batch)
         codes.append(c if keep_device else c.cpu())
-    model.train()
+    model.train(was_training)
     return torch.cat(codes, dim=0)
 
 
@@ -136,6 +137,7 @@ def resample_dead_features(model: nn.Module, data: torch.Tensor, codes: torch.Te
 @torch.no_grad()
 def evaluate_model(model: nn.Module, data: torch.Tensor) -> dict:
     """Compute MSE, L0, dead feature count on full dataset."""
+    was_training = model.training
     model.eval()
     device = next(model.parameters()).device
     codes = get_all_codes(model, data, keep_device=True)
@@ -152,6 +154,7 @@ def evaluate_model(model: nn.Module, data: torch.Tensor) -> dict:
     fve = 1.0 - mse / data_var if data_var > 0 else 0.0
     d_dict = codes.shape[1]
     dead_pct = dead / d_dict
+    model.train(was_training)
     return {
         "mse": mse,
         "l0": l0,
@@ -199,6 +202,8 @@ def train_simple_sae(
 
     Returns metrics dict with mse, l0, dead_features, time.
     """
+    if num_epochs < 1:
+        raise ValueError("num_epochs must be >= 1")
     if seed is not None:
         torch.manual_seed(seed)
     import time
@@ -262,110 +267,124 @@ def train_simple_sae(
         lr_scheduler = None
 
     t0 = time.time()
-    for epoch in trange(num_epochs, desc=arch_name, leave=False):
-        warmup_factor = min(1.0, epoch / max(warmup, 1))
+    try:
+        for epoch in trange(num_epochs, desc=arch_name, leave=False):
+            warmup_factor = min(1.0, epoch / max(warmup, 1))
 
-        # Noise augmentation: encode noisy input, reconstruct clean target
-        if noise_sigma > 0:
-            train_input = train_data + noise_sigma * torch.randn_like(train_data)
-        else:
-            train_input = train_data
-
-        is_matryoshka = isinstance(model, (MatryoshkaBatchTopKSAE, TiedMatryoshkaBatchTopKSAE))
-        if is_matryoshka:
-            x_hat, codes, sparsity_aux = forward_fn(train_input, train_groups=True)
-        else:
-            x_hat, codes, sparsity_aux = forward_fn(train_input)
-        recon_loss = (train_data - x_hat).pow(2).sum(dim=1).mean()
-
-        if is_topk:
-            if is_matryoshka:
-                if noise_sigma > 0 and hasattr(model, "_forward_at_prefix"):
-                    # Recompute multi-scale loss against CLEAN target
-                    x_c_clean = train_data - model.b_dec
-                    clean_loss = torch.zeros(1, device=train_data.device)
-                    for m in model.nested_sizes:
-                        x_hat_m, _ = model._forward_at_prefix(x_c_clean, m)
-                        clean_loss = clean_loss + ((train_data - x_hat_m).pow(2).sum(dim=1).mean())
-                    loss = clean_loss / len(model.nested_sizes)
-                else:
-                    # sparsity_aux is averaged multi-scale loss (scalar) for tied,
-                    # stacked tensor for untied — handle both
-                    loss = sparsity_aux.sum() if sparsity_aux.dim() > 0 else sparsity_aux
+            # Noise augmentation: encode noisy input, reconstruct clean target
+            if noise_sigma > 0:
+                train_input = train_data + noise_sigma * torch.randn_like(train_data)
             else:
-                loss = recon_loss
-                # AuxK loss for TopK/TiedTopK (Gao et al., alpha=1/32)
-                if isinstance(model, (TopKSAE, TiedTopKSAE)) and sparsity_aux.requires_grad:
-                    loss = loss + (1.0 / 32.0) * sparsity_aux
-        else:
-            effective_lambda = math.exp(log_lambda) * warmup_factor
-            sparsity_loss = sparsity_aux.sum(dim=1).mean()
-            loss = recon_loss + effective_lambda * sparsity_loss
+                train_input = train_data
 
-        if loss.isnan() or loss.isinf():
-            tqdm.write(f"    [{arch_name}] NaN/Inf loss at epoch {epoch + 1}, stopping")
-            nan_stopped = True
-            if best_state is None:
-                # Save current params (not yet corrupted — break is before optimizer.step)
-                best_state = {k: v.clone() for k, v in model.state_dict().items()}
-            break
-
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        if grad_clip > 0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-        optimizer.step()
-        if lr_scheduler is not None:
-            lr_scheduler.step()
-        model.normalize_decoder()
-
-        # Adaptive lambda for L1 (k-normalised gain)
-        if not is_topk and warmup_factor >= 1.0:
-            with torch.no_grad():
-                cur_l0 = (codes > 0).float().sum(dim=1).mean().item()
-            error = cur_l0 - target_l0
-            step = 0.03 * error / max(target_l0, 1)
-            log_lambda += step
-            log_lambda = max(math.log(1e-8), min(math.log(10.0), log_lambda))
-
-        # Early stopping (only after warmup, eval every 10 epochs to save compute)
-        if patience > 0 and warmup_factor >= 1.0 and epoch % 10 == 0:
-            with torch.no_grad():
-                val_hat, _, _ = model(val_data)
-                val_mse = (val_data - val_hat).pow(2).sum(dim=1).mean().item()
-            if val_mse < best_val_mse:
-                best_val_mse = val_mse
-                best_state = {k: v.clone() for k, v in model.state_dict().items()}
-                patience_counter = 0
+            is_matryoshka = isinstance(model, (MatryoshkaBatchTopKSAE, TiedMatryoshkaBatchTopKSAE))
+            if is_matryoshka and noise_sigma > 0:
+                # Denoising for matryoshka: forward() scores each level against
+                # its own (noisy) input, so build the per-level losses here —
+                # encode the NOISY input, reconstruct the CLEAN target.
+                x_c_noisy = train_input - model.b_dec
+                level_mses = []
+                x_hat = codes = None
+                for m in model.nested_sizes:
+                    x_hat_m, acts_m = model._forward_at_prefix(x_c_noisy, m)
+                    level_mses.append((train_data - x_hat_m).pow(2).sum(dim=1).mean())
+                    if m == model.d_dict:
+                        x_hat, codes = x_hat_m, acts_m
+                sparsity_aux = torch.stack(level_mses)  # (n_levels,)
+            elif is_matryoshka:
+                x_hat, codes, sparsity_aux = forward_fn(train_input, train_groups=True)
             else:
-                patience_counter += 10  # count in epochs, not val checks
-                if patience_counter >= patience:
-                    tqdm.write(f"    [{arch_name}] Early stopping at epoch {epoch + 1} (val_mse={val_mse:.6f})")
-                    break
+                x_hat, codes, sparsity_aux = forward_fn(train_input)
+            recon_loss = (train_data - x_hat).pow(2).sum(dim=1).mean()
 
-        # Update AuxK dead mask every 100 epochs (TopK and TiedTopK)
-        # Reuse codes from the main forward pass — no extra forward needed
-        if isinstance(model, (TopKSAE, TiedTopKSAE)) and hasattr(model, "update_dead_mask") and (epoch + 1) % 100 == 0:
-            with torch.no_grad():
-                model.update_dead_mask(codes.detach())
-
-        # Dead feature resampling (use train_data only to avoid val leakage)
-        if resample_every > 0 and (epoch + 1) % resample_every == 0 and epoch < num_epochs - 1000:
-            with torch.no_grad():
-                if is_mps:
-                    model.cpu()
-                    td_cpu = train_data.cpu()
-                    codes_cpu = model.encode(td_cpu)
-                    n = resample_dead_features(model, td_cpu, codes_cpu)
-                    model.to(device)
-                    torch.mps.empty_cache()
-                    del td_cpu, codes_cpu
+            if is_topk:
+                if is_matryoshka:
+                    # sparsity_aux: (n_levels,) stacked per-level recon MSE
+                    loss = sparsity_aux.mean()
                 else:
-                    codes_gpu = get_all_codes(model, train_data, keep_device=True)
-                    n = resample_dead_features(model, train_data, codes_gpu)
-                    del codes_gpu
-                if n > 0:
-                    tqdm.write(f"    [{arch_name} epoch {epoch + 1}] Resampled {n} dead features")
+                    loss = recon_loss
+                    # AuxK loss for TopK/TiedTopK (Gao et al., alpha=1/32)
+                    if isinstance(model, (TopKSAE, TiedTopKSAE)) and sparsity_aux.requires_grad:
+                        loss = loss + (1.0 / 32.0) * sparsity_aux
+            else:
+                effective_lambda = math.exp(log_lambda) * warmup_factor
+                sparsity_loss = sparsity_aux.sum(dim=1).mean()
+                loss = recon_loss + effective_lambda * sparsity_loss
+
+            if loss.isnan() or loss.isinf():
+                tqdm.write(f"    [{arch_name}] NaN/Inf loss at epoch {epoch + 1}, stopping")
+                nan_stopped = True
+                if best_state is None:
+                    # Save current params (not yet corrupted — break is before optimizer.step)
+                    best_state = {k: v.clone() for k, v in model.state_dict().items()}
+                break
+
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            if grad_clip > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
+            if lr_scheduler is not None:
+                lr_scheduler.step()
+            model.normalize_decoder()
+
+            # Adaptive lambda for L1 (k-normalised gain)
+            if not is_topk and warmup_factor >= 1.0:
+                with torch.no_grad():
+                    cur_l0 = (codes > 0).float().sum(dim=1).mean().item()
+                error = cur_l0 - target_l0
+                step = 0.03 * error / max(target_l0, 1)
+                log_lambda += step
+                log_lambda = max(math.log(1e-8), min(math.log(10.0), log_lambda))
+
+            # Early stopping (only after warmup, eval every 10 epochs to save compute)
+            if patience > 0 and warmup_factor >= 1.0 and epoch % 10 == 0:
+                with torch.no_grad():
+                    val_hat, _, _ = model(val_data)
+                    val_mse = (val_data - val_hat).pow(2).sum(dim=1).mean().item()
+                if val_mse < best_val_mse:
+                    best_val_mse = val_mse
+                    best_state = {k: v.clone() for k, v in model.state_dict().items()}
+                    patience_counter = 0
+                else:
+                    patience_counter += 10  # count in epochs, not val checks
+                    if patience_counter >= patience:
+                        tqdm.write(f"    [{arch_name}] Early stopping at epoch {epoch + 1} (val_mse={val_mse:.6f})")
+                        break
+
+            # Update AuxK dead mask every 100 epochs (TopK and TiedTopK)
+            # Reuse codes from the main forward pass — no extra forward needed
+            if (
+                isinstance(model, (TopKSAE, TiedTopKSAE))
+                and hasattr(model, "update_dead_mask")
+                and (epoch + 1) % 100 == 0
+            ):
+                with torch.no_grad():
+                    model.update_dead_mask(codes.detach())
+
+            # Dead feature resampling (use train_data only to avoid val leakage)
+            if resample_every > 0 and (epoch + 1) % resample_every == 0 and epoch < num_epochs - 1000:
+                with torch.no_grad():
+                    if is_mps:
+                        model.cpu()
+                        td_cpu = train_data.cpu()
+                        codes_cpu = model.encode(td_cpu)
+                        n = resample_dead_features(model, td_cpu, codes_cpu)
+                        model.to(device)
+                        torch.mps.empty_cache()
+                        del td_cpu, codes_cpu
+                    else:
+                        codes_gpu = get_all_codes(model, train_data, keep_device=True)
+                        n = resample_dead_features(model, train_data, codes_gpu)
+                        del codes_gpu
+                    if n > 0:
+                        tqdm.write(f"    [{arch_name} epoch {epoch + 1}] Resampled {n} dead features")
+    finally:
+        if use_compile:
+            # Restore the eager forward so the compiled wrapper doesn't leak
+            # out of this function with the trained model.
+            model.forward = model._orig_forward
+            del model._orig_forward
 
     actual_epochs = epoch + 1
     elapsed = time.time() - t0
@@ -403,17 +422,32 @@ def cross_validate_sae(
     model_class: type,
     data: torch.Tensor,
     n_folds: int = 5,
+    seed: int = 0,
     **train_kwargs,
 ) -> dict:
+    """K-fold cross-validation for an SAE architecture.
+
+    Args:
+        seed: Seeds a dedicated torch.Generator for the fold shuffle so folds
+            are reproducible regardless of ambient RNG state.
+        **train_kwargs: `d_dict` is required; `k` is optional (only forwarded
+            to the constructor when given, so non-topk archs work too); the
+            rest is passed to `train_simple_sae`.
+    """
     d_model = data.shape[1]
     device = data.device
     d_dict = train_kwargs.pop("d_dict")
-    k = train_kwargs.pop("k")
+    k = train_kwargs.pop("k", None)
     fold_size = data.shape[0] // n_folds
     usable = fold_size * n_folds
-    perm = torch.randperm(data.shape[0], device=device)[:usable]
+    gen = torch.Generator().manual_seed(seed)
+    perm = torch.randperm(data.shape[0], generator=gen)[:usable].to(device)
     data_shuffled = data[perm]
     fold_metrics: list[dict] = []
+
+    model_kwargs = {"d_input": d_model, "d_dict": d_dict}
+    if k is not None:
+        model_kwargs["k"] = k
 
     for fold in range(n_folds):
         val_start = fold * fold_size
@@ -421,7 +455,7 @@ def cross_validate_sae(
         val_split = data_shuffled[val_start:val_end]
         train_split = torch.cat([data_shuffled[:val_start], data_shuffled[val_end:]], dim=0)
 
-        model = model_class(d_input=d_model, d_dict=d_dict, k=k).to(device)
+        model = model_class(**model_kwargs).to(device)
         train_simple_sae(model, train_split, **train_kwargs)
         metrics = evaluate_model(model, val_split)
         fold_metrics.append(metrics)

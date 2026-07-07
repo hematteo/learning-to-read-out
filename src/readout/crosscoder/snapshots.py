@@ -25,7 +25,7 @@ def load_snapshot_at(p: Path | str, *, dtype: torch.dtype | None = None) -> torc
     p = Path(p)
     if not p.exists():
         raise FileNotFoundError(p)
-    x = torch.load(p, map_location="cpu", weights_only=False)
+    x = torch.load(p, map_location="cpu", weights_only=True)
     if isinstance(x, dict):
         for k in ("W_U", "w_u", "W_E", "w_e"):
             if k in x:

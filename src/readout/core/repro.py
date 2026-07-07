@@ -35,7 +35,8 @@ def git_commit(repo: Path | None = None) -> str | None:
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, RuntimeError):
+        # RuntimeError: repo_root() found no repo (packaged install).
         return None
 
 
@@ -48,6 +49,10 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
     reproducibility comparisons.
     """
     random.seed(seed)
+    # NOTE: setting PYTHONHASHSEED here cannot affect the already-running
+    # interpreter (the str/bytes hash salt is fixed at startup); it only
+    # covers subprocesses inheriting this environment. No in-repo logic may
+    # depend on str hash order.
     os.environ["PYTHONHASHSEED"] = str(seed)
     try:
         import numpy as np
@@ -70,43 +75,53 @@ def seed_everything(seed: int, *, deterministic: bool = False) -> None:
 
 
 def _git_hash(repo: Path | None = None) -> tuple[str, bool]:
-    """Return (short_hash, is_dirty). ('unknown', False) if not in a git repo."""
-    cwd = str(repo) if repo else None
-    try:
-        h = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--short=12", "HEAD"],
-                cwd=cwd,
-                stderr=subprocess.DEVNULL,
-            )
-            .decode()
-            .strip()
-        )
-        dirty = (
-            subprocess.call(
-                ["git", "diff-index", "--quiet", "HEAD", "--"],
-                cwd=cwd,
-                stderr=subprocess.DEVNULL,
-            )
-            != 0
-        )
-        return h, dirty
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        # No git available (e.g. a packaged tarball with no .git). Fall back to
-        # an explicit commit record so run provenance stays meaningful: the
-        # READOUT_COMMIT env var, then a COMMIT_HASH file at the repo root.
-        env_h = os.environ.get("READOUT_COMMIT")
-        if env_h:
-            return env_h.strip(), False
-        try:
-            from readout.core.paths import repo_root
+    """Return (short_hash, is_dirty). ('unknown', False) if not in a git repo.
 
-            commit_file = repo_root() / "COMMIT_HASH"
-            if commit_file.is_file():
-                return (commit_file.read_text().strip() or "unknown"), False
-        except OSError:
+    Anchors git at the repo containing this package, never the process cwd
+    (which may be an unrelated git repo, e.g. a dotfiles-managed $HOME).
+    """
+    if repo is None:
+        try:
+            repo = repo_root()
+        except RuntimeError:
+            # Packaged install: no repo root to anchor at; skip git entirely
+            # rather than record whatever repo the process was launched from.
+            repo = None
+    if repo is not None:
+        try:
+            h = (
+                subprocess.check_output(
+                    ["git", "rev-parse", "--short=12", "HEAD"],
+                    cwd=str(repo),
+                    stderr=subprocess.DEVNULL,
+                )
+                .decode()
+                .strip()
+            )
+            dirty = (
+                subprocess.call(
+                    ["git", "diff-index", "--quiet", "HEAD", "--"],
+                    cwd=str(repo),
+                    stderr=subprocess.DEVNULL,
+                )
+                != 0
+            )
+            return h, dirty
+        except (subprocess.CalledProcessError, FileNotFoundError):
             pass
-        return "unknown", False
+    # No git available (e.g. a packaged tarball with no .git). Fall back to
+    # an explicit commit record so run provenance stays meaningful: the
+    # READOUT_COMMIT env var, then a COMMIT_HASH file at the repo root.
+    env_h = os.environ.get("READOUT_COMMIT")
+    if env_h:
+        return env_h.strip(), False
+    try:
+        commit_file = repo_root() / "COMMIT_HASH"
+        if commit_file.is_file():
+            return (commit_file.read_text().strip() or "unknown"), False
+    except (OSError, RuntimeError):
+        pass
+    return "unknown", False
 
 
 def log_run_provenance(seed: int | None = None) -> dict[str, Any]:

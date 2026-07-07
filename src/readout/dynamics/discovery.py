@@ -83,6 +83,8 @@ class RunRow:
     direction_to_terminal_path: str | None = None
     lifecycle_path: str | None = None
     cusum_path: str | None = None
+    # Payload format varies (per-row 10k null vs multi-seed 100k cache);
+    # read it back via readout.dynamics.derive.load_cusum_null.
     cusum_null_path: str | None = None
 
     def to_dict(self) -> dict:
@@ -240,6 +242,8 @@ def _t3_x_rows() -> list[RunRow]:
             )
     for d in sorted(base.glob("t3_2*")):
         for ckpt in sorted(d.rglob("we_cc_dsae24576_seed*.pt")):
+            if ckpt.name.startswith("._"):
+                continue
             seed = _parse_seed(ckpt.stem)
             rows.append(
                 RunRow(
@@ -461,4 +465,3 @@ def _t2_1_rows() -> list[RunRow]:
             )
         )
     return rows
-

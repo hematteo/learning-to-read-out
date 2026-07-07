@@ -56,7 +56,14 @@ def ssd_root() -> Path:
     """
     env = os.environ.get("UM_SSD_ROOT")
     if env:
-        return Path(env)
+        # Anchor a relative UM_SSD_ROOT so it doesn't silently fork snapshot
+        # caches per launch directory. Only genuinely relative paths are
+        # rewritten (abspath: no symlink resolution, so /tmp stays /tmp on
+        # macOS and rooted paths pass through unchanged on Windows).
+        expanded = os.path.expanduser(env)
+        if not os.path.isabs(expanded):
+            expanded = os.path.abspath(expanded)
+        return Path(expanded)
     return repo_root() / "local_snapshots"
 
 
@@ -85,14 +92,19 @@ def snapshot_dir(model_name: str) -> Path:
     return ssd_root() / "snapshots" / model_short(model_name)
 
 
-def snapshot_path(model_name: str, step: int, *, kind: str = "wu") -> Path:
-    """Path to a single snapshot .pt file.
+def snapshot_filename(model_name: str, step: int, *, kind: str = "wu") -> str:
+    """Bare snapshot filename (registry-free; accepts any HF model id).
 
     kind="wu" -> unembedding row matrix; kind="we" -> input-embedding rows.
     """
     if kind not in ("wu", "we"):
         raise ValueError(f"kind must be 'wu' or 'we', got {kind!r}")
-    return snapshot_dir(model_name) / f"{model_slug(model_name)}_step{step}_{kind}.pt"
+    return f"{model_slug(model_name)}_step{step}_{kind}.pt"
+
+
+def snapshot_path(model_name: str, step: int, *, kind: str = "wu") -> Path:
+    """Path to a single snapshot .pt file (registered models only)."""
+    return snapshot_dir(model_name) / snapshot_filename(model_name, step, kind=kind)
 
 
 def release_root() -> Path:

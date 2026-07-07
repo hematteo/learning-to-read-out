@@ -18,15 +18,22 @@ import numpy as np
 import torch
 
 from .checkpoints import unwrap_ckpt
+from .inference import reconstruct_preprocess_stats
+from .snapshots import load_snapshot_at
 
 
-def _maybe_compute_preprocess_stats(stats, mode, slug, snap_dir, steps, device="cpu"):
+def _load_snap(snap_dir, slug, step, kind):
+    return load_snapshot_at(Path(snap_dir) / f"{slug}_step{step}_{kind}.pt")
+
+
+def _maybe_compute_preprocess_stats(stats, mode, slug, snap_dir, steps, kind="wu"):
     """Return preprocess stats compatible with extract_rates.
 
-    If ``stats`` is non-None, return it unchanged. Otherwise compute the
-    per-snapshot mean/scale on the fly using the same formulas as
-    ``preprocess_snapshots`` in ``wu_adapter.py`` (mode='center_scale' only).
-    Returns None if mode is 'none' or unrecognized.
+    If ``stats`` is non-None, return it unchanged. Otherwise rebuild the
+    per-snapshot stats from the raw snapshots via
+    ``inference.reconstruct_preprocess_stats`` (which delegates to the
+    training-time formula in ``wu_adapter.preprocess_snapshots``).
+    Returns None if mode is 'none'.
     """
     if stats is not None:
         return stats
@@ -34,29 +41,20 @@ def _maybe_compute_preprocess_stats(stats, mode, slug, snap_dir, steps, device="
         return None
     if mode not in ("center", "center_scale"):
         raise ValueError(f"Unknown preprocess mode for stats reconstruction: {mode}")
-    means: list[torch.Tensor] = []
-    scales: list[torch.Tensor] = []
-    for i, step in enumerate(steps):
-        x = torch.load(Path(snap_dir) / f"{slug}_step{step}_wu.pt", map_location="cpu").float()
-        m = x.mean(dim=0, keepdim=True)  # (1, d)
-        centered = x - m
-        if mode == "center":
-            s = torch.ones(1, 1, dtype=x.dtype)
-        else:  # center_scale
-            d = x.shape[-1]
-            mean_sq = centered.pow(2).sum(dim=-1).mean(dim=-1, keepdim=True).unsqueeze(-1)
-            s = (mean_sq / d).clamp_min(1e-8).sqrt().squeeze(-1)
-        means.append(m.unsqueeze(0))  # (1, 1, d)
-        scales.append(s.reshape(1, 1, 1))
+    snaps = (_load_snap(snap_dir, slug, step, kind) for step in steps)
+    if mode == "center_scale":
+        return reconstruct_preprocess_stats(snaps)
+    # mode == "center": per-snapshot mean, unit scale (preprocess_snapshots semantics).
+    means = [x.mean(dim=0, keepdim=True).unsqueeze(0) for x in snaps]  # each (1, 1, d)
     return {
         "mean": torch.cat(means, dim=0),  # (K, 1, d)
-        "scale": torch.cat(scales, dim=0),  # (K, 1, 1)
+        "scale": torch.ones(len(means), 1, 1),  # (K, 1, 1)
         "mode": mode,
     }
 
 
-def compute_rates(ckpt_path, snap_dir, device="cpu"):
-    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=False))
+def compute_rates(ckpt_path, snap_dir, device="cpu", kind="wu"):
+    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=True))
     sd = ck["state_dict"]
     steps = ck["steps"]
     model_name = ck["model_name"]
@@ -70,12 +68,12 @@ def compute_rates(ckpt_path, snap_dir, device="cpu"):
         slug,
         snap_dir,
         steps,
-        device=device,
+        kind=kind,
     )
     K, d, D = W_E.shape
     rates = torch.zeros(K, D)
     for i, step in enumerate(steps):
-        x = torch.load(snap_dir / f"{slug}_step{step}_wu.pt", map_location="cpu").float()
+        x = _load_snap(snap_dir, slug, step, kind)
         if stats is not None:
             x = (x - stats["mean"][i].squeeze(0)) / stats["scale"][i].squeeze()
         pre = (x.to(device) @ W_E[i].to(device) + b_E[i].to(device)).cpu()
@@ -83,7 +81,7 @@ def compute_rates(ckpt_path, snap_dir, device="cpu"):
     return rates, list(steps)
 
 
-def compute_rates_canonical(ckpt_path, snap_dir, device="cpu"):
+def compute_rates_canonical(ckpt_path, snap_dir, device="cpu", kind="wu"):
     """Per-snapshot per-feature firing rate under the model's canonical encode.
 
     Matches llamascopium.Crosscoder.encode (sparsity_include_decoder_norm=True):
@@ -95,7 +93,7 @@ def compute_rates_canonical(ckpt_path, snap_dir, device="cpu"):
     joint_pre is shared across heads; per-head variation comes through
     decoder norm. Inputs are preprocessed identically to training.
     """
-    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=False))
+    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=True))
     sd = ck["state_dict"]
     steps = ck["steps"]
     model_name = ck["model_name"]
@@ -110,7 +108,7 @@ def compute_rates_canonical(ckpt_path, snap_dir, device="cpu"):
         slug,
         snap_dir,
         steps,
-        device=device,
+        kind=kind,
     )
     K, d, D = W_E.shape
 
@@ -118,7 +116,7 @@ def compute_rates_canonical(ckpt_path, snap_dir, device="cpu"):
 
     joint_pre = None
     for i, step in enumerate(steps):
-        x = torch.load(snap_dir / f"{slug}_step{step}_wu.pt", map_location="cpu").float()
+        x = _load_snap(snap_dir, slug, step, kind)
         if stats is not None:
             x = (x - stats["mean"][i].squeeze(0)) / stats["scale"][i].squeeze()
         head_pre = x.to(device) @ W_E[i].to(device) + b_E[i].to(device)  # (V, D)
@@ -135,7 +133,7 @@ def compute_rates_canonical(ckpt_path, snap_dir, device="cpu"):
 def rate_rotation_r(ckpt_path, rates):
     """Pearson r between |Δrate| and (1 - cos(W_D[i], W_D[i+1])) over all features
     pooled across consecutive snapshot pairs (matches run5_1b_sweep_analysis.py)."""
-    ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    ck = torch.load(ckpt_path, map_location="cpu", weights_only=True)
     W_D = ck["state_dict"]["W_D"].cpu().numpy()  # (K, D, d)
     rates_np = rates.cpu().numpy() if isinstance(rates, torch.Tensor) else np.asarray(rates)
     K = rates_np.shape[0]
@@ -159,6 +157,13 @@ def main():
     ap.add_argument("--cache-dir", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--device", default="cpu")
+    ap.add_argument(
+        "--kind",
+        choices=("wu", "we"),
+        default="wu",
+        help="Snapshot matrix kind: 'wu' (unembedding, default) or 'we' (input embedding). "
+        "Selects the *_<kind>.pt snapshot files in --cache-dir.",
+    )
     ap.add_argument(
         "--append-manifest",
         action="store_true",
@@ -190,7 +195,7 @@ def main():
     steps: list[int] = []
     for i, ckpt in enumerate(args.ckpts):
         print(f"[{i + 1}/{len(args.ckpts)}] {ckpt.name}...", flush=True)
-        rates, ckpt_steps = rate_fn(ckpt, args.cache_dir, device=args.device)
+        rates, ckpt_steps = rate_fn(ckpt, args.cache_dir, device=args.device, kind=args.kind)
         # rates_per_seed shares a single steps axis in the saved file, so every
         # checkpoint passed in one invocation must use the same schedule.
         if steps and list(ckpt_steps) != list(steps):
@@ -218,31 +223,9 @@ def main():
     print(f"Saved to {args.output}")
 
     if args.append_manifest:
-        from readout.crosscoder.manifest import (
-            MANIFEST_HEADER,
-            _atomic_write,
-            _ensure_manifest_dir,
-            _fmt,
-            _read_existing,
-            update_or_insert,
-        )
+        from readout.crosscoder.manifest import upsert_manifest_rows
 
-        manifest_csv = Path(args.manifest_path)
-        _ensure_manifest_dir(manifest_csv, strict=True)
-        header, rows = _read_existing(manifest_csv)
-        if header != MANIFEST_HEADER:
-            merged = list(MANIFEST_HEADER)
-            for c in header:
-                if c not in merged:
-                    merged.append(c)
-            header = merged
-        else:
-            header = list(MANIFEST_HEADER)
-        for ckpt, r in rotation_rs.items():
-            new_row = {
-                "path": str(Path(ckpt).resolve()),
-                "rate_rotation_r": _fmt(r),
-            }
-            rows, action = update_or_insert(rows, new_row, key="path")
+        new_rows = [{"path": str(Path(ckpt).resolve()), "rate_rotation_r": r} for ckpt, r in rotation_rs.items()]
+        actions = upsert_manifest_rows(Path(args.manifest_path), new_rows, key="path", strict=True)
+        for (ckpt, r), action in zip(rotation_rs.items(), actions):
             print(f"Manifest {action}: {ckpt.name} (rate_rotation_r={r:.4f})")
-        _atomic_write(manifest_csv, header, rows)

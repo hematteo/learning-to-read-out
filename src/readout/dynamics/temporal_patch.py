@@ -119,9 +119,11 @@ results/temporal_patch_metrics/<tag>/
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import string
 import time
+import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -131,6 +133,7 @@ import torch.nn.functional as F
 
 from readout.core.data import get_device
 from readout.core.hf_revisions import resolve_revision
+from readout.core.model_specs import DEFAULT_STEPS_32
 from readout.core.paths import repo_root, ssd_path
 from readout.crosscoder import inference
 from readout.crosscoder.checkpoints import load_checkpoint
@@ -146,6 +149,16 @@ SEQ_LEN = 512
 # Sequences per forward pass when building the hLN cache (archived
 # intervention pipeline value; small because K x V x d activations dominate).
 HLN_FORWARD_BATCH = 4
+
+
+def _stable_seed(*parts) -> int:
+    """Process-stable 32-bit seed from string-able parts.
+
+    Python's builtin hash() is salted per process (PYTHONHASHSEED), so it must
+    never seed an RNG that claims determinism; crc32 over the utf-8 bytes is
+    stable across processes and Python versions.
+    """
+    return zlib.crc32("|".join(str(p) for p in parts).encode("utf-8"))
 
 
 def encode_snapshot_local(W_U: torch.Tensor, pieces: dict) -> torch.Tensor:
@@ -200,40 +213,7 @@ CFG_PYTHIA_160M = ModelCfg(
     aggregates_template=None,
     npy_dir=SSD / "derived/rates/wu-d8192-multiseed",
     hLN_cache_dir=SSD / "readout_edit_timing",
-    steps_canonical=[
-        0,
-        1,
-        2,
-        4,
-        8,
-        16,
-        32,
-        64,
-        128,
-        256,
-        512,
-        1000,
-        2000,
-        3000,
-        4000,
-        5000,
-        6000,
-        7000,
-        8000,
-        9000,
-        14000,
-        21000,
-        27000,
-        34000,
-        47000,
-        61000,
-        75000,
-        89000,
-        102000,
-        116000,
-        130000,
-        143000,
-    ],
+    steps_canonical=list(DEFAULT_STEPS_32),
 )
 
 CFG_PYTHIA_1B = ModelCfg(
@@ -245,40 +225,7 @@ CFG_PYTHIA_1B = ModelCfg(
     aggregates_template=str(SSD / "derived/aggregates/aggregates_dsae{d_sae}_seed{seed}.pt"),
     npy_dir=None,
     hLN_cache_dir=SSD / "readout_edit_timing_pythia1b",
-    steps_canonical=[
-        0,
-        1,
-        2,
-        4,
-        8,
-        16,
-        32,
-        64,
-        128,
-        256,
-        512,
-        1000,
-        2000,
-        3000,
-        4000,
-        5000,
-        6000,
-        7000,
-        8000,
-        9000,
-        14000,
-        21000,
-        27000,
-        34000,
-        47000,
-        61000,
-        75000,
-        89000,
-        102000,
-        116000,
-        130000,
-        143000,
-    ],
+    steps_canonical=list(DEFAULT_STEPS_32),
 )
 
 # Pythia-6.9B and OLMo-2-7B configs resolve the released artifacts where they
@@ -295,40 +242,7 @@ CFG_PYTHIA_6_9B = ModelCfg(
     aggregates_template=str(SSD / "derived/aggregates/aggregates_pythia-6.9b_d{d_sae}_seed{seed}.pt"),
     npy_dir=None,
     hLN_cache_dir=SSD / "hln_cache/temporal_patch_grid/pythia-6.9b",
-    steps_canonical=[
-        0,
-        1,
-        2,
-        4,
-        8,
-        16,
-        32,
-        64,
-        128,
-        256,
-        512,
-        1000,
-        2000,
-        3000,
-        4000,
-        5000,
-        6000,
-        7000,
-        8000,
-        9000,
-        14000,
-        21000,
-        27000,
-        34000,
-        47000,
-        61000,
-        75000,
-        89000,
-        102000,
-        116000,
-        130000,
-        143000,
-    ],
+    steps_canonical=list(DEFAULT_STEPS_32),
 )
 
 # OLMo-2-7B's published step list (matches experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py).
@@ -350,6 +264,7 @@ CFG_OLMO_2_7B = ModelCfg(
         928000,
     ],
 )
+
 
 @dataclass(frozen=True)
 class PatchContext:
@@ -386,7 +301,8 @@ RECOVERY_FLOOR = {
 }
 
 # Late-rise / late-specialist cutoff: features that PEAK at or after this step
-# count as "late specialists" for the 1000->143000 transition.
+# count as "late specialists" for early->terminal transitions (the terminal
+# snapshot is whatever ctx.steps[-1] is for the active schedule).
 LATE_PEAK_CUTOFF = 5000
 
 # ---------------------------------------------------------------------------
@@ -736,7 +652,15 @@ class TokenMeta:
 
 def build_token_meta(tok, corpus_ids: torch.Tensor, V_explicit: int) -> TokenMeta:
     V = V_explicit
-    counts = np.bincount(corpus_ids.numpy(), minlength=V).astype(np.int64)
+    ids_np = corpus_ids.numpy()
+    # bincount(minlength=V) silently returns a LONGER array when any id >= V,
+    # desyncing log_freq/freq_decile from the other (V,) per-token arrays.
+    if ids_np.size and int(ids_np.max()) >= V:
+        raise ValueError(
+            f"corpus contains token id {int(ids_np.max())} >= vocab size {V}; "
+            f"the eval corpus was likely tokenized for a different model."
+        )
+    counts = np.bincount(ids_np, minlength=V).astype(np.int64)
     log_freq = np.log1p(counts).astype(np.float32)
 
     text = [None] * V
@@ -1045,8 +969,21 @@ def _cache_hidden_generic(model, ids_seqs: torch.Tensor) -> torch.Tensor:
     return torch.cat(captured, dim=0)
 
 
-# Cache for HF branch enumeration so we don't re-hit the API per step.
-_resolve_revision = resolve_revision  # canonical resolver: readout.core.hf_revisions
+# Back-compat alias only — HF branch-enumeration caching lives inside the
+# canonical resolver (readout.core.hf_revisions.resolve_revision).
+_resolve_revision = resolve_revision
+
+
+def _corpus_fingerprint(ids_seqs: torch.Tensor) -> str:
+    """sha1 over the token tensor's contiguous bytes + shape (corpus identity)."""
+    t = ids_seqs.detach().cpu().contiguous()
+    h = hashlib.sha1(t.numpy().tobytes())
+    h.update(str(tuple(t.shape)).encode("utf-8"))
+    return h.hexdigest()
+
+
+# hLN caches written before corpus fingerprinting; warn once per path.
+_LEGACY_HLN_WARNED: set[Path] = set()
 
 
 def cache_or_build_hLN(ctx: PatchContext, step: int, ids_seqs: torch.Tensor) -> dict:
@@ -1054,12 +991,36 @@ def cache_or_build_hLN(ctx: PatchContext, step: int, ids_seqs: torch.Tensor) -> 
 
     Generic over Pythia (embed_out / step<N>) and OLMo (lm_head /
     stage1-step<N>-tokens<T>B). The revision-resolution map is cached per
-    process to keep HF API hits to one per model."""
+    process to keep HF API hits to one per model.
+
+    The cache file is keyed by step only, so the payload stores a fingerprint
+    of the corpus it was built from; a hit against a different corpus
+    (e.g. after --eval-tokens changed) raises instead of silently pairing
+    h_LN with the wrong token ids."""
     cache_dir = ctx.cfg.hLN_cache_dir
     cache_dir.mkdir(parents=True, exist_ok=True)
     p = cache_dir / f"hLN_step{step}.pt"
+    fp = _corpus_fingerprint(ids_seqs)
     if p.exists():
-        return torch.load(p, map_location="cpu", weights_only=False)
+        cached = torch.load(p, map_location="cpu", weights_only=False)
+        cached_fp = cached.get("corpus_sha1")
+        if cached_fp is None:
+            if p not in _LEGACY_HLN_WARNED:
+                _LEGACY_HLN_WARNED.add(p)
+                print(
+                    f"  [h_LN cache] WARNING: {p} predates corpus fingerprinting; "
+                    f"cannot verify it matches the current eval corpus. Delete it "
+                    f"to force a rebuild if --eval-tokens changed.",
+                    flush=True,
+                )
+        elif cached_fp != fp:
+            raise ValueError(
+                f"h_LN cache {p} was built from a different eval corpus "
+                f"(cached sha1 {cached_fp[:12]}… != current {fp[:12]}…). "
+                f"Delete the cache file or point --eval-tokens at the corpus "
+                f"it was built from."
+            )
+        return cached
     revision = _resolve_revision(ctx.model_name, step)
     print(
         f"  [h_LN cache] forwarding {ctx.model_name} {revision} -> {p.name}",
@@ -1086,7 +1047,7 @@ def cache_or_build_hLN(ctx: PatchContext, step: int, ids_seqs: torch.Tensor) -> 
         torch.cuda.empty_cache()
     if torch.backends.mps.is_available():
         torch.mps.empty_cache()
-    out = {"h_LN": h_LN, "W_U_orig": W_U_orig, "revision": revision}
+    out = {"h_LN": h_LN, "W_U_orig": W_U_orig, "revision": revision, "corpus_sha1": fp}
     torch.save(out, p)
     print(f"  [h_LN cache] done in {time.time() - t0:.1f}s", flush=True)
     return out
@@ -1144,7 +1105,7 @@ def extract_pieces_for_steps(ctx: PatchContext, seed: int, needed_steps: list[in
     sd, ps, _ = load_crosscoder(ctx, seed)
     canonical = ctx.steps
     out: dict[int, dict] = {}
-    log_thr = sd["activation_function.log_jumprelu_threshold"].exp().float().clone()
+    thr = sd["activation_function.log_jumprelu_threshold"].exp().float().clone()
     for s in needed_steps:
         idx = canonical.index(s)
         out[s] = {
@@ -1152,7 +1113,7 @@ def extract_pieces_for_steps(ctx: PatchContext, seed: int, needed_steps: list[in
             "W_D": sd["W_D"][idx].float().clone(),
             "b_E": sd["b_E"][idx].float().clone(),
             "b_D": sd["b_D"][idx].float().clone(),
-            "thr": log_thr,  # shared across snapshots
+            "thr": thr,  # shared across snapshots
             "mean_i": ps["mean"][idx].squeeze(0).float().clone(),
             "scale_i": ps["scale"][idx].squeeze().float().clone(),
         }
@@ -1169,14 +1130,27 @@ def build_temporal_patch(
     base_step: int,
     target_step: int,
     feature_subset: list[int],
+    acts_cache: dict[int, torch.Tensor] | None = None,
 ) -> TemporalPatch:
     """Build a TemporalPatch from pre-extracted pieces and pre-loaded W_U slabs.
 
     Caller is responsible for managing the lifetime of pieces_b/pieces_t and
     the W_U slabs — typically extract once per (base, target) snapshot in
-    `run()` and reuse across all subsets/concepts."""
-    a_b = encode_snapshot_local(W_U_b, pieces_b)  # a_k(b)
-    a_t = encode_snapshot_local(W_U_t, pieces_t)  # a_k(t)
+    `run()` and reuse across all subsets/concepts.
+
+    `acts_cache` (step -> (V, d_sae) snapshot-local activations) skips
+    re-encoding when the same snapshot recurs across subsets/transitions;
+    each entry is ~V*d_sae*4 bytes, so callers should clear it when done."""
+
+    def _acts(step: int, W_U: torch.Tensor, pieces: dict) -> torch.Tensor:
+        if acts_cache is None:
+            return encode_snapshot_local(W_U, pieces)
+        if step not in acts_cache:
+            acts_cache[step] = encode_snapshot_local(W_U, pieces)
+        return acts_cache[step]
+
+    a_b = _acts(base_step, W_U_b, pieces_b)  # a_k(b)
+    a_t = _acts(target_step, W_U_t, pieces_t)  # a_k(t)
     R_b = decode_subset_at(a_b, pieces_b, feature_subset)
     R_t = decode_subset_at(a_t, pieces_t, feature_subset)
     delta_S = R_t - R_b
@@ -1204,15 +1178,18 @@ def select_feature_subset(
     decoder_norms_seed: np.ndarray,
     cusum_seed: np.ndarray,
     peak_steps_seed: np.ndarray,
-    rng: np.random.Generator,
     excluded: set[int] | None = None,
 ) -> list[int]:
     """Return list of feature ids selected by the named ranking rule.
 
-    rates_seed: (32, D) firing rates per snapshot
-    decoder_norms_seed: (32, D)
+    rates_seed: (K, D) firing rates per snapshot (K = len(ctx.steps))
+    decoder_norms_seed: (K, D)
     cusum_seed: (D,) max-CUSUM statistic per feature
     peak_steps_seed: (D,) the step at which each feature peaks (in step units)
+
+    Selection is fully deterministic given the aggregates; features a rule
+    marks ineligible (score -inf) are never used as filler, so the returned
+    list may be shorter than top_k.
     """
     excluded = excluded or set()
     bi = ctx.steps.index(base_step)
@@ -1241,7 +1218,7 @@ def select_feature_subset(
     elif name == "late_specialist_top_k":
         # Peak at or after LATE_PEAK_CUTOFF; rank by terminal decoder norm.
         is_late = peak_steps_seed >= LATE_PEAK_CUTOFF
-        terminal = decoder_norms_seed[ctx.steps.index(143000)]
+        terminal = decoder_norms_seed[len(ctx.steps) - 1]  # terminal snapshot
         score = np.where(is_late, terminal, -np.inf)
         order = np.argsort(-score)
     elif name == "matched_random_top_k":
@@ -1256,9 +1233,19 @@ def select_feature_subset(
     for idx in order:
         if int(idx) in excluded:
             continue
+        # -inf marks rule-ineligible features; never pad the subset with them.
+        if not np.isfinite(score[idx]):
+            break
         out.append(int(idx))
         if len(out) >= top_k:
             break
+    if len(out) < top_k:
+        print(
+            f"WARNING: subset '{name}' has only {len(out)}/{top_k} eligible "
+            f"features for transition {base_step}->{target_step}; returning "
+            f"the short list instead of padding with rule-violating features.",
+            flush=True,
+        )
     return out
 
 
@@ -1279,7 +1266,7 @@ def build_matched_random_control(
     if not target_subset:
         return []
     bi = ctx.steps.index(base_step)
-    ti = ctx.steps.index(143000)
+    ti = len(ctx.steps) - 1  # terminal snapshot of the active schedule
     norm = decoder_norms_seed[ti]
     rate = rates_seed[bi]
     D = len(norm)
@@ -1436,14 +1423,21 @@ def fit_logreg_probe(
     off_C: np.ndarray,
     l2: float = 1.0,
     n_iter: int = 200,
-) -> tuple[torch.Tensor, float]:
+) -> tuple[torch.Tensor, float] | None:
+    """L2-regularized logistic probe on W rows; None if the fit diverged."""
     idx = np.concatenate([in_C, off_C])
     y = np.concatenate([np.ones(len(in_C)), np.zeros(len(off_C))]).astype(np.float32)
     X = W[torch.as_tensor(idx, dtype=torch.long)].float()
     yt = torch.from_numpy(y)
     w = torch.zeros(X.shape[1], requires_grad=True)
     b = torch.zeros(1, requires_grad=True)
-    opt = torch.optim.LBFGS([w, b], lr=0.5, max_iter=n_iter, history_size=20)
+    opt = torch.optim.LBFGS(
+        [w, b],
+        lr=0.5,
+        max_iter=n_iter,
+        history_size=20,
+        line_search_fn="strong_wolfe",
+    )
 
     def closure():
         opt.zero_grad()
@@ -1452,8 +1446,16 @@ def fit_logreg_probe(
         loss.backward()
         return loss
 
-    opt.step(closure)
-    return w.detach(), float(b.detach())
+    try:
+        opt.step(closure)
+    except RuntimeError:
+        # LBFGS raises internally (step-size overflow) when the loss diverges.
+        return None
+    w_fit = w.detach()
+    b_fit = float(b.detach())
+    if not (torch.isfinite(w_fit).all() and np.isfinite(b_fit)):
+        return None
+    return w_fit, b_fit
 
 
 def probe_logit_transfer(W_eval: torch.Tensor, w: torch.Tensor, b: float, in_C: np.ndarray, off_C: np.ndarray) -> dict:
@@ -1541,8 +1543,9 @@ def evaluate_concept_under_patch(
     # Concept-token sample for log-sum-exp aggregation.
     in_C_all = np.where(concept.member_mask)[0]
     if len(in_C_all) > n_concept_tokens:
-        # Frequency-stratified deterministic sample by concept seed.
-        det_rng = np.random.default_rng(hash(("concept_sample", concept.name)) % 2**32)
+        # Frequency-stratified deterministic sample by concept seed
+        # (process-stable: builtin hash() is salted, _stable_seed is not).
+        det_rng = np.random.default_rng(_stable_seed("concept_sample", concept.name))
         w = meta.log_freq[in_C_all] + 1e-3
         w = w / w.sum()
         in_C = np.sort(det_rng.choice(in_C_all, size=n_concept_tokens, replace=False, p=w))
@@ -1555,10 +1558,15 @@ def evaluate_concept_under_patch(
     distractors = [
         sample_matched_distractors(int(t), concept, meta, pool, n_match=n_match, rng=rng) for t in target_ids
     ]
-    single_d = np.array(
-        [d[0] if d.size > 0 else int(target_ids[i]) for i, d in enumerate(distractors)],
-        dtype=np.int64,
-    )
+    # Margin metrics only score contexts that HAVE a matched distractor;
+    # falling back to the target itself would force margin=0 for that context
+    # under every W_U variant. Skipped contexts are counted per row.
+    has_distractor = np.array([d.size > 0 for d in distractors], dtype=bool)
+    single_d = np.array([int(d[0]) for d in distractors if d.size > 0], dtype=np.int64)
+    margin_sel = torch.as_tensor(np.where(has_distractor)[0], dtype=torch.long)
+    h_margin = h[margin_sel]  # (n_with_distractor, d_model)
+    margin_targets = target_ids[has_distractor]
+    n_margin_skipped = int((~has_distractor).sum())
 
     rec = {
         "concept": concept.name,
@@ -1568,6 +1576,7 @@ def evaluate_concept_under_patch(
         "n_contexts": int(len(target_ids)),
         "n_concept_tokens": int(len(in_C)),
         "n_null_tokens": int(len(null_C)),
+        "n_margin_skipped": n_margin_skipped,
     }
 
     # ---- M1: concept-mass logit ratio
@@ -1590,7 +1599,7 @@ def evaluate_concept_under_patch(
     if bootstrap > 1 and len(in_C_all) > n_concept_tokens:
         boot = []
         for bi in range(bootstrap):
-            brng = np.random.default_rng(hash(("boot", concept.name, bi)) % 2**32)
+            brng = np.random.default_rng(_stable_seed("boot", concept.name, bi))
             w = meta.log_freq[in_C_all] + 1e-3
             w = w / w.sum()
             sample = np.sort(brng.choice(in_C_all, size=n_concept_tokens, replace=False, p=w))
@@ -1611,10 +1620,10 @@ def evaluate_concept_under_patch(
         )
 
     # ---- M2a: matched-token margin
-    mg_b = matched_token_margin(h, patch.W_U_base, target_ids, single_d).mean().item()
-    mg_t = matched_token_margin(h, patch.W_U_target, target_ids, single_d).mean().item()
-    mg_pi = matched_token_margin(h, patch.W_U_patch_in, target_ids, single_d).mean().item()
-    mg_po = matched_token_margin(h, patch.W_U_patch_out, target_ids, single_d).mean().item()
+    mg_b = matched_token_margin(h_margin, patch.W_U_base, margin_targets, single_d).mean().item()
+    mg_t = matched_token_margin(h_margin, patch.W_U_target, margin_targets, single_d).mean().item()
+    mg_pi = matched_token_margin(h_margin, patch.W_U_patch_in, margin_targets, single_d).mean().item()
+    mg_po = matched_token_margin(h_margin, patch.W_U_patch_out, margin_targets, single_d).mean().item()
     rec.update(
         {
             "margin_base": mg_b,
@@ -1655,25 +1664,46 @@ def evaluate_concept_under_patch(
 
     # ---- M4: probe-logit transfer (appendix)
     if fit_probe:
-        wp, bp = fit_logreg_probe(patch.W_U_target, in_C, off_C_for_geom)
-        gaps = {}
-        for tag, W in [
-            ("base", patch.W_U_base),
-            ("target", patch.W_U_target),
-            ("patch_in", patch.W_U_patch_in),
-            ("patch_out", patch.W_U_patch_out),
-        ]:
-            r = probe_logit_transfer(W, wp, bp, in_C, off_C_for_geom)
-            rec[f"probe_gap_{tag}"] = r["probe_gap"]
-            gaps[tag] = r["probe_gap"]
-        pg_rec = recovery_dict(
-            gaps["base"],
-            gaps["target"],
-            gaps["patch_in"],
-            gaps["patch_out"],
-            "probe_gap",
-        )
-        rec.update({f"probe_gap_{k}": v for k, v in pg_rec.items()})
+        probe = fit_logreg_probe(patch.W_U_target, in_C, off_C_for_geom)
+        if probe is None:
+            print(
+                f"  WARNING: probe fit diverged for concept {concept.name}; "
+                f"writing NaN probe columns (probe_failed=1).",
+                flush=True,
+            )
+            rec["probe_failed"] = 1
+            for tag in ("base", "target", "patch_in", "patch_out"):
+                rec[f"probe_gap_{tag}"] = float("nan")
+            for k in (
+                "raw_delta_in",
+                "raw_delta_out",
+                "spread_target_minus_base",
+                "recovery_in",
+                "recovery_out",
+                "low_denom",
+            ):
+                rec[f"probe_gap_{k}"] = float("nan")
+        else:
+            wp, bp = probe
+            rec["probe_failed"] = 0
+            gaps = {}
+            for tag, W in [
+                ("base", patch.W_U_base),
+                ("target", patch.W_U_target),
+                ("patch_in", patch.W_U_patch_in),
+                ("patch_out", patch.W_U_patch_out),
+            ]:
+                r = probe_logit_transfer(W, wp, bp, in_C, off_C_for_geom)
+                rec[f"probe_gap_{tag}"] = r["probe_gap"]
+                gaps[tag] = r["probe_gap"]
+            pg_rec = recovery_dict(
+                gaps["base"],
+                gaps["target"],
+                gaps["patch_in"],
+                gaps["patch_out"],
+                "probe_gap",
+            )
+            rec.update({f"probe_gap_{k}": v for k, v in pg_rec.items()})
 
     # ---- M6: candidate-set logit-lens KL (appendix)
     if include_kl:
@@ -1810,14 +1840,36 @@ def write_csv(path: Path, rows: list[dict]):
 
 
 def append_csv(path: Path, row: dict):
-    keys = list(row.keys())
-    new_file = not path.exists()
+    """Append one row, keeping the header in sync with the union of keys.
+
+    Rows vary in key set (zero-context concepts, bootstrap/fit_probe/
+    include_kl toggles); when a row introduces new keys the whole file is
+    rewritten with the extended header (missing fields filled with ""),
+    mirroring the union-of-keys logic in write_csv."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=keys)
-        if new_file:
+    if not path.exists():
+        with path.open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(row.keys()))
             w.writeheader()
-        w.writerow(row)
+            w.writerow(row)
+        return
+    with path.open("r", newline="") as f:
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        new_keys = [k for k in row if k not in header]
+        existing = list(reader) if new_keys else []
+    if new_keys:
+        keys = header + new_keys
+        with path.open("w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=keys)
+            w.writeheader()
+            for r in existing:
+                w.writerow({k: (r.get(k) if r.get(k) is not None else "") for k in keys})
+            w.writerow({k: row.get(k, "") for k in keys})
+    else:
+        with path.open("a", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=header)
+            w.writerow({k: row.get(k, "") for k in header})
 
 
 # ---------------------------------------------------------------------------
@@ -1846,6 +1898,20 @@ def run(
     include_kl: bool = False,
     bootstrap: int = 1,
 ):
+    """Run the full temporal-patch metric pipeline for one crosscoder seed.
+
+    Pairing guarantee: each (concept) evaluation uses a fresh RNG seeded by
+    _stable_seed("eval", concept_name), so every subset's row for a given
+    concept draws IDENTICAL contexts and matched distractors, and the paired
+    real-vs-random comparison in paired_vs_random subtracts rows that saw
+    the same samples. Evaluation draws are therefore order-independent in
+    the subset list. Caveat: matched_random_top_k subset SELECTION still
+    consumes the shared rng_root sequentially across transitions, so the
+    random subsets themselves depend on ctx.rng_seed and transition order
+    (their evaluation, like every other subset's, does not).
+    """
+    if h_step_for_eval not in ("base", "target"):
+        raise ValueError(f"h_step_for_eval must be 'base' or 'target', got {h_step_for_eval!r}")
     out_dir.mkdir(parents=True, exist_ok=True)
     print(
         f"[seed {seed}] model={ctx.model_name} d_sae={ctx.d_sae} loading aggregates",
@@ -1862,7 +1928,7 @@ def run(
     ids_seqs = ids[:n_full].view(-1, SEQ_LEN)
 
     # Vocab size from any snapshot.
-    V_explicit = load_snapshot(ctx, 143000).shape[0]
+    V_explicit = load_snapshot(ctx, ctx.steps[-1]).shape[0]
     print("  building token meta + concept registry...", flush=True)
     meta = build_token_meta(tok, ids[:n_full], V_explicit=V_explicit)
     concepts = build_concept_registry(meta)
@@ -1915,7 +1981,6 @@ def run(
                 norms_seed,
                 cusum_seed,
                 peak_seed,
-                rng_root,
                 excluded=set(),
             )
         # Second pass: matched_random matched against the union of real subsets.
@@ -1947,7 +2012,9 @@ def run(
         summary_path.unlink()
 
     raw_records: list[dict] = []
-    rng = np.random.default_rng(ctx.rng_seed + 100 * seed)
+    # Snapshot-local activations reused across subsets — (V, d_sae) per step,
+    # cleared after the metric loops.
+    acts_cache: dict[int, torch.Tensor] = {}
 
     # Extract pieces only for the snapshots we will actually patch on, then
     # drop the full crosscoder state_dict — at d_sae=24576 it is ~13 GB.
@@ -1963,6 +2030,8 @@ def run(
         h_step = ts.target_step if h_step_for_eval == "target" else ts.base_step
         cached = cache_or_build_hLN(ctx, h_step, ids_seqs)
         h_LN = cached["h_LN"]
+        # Pools depend only on (meta, W_U_target) — build once per transition.
+        pool = build_pools(meta, W_U_by_step[ts.target_step])
         for name, _k in ts.subset_specs:
             S = resolved_subsets[(ts.base_step, ts.target_step)][name]
             if not S:
@@ -1977,10 +2046,15 @@ def run(
                 ts.base_step,
                 ts.target_step,
                 S,
+                acts_cache=acts_cache,
             )
-            pool = build_pools(meta, patch.W_U_target)
             for cn in concept_names:
                 t0 = time.time()
+                # Fresh per-concept RNG: every (transition, subset) row for
+                # this concept draws IDENTICAL contexts and distractors, so
+                # paired_vs_random subtracts truly paired rows and the
+                # pipeline is order-independent in the subset list.
+                eval_rng = np.random.default_rng(_stable_seed("eval", cn))
                 rec = evaluate_concept_under_patch(
                     concept=concepts[cn],
                     h_LN=h_LN,
@@ -1988,7 +2062,7 @@ def run(
                     meta=meta,
                     pool=pool,
                     patch=patch,
-                    rng=rng,
+                    rng=eval_rng,
                     max_contexts=max_contexts,
                     n_match=n_match,
                     n_concept_tokens=n_concept_tokens,
@@ -2019,10 +2093,12 @@ def run(
                     print(f"  {cn:<17} skipped (no contexts)", flush=True)
             # Free the per-subset patch (4 W_U slabs ~1.6 GB at d_model=2048)
             # before the next subset builds its own.
-            del patch, pool
+            del patch
             import gc
 
             gc.collect()
+
+    acts_cache.clear()
 
     # M3 selectivity (forward + backward) per (transition, subset, concept)
     sel_records = family_selectivity(raw_records)

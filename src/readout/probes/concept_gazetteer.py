@@ -145,7 +145,6 @@ SYNTACTIC_LISTS: dict[str, list[str]] = {
         "my",
         "your",
         "his",
-        "her",
         "its",
         "our",
         "their",

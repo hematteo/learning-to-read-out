@@ -20,6 +20,10 @@ from pathlib import Path
 import torch
 from safetensors.torch import load_file as load_safetensors
 
+# Checkpoints trained 2026-07-06 embed torch.__version__ as a raw TorchVersion
+# in their provenance dict, which weights_only=True otherwise rejects.
+torch.serialization.add_safe_globals([torch.torch_version.TorchVersion])
+
 
 @dataclass(frozen=True)
 class Checkpoint:
@@ -53,15 +57,12 @@ def unwrap_ckpt(ck: dict) -> dict:
     cfg = ck.get("config")
     if not isinstance(cfg, dict):
         return ck
-    is_wrapper = (
-        "steps" in cfg
-        and "model_name" in cfg
-        and "steps" not in ck
-        and "model_name" not in ck
-    )
+    is_wrapper = "steps" in cfg and "model_name" in cfg and "steps" not in ck and "model_name" not in ck
     if not is_wrapper:
         return ck
-    merged = {**cfg, "state_dict": ck["state_dict"]}
+    # Keep every other top-level key (quality, preprocess_stats, ...) — the
+    # wrapper detection only guarantees steps/model_name live inside cfg.
+    merged = {**cfg, **{k: v for k, v in ck.items() if k != "config"}}
     merged["config"] = cfg.get("config", cfg)
     return merged
 
@@ -70,7 +71,10 @@ def load_checkpoint(path: Path | str) -> Checkpoint:
     """Load a crosscoder checkpoint from ``.pt`` or ``.safetensors``."""
     p = Path(path)
     if p.suffix == ".pt":
-        ck = torch.load(p, map_location="cpu", weights_only=False)
+        raw = torch.load(p, map_location="cpu", weights_only=True)
+        # Wrapper checkpoints nest model_name/quality/preprocess_stats under
+        # "config"; unwrap so both formats read through the same keys.
+        ck = unwrap_ckpt(raw)
         sd = ck.get("state_dict", ck)
         # 1B aggregates-sidecar convention nests training under "config"
         training = ck.get("training", ck.get("config", {}).get("training", {}))
@@ -82,7 +86,7 @@ def load_checkpoint(path: Path | str) -> Checkpoint:
             model_name=ck.get("model") or ck.get("model_name"),
             quality=ck.get("quality"),
             preprocess_stats=ck.get("preprocess_stats"),
-            raw=ck if isinstance(ck, dict) else None,
+            raw=raw if isinstance(raw, dict) else None,
         )
     if p.suffix == ".safetensors":
         cfg_path = p.with_suffix(".config.json")
