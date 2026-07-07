@@ -291,7 +291,8 @@ def check_scripts_dir_shape() -> list[str]:
         sd = e.get("scripts_dir")
         if not isinstance(sd, str) or eid not in dir_by_id:
             continue  # orphans are check 7's job
-        expected = f"{dir_by_id[eid].relative_to(REPO)}/scripts/"
+        # as_posix: yaml paths are forward-slash; str(Path) is backslash on Windows.
+        expected = f"{dir_by_id[eid].relative_to(REPO).as_posix()}/scripts/"
         if sd.rstrip("/") + "/" != expected:
             issues.append(_c(15, f"experiment {eid!r}: scripts_dir {sd!r} != {expected!r}"))
     return issues
