@@ -21,7 +21,7 @@ W_E value).
 
 from __future__ import annotations
 
-from readout.crosscoder.wu_adapter import main  # noqa: E402
+from readout.crosscoder.wu_adapter import main
 
 if __name__ == "__main__":
     main()

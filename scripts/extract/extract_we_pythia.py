@@ -1,11 +1,18 @@
-"""Extract W_E (input embeddings) from Pythia checkpoints into the
-wu_adapter cache layout.
+"""Extract W_E (input embeddings) from Pythia checkpoints into a snapshot cache.
 
-For the Pythia-160M W_E multi-seed crosscoder. The wu_adapter trainer reads snapshots from a single
-cache directory whose files match `{model_slug}_step{step}_wu.pt`. To train
-on W_E without a code fork we extract `model.gpt_neox.embed_in.weight` per
-snapshot and save it under the same naming convention into a *separate*
-cache directory (so W_U and W_E caches do not collide).
+For the Pythia-160M W_E multi-seed crosscoder. We extract
+`model.gpt_neox.embed_in.weight` per snapshot and save it under the canonical
+W_E naming `{model_slug}_step{step}_we.pt` (readout.core.paths.snapshot_path,
+kind="we") into a *separate* cache directory, so W_E snapshots can never be
+mistaken for W_U ones. Historic caches written by an older version of this
+script used the W_U `_wu.pt` suffix; extract_one refuses to reuse or overwrite
+such files — delete them and re-extract.
+
+Downstream consumers resolve the `_we.pt` names via the canonical helpers
+(readout.crosscoder.snapshots.load_snapshot / readout.core.model_specs.
+snap_path_for with kind/matrix "we"). NOTE: wu_adapter's trainer cache lookup
+still resolves `*_wu.pt` names, so pointing it at this cache requires
+W_E-aware loading; do not rename these files back to `_wu.pt`.
 
 Saves Ge-exact 32-step snapshots by default
 (matches src/readout/crosscoder/wu_adapter.py:DEFAULT_STEPS), so the resulting
@@ -28,14 +35,15 @@ wraps wu_adapter.main; the library module has no __main__ block):
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys as _sys
 from pathlib import Path
 
 import torch
 
-from readout.core.paths import ssd_path, ssd_root
-from readout.crosscoder.wu_adapter import DEFAULT_STEPS  # noqa: E402
+from readout.core.paths import snapshot_filename, ssd_path, ssd_root
+from readout.crosscoder.wu_adapter import DEFAULT_STEPS
 
 
 def extract_one(
@@ -48,8 +56,18 @@ def extract_one(
 ) -> Path:
     from transformers import AutoModelForCausalLM
 
-    slug = model_name.replace("/", "_")
-    out_path = cache_dir / f"{slug}_step{step}_wu.pt"
+    # Canonical W_E filename ("..._we.pt") from the registry-free helper, so
+    # unregistered HF models (e.g. pythia-410m) still extract; only the
+    # directory is caller-chosen.
+    out_path = cache_dir / snapshot_filename(model_name, step, kind="we")
+    wu_named = cache_dir / snapshot_filename(model_name, step, kind="wu")
+    if wu_named.exists():
+        raise RuntimeError(
+            f"{wu_named} exists: this W_E cache holds a file under the W_U naming "
+            f"(written by an older version of this script, or a genuine W_U snapshot). "
+            f"Refusing to treat it as a W_E cache hit or to --overwrite it; "
+            f"delete it and re-extract (canonical W_E files end in '_we.pt')."
+        )
     if out_path.exists() and not overwrite:
         return out_path
     print(f"  step {step}: downloading {model_name}@step{step}...", flush=True)
@@ -70,8 +88,6 @@ def extract_one(
         torch.cuda.empty_cache()
 
     if cleanup_hf_cache:
-        import os  # local: survives top-level autoformat/import-prune passes
-
         # Honor HF_HOME if set; transformers caches under HF_HOME/hub when
         # the env var is exported, not under the default $HOME/.cache path.
         hf_home = os.environ.get("HF_HOME") or str(Path.home() / ".cache" / "huggingface")

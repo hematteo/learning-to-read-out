@@ -65,6 +65,13 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="exit 1 if the table is stale instead of rewriting")
     args = ap.parse_args()
 
+    if not REPRODUCE_MD.exists():
+        print(
+            f"{REPRODUCE_MD} not found; restore docs/REPRODUCE.md (with the "
+            f"{BEGIN!r} ... {END!r} markers) before regenerating the figure index",
+            file=sys.stderr,
+        )
+        return 1
     doc = REPRODUCE_MD.read_text()
     if BEGIN not in doc or END not in doc:
         print(f"markers missing in {REPRODUCE_MD}; expected {BEGIN!r} ... {END!r}", file=sys.stderr)

@@ -136,6 +136,11 @@ def _is_hidden(p: Path) -> bool:
     return p.name.startswith(".")
 
 
+def _c(n: int, msg: str) -> str:
+    """Prefix an issue with the docstring check number it fired from."""
+    return f"[check-{n:02d}] {msg}"
+
+
 def check_scripts_verbs() -> list[str]:
     issues: list[str] = []
     scripts = REPO / "scripts"
@@ -145,13 +150,13 @@ def check_scripts_verbs() -> list[str]:
         if _is_hidden(p):
             continue
         if p.is_file():
-            issues.append(f"loose file in scripts/ root: {p.name} (must be in scripts/<verb>/)")
+            issues.append(_c(2, f"loose file in scripts/ root: {p.name} (must be in scripts/<verb>/)"))
         elif p.is_dir():
             name = p.name.lstrip("_")
             if p.name.startswith("_"):
                 continue  # _legacy etc.
             if name not in ALLOWED_SCRIPT_VERBS:
-                issues.append(f"unknown verb scripts/{p.name}/ (allowed: {sorted(ALLOWED_SCRIPT_VERBS)})")
+                issues.append(_c(1, f"unknown verb scripts/{p.name}/ (allowed: {sorted(ALLOWED_SCRIPT_VERBS)})"))
     return issues
 
 
@@ -168,7 +173,7 @@ def check_src_no_main() -> list[str]:
         except (UnicodeDecodeError, OSError):
             continue
         if 'if __name__ == "__main__"' in text or "if __name__ == '__main__'" in text:
-            issues.append(f"src/ module has __main__ block: {p.relative_to(REPO)}")
+            issues.append(_c(3, f"src/ module has __main__ block: {p.relative_to(REPO)}"))
     return issues
 
 
@@ -186,19 +191,27 @@ def check_experiments_no_loose() -> list[str]:
         if _is_hidden(p):
             continue
         if p.suffix == ".py" and p.name != "__init__.py":
-            issues.append(f"loose .py at experiments/ root: {p.name} (wrap in experiments/<topic>/<id>/scripts/)")
+            issues.append(
+                _c(4, f"loose .py at experiments/ root: {p.name} (wrap in experiments/<topic>/<id>/scripts/)")
+            )
     for top in exp.iterdir():
         if not top.is_dir() or _is_hidden(top) or top.name.startswith("_") or top.name == "__pycache__":
             continue
         if (top / "README.md").exists():
-            issues.append(f"unexpected depth-1 experiment dir: experiments/{top.name}/ (use experiments/<topic>/<id>/)")
+            issues.append(
+                _c(4, f"unexpected depth-1 experiment dir: experiments/{top.name}/ (use experiments/<topic>/<id>/)")
+            )
             continue
         for sub in top.iterdir():
             if _is_hidden(sub) or sub.name == "__pycache__":
                 continue
             if sub.suffix == ".py" and sub.name != "__init__.py":
                 issues.append(
-                    f"loose .py in topic dir experiments/{top.name}/: {sub.name} (move into experiments/{top.name}/<id>/)"
+                    _c(
+                        4,
+                        f"loose .py in topic dir experiments/{top.name}/: {sub.name} "
+                        f"(move into experiments/{top.name}/<id>/)",
+                    )
                 )
     return issues
 
@@ -212,21 +225,25 @@ def check_top_level() -> list[str]:
         if p.name.startswith("_"):
             continue
         if p.is_dir() and p.name not in ALLOWED_TOP_LEVEL:
-            issues.append(f"unexpected top-level dir: {p.name}")
+            issues.append(_c(5, f"unexpected top-level dir: {p.name}"))
         elif p.is_file() and p.name not in ALLOWED_TOP_FILES:
-            issues.append(f"unexpected top-level file: {p.name}")
+            issues.append(_c(5, f"unexpected top-level file: {p.name}"))
     return issues
 
 
 def check_readme_exists() -> list[str]:
     """The repo front door is mandatory."""
     if not README.exists():
-        return ["top-level README.md missing (the repo front door is mandatory)"]
+        return [_c(9, "top-level README.md missing (the repo front door is mandatory)")]
     return []
 
 
-# from experiments[.…] / import experiments[.…]
-_FORBIDDEN_SCRIPT_IMPORT = re.compile(r"^\s*(?:from|import)\s+(experiments)(?:\.|\s|,|$)")
+# from/import experiments[.…] or scripts[.…] — the layers scripts/ may not depend on
+# (check 10). The trailing group is a word boundary so e.g. `import scriptsutil` passes.
+_FORBIDDEN_SCRIPT_IMPORT = re.compile(r"^\s*(?:from|import)\s+(experiments|scripts)(?:\.|\s|,|$)")
+
+# from/import experiments[.…] only — cross-experiment reach-ins (check 14).
+_EXPERIMENTS_PKG_IMPORT = re.compile(r"^\s*(?:from|import)\s+(experiments)(?:\.|\s|,|$)")
 
 # sys.path edits: only a same-directory insert (sibling modules in the file's
 # own scripts/ dir) is allowed; the readout package itself is installed.
@@ -253,8 +270,11 @@ def check_sys_path_hygiene() -> list[str]:
             for lineno, line in enumerate(text.splitlines(), start=1):
                 if _SYS_PATH_EDIT.search(line) and not _SAME_DIR_INSERT.search(line):
                     issues.append(
-                        f"{p.relative_to(REPO)}:{lineno} edits sys.path beyond a same-dir "
-                        f"insert (the readout package is installed; import it): {line.strip()}"
+                        _c(
+                            13,
+                            f"{p.relative_to(REPO)}:{lineno} edits sys.path beyond a same-dir "
+                            f"insert (the readout package is installed; import it): {line.strip()}",
+                        )
                     )
     return issues
 
@@ -273,7 +293,7 @@ def check_scripts_dir_shape() -> list[str]:
             continue  # orphans are check 7's job
         expected = f"{dir_by_id[eid].relative_to(REPO)}/scripts/"
         if sd.rstrip("/") + "/" != expected:
-            issues.append(f"experiment {eid!r}: scripts_dir {sd!r} != {expected!r}")
+            issues.append(_c(15, f"experiment {eid!r}: scripts_dir {sd!r} != {expected!r}"))
     return issues
 
 
@@ -291,20 +311,25 @@ def check_no_cross_experiment_imports() -> list[str]:
         except (UnicodeDecodeError, OSError):
             continue
         for lineno, line in enumerate(text.splitlines(), start=1):
-            if _FORBIDDEN_SCRIPT_IMPORT.match(line):
+            if _EXPERIMENTS_PKG_IMPORT.match(line):
                 issues.append(
-                    f"{p.relative_to(REPO)}:{lineno} imports the experiments tree "
-                    f"(promote shared code to src/readout/): {line.strip()}"
+                    _c(
+                        14,
+                        f"{p.relative_to(REPO)}:{lineno} imports the experiments tree "
+                        f"(promote shared code to src/readout/): {line.strip()}",
+                    )
                 )
     return issues
 
 
 def check_scripts_imports() -> list[str]:
-    """scripts/ is the presentation/entry layer: it must not depend on experiments/.
+    """scripts/ is the presentation/entry layer: it depends ONLY on src/.
 
     Importing `experiments.*` reaches into experiment-private code (a layering
-    inversion). Intra-`scripts/` imports of a shared helper module are allowed:
-    that is deduplication within the layer, not a cross-layer dependency.
+    inversion); importing the `scripts` package couples sibling entry points.
+    Intra-`scripts/` imports of a shared helper module via a same-dir sys.path
+    insert are allowed: that is deduplication within the layer, not a
+    package-level cross-layer dependency.
     """
     issues: list[str] = []
     scripts = REPO / "scripts"
@@ -321,8 +346,11 @@ def check_scripts_imports() -> list[str]:
             m = _FORBIDDEN_SCRIPT_IMPORT.match(line)
             if m:
                 issues.append(
-                    f"{p.relative_to(REPO)}:{lineno} imports {m.group(1)!r} "
-                    f"(scripts/ must depend only on src/): {line.strip()}"
+                    _c(
+                        10,
+                        f"{p.relative_to(REPO)}:{lineno} imports {m.group(1)!r} "
+                        f"(scripts/ must depend only on src/): {line.strip()}",
+                    )
                 )
     return issues
 
@@ -330,8 +358,12 @@ def check_scripts_imports() -> list[str]:
 def _experiment_dirs() -> list[Path]:
     """Leaf experiment dirs across the 2-level topic layout.
 
-    A leaf is a directory containing README.md at depth 2
-    (`experiments/<topic>/<id>/`).
+    Discovery is structural, NOT README-based: every non-hidden,
+    non-underscore directory at `experiments/<topic>/<id>/` depth is a leaf,
+    so a README-less experiment still surfaces in checks 6 and 7 instead of
+    silently vanishing. A depth-1 dir that carries its own README.md is a
+    (legacy single-level) experiment, mirroring check 4's handling; other
+    depth-1 dirs are topic containers and only their children are leaves.
     """
     exp = REPO / "experiments"
     if not exp.exists():
@@ -346,8 +378,7 @@ def _experiment_dirs() -> list[Path]:
         for child in sorted(top.iterdir()):
             if not child.is_dir() or child.name.startswith("_") or _is_hidden(child) or child.name == "__pycache__":
                 continue
-            if (child / "README.md").exists():
-                leaves.append(child)
+            leaves.append(child)
     return leaves
 
 
@@ -362,28 +393,30 @@ def _load_experiments_yaml() -> dict | None:
 
 
 def check_experiment_readmes() -> list[str]:
-    return [f"experiments/{p.name}/ missing README.md" for p in _experiment_dirs() if not (p / "README.md").exists()]
+    return [
+        _c(6, f"{p.relative_to(REPO)}/ missing README.md") for p in _experiment_dirs() if not (p / "README.md").exists()
+    ]
 
 
 def check_yaml_dir_parity() -> list[str]:
     issues: list[str] = []
     data = _load_experiments_yaml()
     if data is None:
-        return ["experiments.yaml not found or pyyaml not installed"]
+        return [_c(7, "experiments.yaml not found or pyyaml not installed")]
     yaml_ids = {e["id"] for e in (data.get("experiments") or []) if "id" in e}
     dir_ids = {p.name for p in _experiment_dirs()}
     for orphan in sorted(dir_ids - yaml_ids):
         issues.append(
-            f"experiments/{orphan}/ has no entry in experiments.yaml (add one or rename to underscore-prefix)"
+            _c(7, f"experiments/{orphan}/ has no entry in experiments.yaml (add one or rename to underscore-prefix)")
         )
     for orphan in sorted(yaml_ids - dir_ids):
-        issues.append(f"experiments.yaml entry id={orphan!r} has no matching experiments/{orphan}/ dir")
+        issues.append(_c(7, f"experiments.yaml entry id={orphan!r} has no matching experiments/{orphan}/ dir"))
     return issues
 
 
 def check_paper_label_coverage() -> list[str]:
     if not PAPER_TEX.exists():
-        return ["paper/main.tex not shipped — figure-label coverage check skipped"]
+        return [_c(8, "paper/main.tex not shipped — figure-label coverage check skipped")]
     data = _load_experiments_yaml()
     if data is None:
         return []
@@ -394,7 +427,11 @@ def check_paper_label_coverage() -> list[str]:
     labels_in_yaml = {label for e in (data.get("experiments") or []) for label in (e.get("paper_labels") or [])}
     labels_in_yaml.update(data.get("paper_only_labels") or [])
     return [
-        f"paper label {label!r} has no producer in experiments.yaml (add to an experiment's paper_labels or top-level paper_only_labels)"
+        _c(
+            8,
+            f"paper label {label!r} has no producer in experiments.yaml "
+            f"(add to an experiment's paper_labels or top-level paper_only_labels)",
+        )
         for label in sorted(labels_in_paper - labels_in_yaml)
     ]
 
@@ -436,7 +473,9 @@ def check_manifest_consistency() -> list[str]:
                 continue
             label = pf.split("->")[-1].strip()
             if label and label not in labels:
-                issues.append(f"experiment {eid!r}: paper_figures label {label!r} is not in its paper_labels: list")
+                issues.append(
+                    _c(11, f"experiment {eid!r}: paper_figures label {label!r} is not in its paper_labels: list")
+                )
         refs: list[str] = []
         for key in ("scripts_dir", "figures_dir"):
             val = e.get(key)
@@ -453,7 +492,7 @@ def check_manifest_consistency() -> list[str]:
             if _path_is_regenerable(ref):
                 continue
             if not (REPO / ref).exists():
-                issues.append(f"experiment {eid!r}: referenced path {ref!r} does not exist on disk")
+                issues.append(_c(11, f"experiment {eid!r}: referenced path {ref!r} does not exist on disk"))
     return issues
 
 
@@ -545,13 +584,16 @@ def check_committed_paths_resolve() -> tuple[list[str], list[str]]:
                 continue
             if (REPO / ref).exists():
                 continue
-            msg = f"experiment {eid!r}: committed {kind} {ref!r} does not resolve on disk"
+            msg = _c(12, f"experiment {eid!r}: committed {kind} {ref!r} does not resolve on disk")
             if verdict == "committed":
                 errors.append(msg)
             else:  # ambiguous — stay conservative
                 warnings.append(
-                    f"experiment {eid!r}: {kind} {ref!r} does not resolve on disk "
-                    f"(ambiguous committed-vs-regenerable; not failing CI)"
+                    _c(
+                        12,
+                        f"experiment {eid!r}: {kind} {ref!r} does not resolve on disk "
+                        f"(ambiguous committed-vs-regenerable; not failing CI)",
+                    )
                 )
     return errors, warnings
 

@@ -34,7 +34,8 @@ from pathlib import Path
 
 import torch
 
-from readout.core.paths import repo_root  # noqa: E402
+from readout.core.hf_revisions import resolve_revision
+from readout.core.paths import repo_root
 from readout.core.resume import atomic_write_torch
 
 REPO = repo_root()
@@ -87,12 +88,6 @@ def parse_steps(raw: str) -> list[int]:
     if raw == "all":
         return list(PYTHIA_DEFAULT_STEPS)
     return [int(x) for x in raw.split(",") if x.strip()]
-
-
-def resolve_revision(model_name: str, step: int) -> str:
-    if "olmo" in model_name.lower():
-        raise NotImplementedError("OLMo revision lookup not ported yet.")
-    return f"step{step}"
 
 
 def resolve_readout(model):
@@ -148,8 +143,7 @@ def cache_one_step(
 
     revision = resolve_revision(hf_name, step)
     print(
-        f"[step {step}] loading {hf_name}@{revision} dtype={model_dtype} "
-        f"need_hln={need_hln} need_wu={need_wu}",
+        f"[step {step}] loading {hf_name}@{revision} dtype={model_dtype} need_hln={need_hln} need_wu={need_wu}",
         flush=True,
     )
     t0 = time.time()
@@ -199,7 +193,7 @@ def parse_dtype(name: str) -> torch.dtype:
     return {"fp32": torch.float32, "bf16": torch.bfloat16, "fp16": torch.float16}[name]
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=list(HF_NAME.keys()), required=True)
     parser.add_argument(
@@ -261,68 +255,79 @@ def main() -> None:
     def hln_path(step: int) -> Path:
         return args.out_dir / f"hLN_step{step}.pt"
 
-    def wu_path(step: int) -> Path:
+    def wu_path(step: int) -> Path | None:
+        """None when no --snapshots-dir was given (W_U extraction disabled)."""
         if args.snapshots_dir is None:
-            return Path("/dev/null")
+            return None
         return args.snapshots_dir / f"{slug}_step{step}_wu.pt"
 
+    def wu_done(step: int) -> bool:
+        p = wu_path(step)
+        return p is None or p.exists()
+
     n_total = len(steps)
-    done_full = sum(
-        1
-        for s in steps
-        if hln_path(s).exists() and (args.snapshots_dir is None or wu_path(s).exists())
-    )
+    done_full = sum(1 for s in steps if hln_path(s).exists() and wu_done(s))
     if done_full:
         print(f"[resume] {done_full}/{n_total} steps already complete", flush=True)
     else:
         print(f"[resume] starting fresh, {n_total} steps todo", flush=True)
 
+    failures: list[tuple[int, str]] = []
     for step in steps:
+        wu_p = wu_path(step)
         need_hln = not hln_path(step).exists()
-        need_wu = args.snapshots_dir is not None and not wu_path(step).exists()
+        need_wu = wu_p is not None and not wu_p.exists()
         if not need_hln and not need_wu:
             continue
 
-        payload, wu, revision = cache_one_step(
-            hf_name,
-            step,
-            ids_seqs,
-            device=args.device,
-            model_dtype=model_dtype,
-            save_dtype=save_dtype,
-            batch_seqs=args.batch_seqs,
-            need_hln=need_hln,
-            need_wu=need_wu,
-        )
-        if need_hln and payload is not None:
-            atomic_write_torch(hln_path(step), payload)
-            print(
-                f"[step {step}] saved h_LN shape={tuple(payload['h_LN'].shape)} "
-                f"dtype={payload['h_LN'].dtype}",
-                flush=True,
+        # One bad revision (missing HF branch, flaky download, OOM) must not
+        # abort a multi-hour run: record it, keep going, report at the end
+        # (same error policy as extract_we_pythia).
+        try:
+            payload, wu, revision = cache_one_step(
+                hf_name,
+                step,
+                ids_seqs,
+                device=args.device,
+                model_dtype=model_dtype,
+                save_dtype=save_dtype,
+                batch_seqs=args.batch_seqs,
+                need_hln=need_hln,
+                need_wu=need_wu,
             )
-        if need_wu and wu is not None:
-            atomic_write_torch(wu_path(step), wu)
-            print(
-                f"[step {step}] saved W_U shape={tuple(wu.shape)} -> {wu_path(step)}",
-                flush=True,
-            )
-
-        if not args.no_clean_hf_cache:
-            clean_hf_cache(hf_name)
+            if need_hln and payload is not None:
+                atomic_write_torch(hln_path(step), payload)
+                print(
+                    f"[step {step}] saved h_LN shape={tuple(payload['h_LN'].shape)} dtype={payload['h_LN'].dtype}",
+                    flush=True,
+                )
+            if need_wu and wu is not None and wu_p is not None:
+                atomic_write_torch(wu_p, wu)
+                print(
+                    f"[step {step}] saved W_U shape={tuple(wu.shape)} -> {wu_p}",
+                    flush=True,
+                )
+        except Exception as e:  # noqa: BLE001
+            print(f"[step {step}] FAILED ({type(e).__name__}: {e})", flush=True)
+            failures.append((step, f"{type(e).__name__}: {e}"))
+        finally:
+            if not args.no_clean_hf_cache:
+                clean_hf_cache(hf_name)
 
     n_done_hln = sum(1 for s in steps if hln_path(s).exists())
-    n_done_wu = (
-        sum(1 for s in steps if wu_path(s).exists())
-        if args.snapshots_dir is not None
-        else None
-    )
+    n_done_wu = sum(1 for s in steps if wu_done(s)) if args.snapshots_dir is not None else None
     print(
         f"[done] h_LN={n_done_hln}/{n_total}, "
         f"W_U={n_done_wu}/{n_total if n_done_wu is not None else '-'} in {args.out_dir}",
         flush=True,
     )
+    if failures:
+        print(f"[done] {len(failures)} step(s) FAILED:", flush=True)
+        for s, msg in failures:
+            print(f"  step {s}: {msg}", flush=True)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

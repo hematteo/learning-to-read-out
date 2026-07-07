@@ -114,6 +114,14 @@ def main():
         batch_size = args.batch_size
         d_sae = args.d_sae
 
+    if args.dry_run:
+        # The dry-run shrinks d_sae to 256; keep BatchTopK's k below it.
+        batchtopk_k = min(args.batchtopk_k, d_sae // 2)
+    else:
+        if args.arch == "batchtopk" and args.batchtopk_k > d_sae:
+            raise ValueError(f"--batchtopk-k ({args.batchtopk_k}) exceeds --d-sae ({d_sae}); pick k <= d_sae")
+        batchtopk_k = args.batchtopk_k
+
     snapshots, resolved_steps = load_snapshots(
         model_name=args.model,
         steps=steps,
@@ -123,9 +131,6 @@ def main():
     print(f"Snapshots loaded: {tuple(snapshots.shape)} (K, V, d)", flush=True)
 
     snapshots, preprocess_stats = preprocess_snapshots(snapshots, mode=args.input_preprocess)
-
-    # For BatchTopK on the dry-run, clamp k below d_sae.
-    batchtopk_k = min(args.batchtopk_k, d_sae // 2)
 
     model = train_arch_sweep(
         snapshots,
@@ -162,6 +167,11 @@ def main():
             "n_snapshots": snapshots.shape[0],
             "d_model": snapshots.shape[-1],
             "batchtopk_k": batchtopk_k if args.arch == "batchtopk" else None,
+            # Gate-semantics provenance: the sweep JumpReLU gates the raw
+            # summed pre-activation shared across snapshots (NOT the
+            # production decoder-norm-scaled per-snapshot gate), so rates
+            # from compute_rates_canonical do not describe its firing.
+            "jumprelu_gate": ("raw_pre_shared_across_snapshots" if args.arch == "jumprelu" else None),
         },
         "steps": resolved_steps,
         "model_name": args.model,

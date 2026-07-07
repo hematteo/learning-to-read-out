@@ -10,7 +10,7 @@ Usage:
     python scripts/eval/recompute_metrics.py \\
         --root ${UM_SSD_ROOT}/hf_release \\
         --out  ${UM_SSD_ROOT}/hf_release/recompute_summary.csv \\
-        --device cuda   # auto-detects cuda/cpu by default; mps also works
+        --device cuda   # auto-detects cuda/mps/cpu by default
 """
 
 from __future__ import annotations
@@ -23,41 +23,48 @@ from time import time
 
 import torch
 
+from readout.core.data import get_device
 from readout.crosscoder.checkpoints import load_checkpoint
+from readout.crosscoder.inference import (
+    THRESHOLD_KEY,
+    decode_step,
+    decoder_norms,
+    encoder_bias_total,
+    encoder_preacts,
+    jumprelu_feature_acts,
+    jumprelu_threshold,
+)
 from readout.crosscoder.snapshots import load_snapshots
 from readout.crosscoder.wu_adapter import preprocess_snapshots
 
+CROSSCODER_SD_KEYS = ("W_E", "W_D", "b_E", "b_D", THRESHOLD_KEY)
+
 
 def compute_metrics(sd, X_norm: torch.Tensor, batch_rows: int, device: str) -> dict:
-    """Crosscoder forward (matches Crosscoder.encode/decode in llamascopium):
-      pre[h] = x[:, h, :] @ W_E[h] + b_E[h]            # per head
-      pre    = sum_h pre[h]                             # shared (B, d_sae)
-      pre_replicated = repeat(pre, '... d -> ... K d')  # (B, K, d_sae)
-      scaled = pre_replicated * decoder_norm            # (B, K, d_sae); decoder_norm: (K, d_sae)
-      fired  = scaled > threshold                       # JumpReLU mask, per-head
-      acts   = scaled * fired / decoder_norm            # (B, K, d_sae); per-head feature_acts
-      rec[h] = acts[:, h, :] @ W_D[h] + b_D[h]          # per-head reconstruction
-    l0 reported = (fired.sum(-1)).mean over (B, K)  — same as quick_quality.
+    """Crosscoder forward via the canonical readout.crosscoder.inference helpers.
+
+    Gating uses the production convention: feature j fires at snapshot k iff
+    ``pre_j * ||W_D[k, j]|| > threshold_j`` (jumprelu_feature_acts, which keeps
+    ``acts = pre * fired`` and never divides by the decoder norm, so exactly-zero
+    dead-feature columns cannot inject NaN/Inf). EV / MSE / L0 are exact sums
+    over all (V, K) rows — batch-size invariant, unlike a mean of batch means.
     """
-    W_E = sd["W_E"]  # (K, d, d_sae)
-    W_D = sd["W_D"]  # (K, d_sae, d)
-    b_E = sd["b_E"]  # (K, d_sae)
-    b_D = sd["b_D"]  # (K, d)
-    threshold = sd["activation_function.log_jumprelu_threshold"].exp()
-
     K, V, d = X_norm.shape
-    d_sae = W_E.shape[-1]
+    d_sae = sd["W_E"].shape[-1]
 
-    W_E_d = W_E.to(device)
-    b_E_d = b_E.to(device)
-    W_D_d = W_D.to(device)
-    b_D_d = b_D.to(device)
-    thr_d = threshold.to(device)
-    decoder_norm = torch.norm(W_D_d, dim=-1)  # (K, d_sae)
+    # Move the weights to the device once; the helpers then run transfer-free.
+    sd_dev = {k: v.to(device) for k, v in sd.items()}
+    thr = jumprelu_threshold(sd_dev)  # (d_sae,)
+    dec_norm = decoder_norms(sd_dev)  # (K, d_sae)
+    b_total = encoder_bias_total(sd_dev)  # (d_sae,)
 
-    total_rec = 0.0
-    total_var = 0.0
-    total_l0 = 0.0
+    # Global mean over all (K, V, d) entries; SStot uses it so EV does not
+    # depend on how rows are batched. float64 accumulation happens on CPU
+    # (X_norm lives there); on-device sums stay fp32 for MPS compatibility.
+    x_mean = float(X_norm.mean(dtype=torch.float64))
+    sse = 0.0  # sum (recon - x)^2
+    sstot = 0.0  # sum (x - x_mean)^2
+    n_fired = 0
     n_batches = 0
     feature_fires = torch.zeros(d_sae, dtype=torch.float64)
     n_seen = 0
@@ -67,36 +74,34 @@ def compute_metrics(sd, X_norm: torch.Tensor, batch_rows: int, device: str) -> d
     for i in range(0, V, batch_rows):
         x = X_perm[i : i + batch_rows].to(device)  # (B, K, d)
         B = x.shape[0]
-        hidden_pre_per_head = torch.einsum("bkd,kde->bke", x, W_E_d) + b_E_d  # (B, K, d_sae)
-        accumulated = hidden_pre_per_head.sum(dim=1)  # (B, d_sae)
-        pre_rep = accumulated.unsqueeze(1).expand(B, K, d_sae)  # (B, K, d_sae)
-        scaled = pre_rep * decoder_norm  # (B, K, d_sae)
-        fired_mask = scaled > thr_d
-        acts_scaled = scaled * fired_mask
-        feature_acts = acts_scaled / decoder_norm  # (B, K, d_sae)
+        pre_joint = encoder_preacts(sd_dev, x[:, 0], 0)  # (B, d_sae)
+        for k in range(1, K):
+            pre_joint = pre_joint + encoder_preacts(sd_dev, x[:, k], k)
+        pre_joint = pre_joint + b_total
 
-        recon = torch.einsum("bke,kef->bkf", feature_acts, W_D_d) + b_D_d  # (B, K, d)
-
-        total_rec += (recon - x).pow(2).mean().item()
-        total_var += x.var().item()
-        total_l0 += fired_mask.float().sum(dim=-1).mean().item()
+        sstot += (x - x_mean).pow(2).sum().item()
+        for k in range(K):
+            feature_acts, fired = jumprelu_feature_acts(pre_joint, thr, dec_norm[k])  # (B, d_sae)
+            recon = decode_step(sd_dev, feature_acts, k)  # (B, d)
+            sse += (recon - x[:, k]).pow(2).sum().item()
+            fired_cpu = fired.cpu()
+            n_fired += int(fired_cpu.sum())
+            feature_fires += fired_cpu.sum(dim=0).to(torch.float64)
+            n_seen += B
+            del feature_acts, fired, recon, fired_cpu
         n_batches += 1
 
-        fa_cpu = fired_mask.to(torch.bool).cpu().reshape(-1, d_sae)
-        feature_fires += fa_cpu.sum(dim=0).to(torch.float64)
-        n_seen += fa_cpu.shape[0]
-
-        del x, hidden_pre_per_head, accumulated, pre_rep, scaled
-        del fired_mask, acts_scaled, feature_acts, recon, fa_cpu
-        if device == "mps":
+        del x, pre_joint
+        if str(device).startswith("mps"):
             torch.mps.empty_cache()
 
-    ev = 1.0 - total_rec / total_var if total_var > 0 else 0.0
+    n_elems = V * K * d
+    ev = 1.0 - sse / sstot if sstot > 0 else 0.0
     dead_rate = float((feature_fires / n_seen <= 1e-6).float().mean()) if n_seen > 0 else float("nan")
     return {
         "explained_variance": float(ev),
-        "reconstruction_mse": total_rec / n_batches,
-        "mean_l0": total_l0 / n_batches,
+        "reconstruction_mse": sse / n_elems,
+        "mean_l0": n_fired / (V * K),
         "dead_rate": dead_rate,
         "d_sae": int(d_sae),
         "n_snapshots": int(K),
@@ -108,6 +113,12 @@ def compute_metrics(sd, X_norm: torch.Tensor, batch_rows: int, device: str) -> d
 def process_one(path: Path, device: str, batch_rows: int, snapshot_dir: Path | None = None) -> dict:
     t0 = time()
     cp = load_checkpoint(path)
+    missing = [k for k in CROSSCODER_SD_KEYS if k not in cp.state_dict]
+    if missing:
+        raise RuntimeError(
+            f"not a JumpReLU crosscoder checkpoint (state dict lacks {missing}); "
+            f"skipping {path.name} — vanilla SAE / non-crosscoder payloads have a different forward"
+        )
     if cp.model_name is None or cp.steps is None:
         raise RuntimeError(f"missing model_name or steps in {path}")
 
@@ -145,6 +156,10 @@ def find_crosscoder_ckpts(root: Path) -> list[Path]:
     for p in root.rglob("*.pt"):
         if p.name.startswith("._"):
             continue
+        # Fragile: legacy .pt checkpoints carry no `kind` field, so discovery is a
+        # substring match on the filename. Anything that slips through and is not
+        # a crosscoder is rejected with a clear error in process_one (its row in
+        # the summary CSV records the error), not a KeyError mid-forward.
         if "wu_cc" in p.name or "cc_olmo" in p.name or "cc_pythia" in p.name:
             out.append(p)
     return sorted(set(out))
@@ -154,7 +169,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--device", default=get_device())
     ap.add_argument("--batch-rows", type=int, default=4096)
     ap.add_argument("--filter", default=None, help="substring filter on ckpt path")
     ap.add_argument("--single", type=Path, default=None, help="run one ckpt only")

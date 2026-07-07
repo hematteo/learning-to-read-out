@@ -14,7 +14,7 @@ Usage:
 
 from __future__ import annotations
 
-from readout.crosscoder.extract_rates import main  # noqa: E402
+from readout.crosscoder.extract_rates import main
 
 if __name__ == "__main__":
     main()
