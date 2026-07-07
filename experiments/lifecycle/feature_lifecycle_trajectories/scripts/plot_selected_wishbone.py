@@ -22,39 +22,26 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
-from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
-from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
-from readout.core.paths import (
-    repo_root,  # noqa: E402
-    ssd_path,  # noqa: E402
+from lifecycle_common import (
+    OLMO_STEPS_32,
+    PYTHIA_STEPS_32,
+    REPO,
+    Run,
+    ensure_geometry_cache,
+    load_decoder_norms,
+    load_rates,
 )
 
-REPO = repo_root()
+from readout.core.paths import ssd_path
+from readout.core.repro import log_run_provenance
 
 OUT_DEFAULT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories/wishbone"
-CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"
-
-PYTHIA_STEPS_32 = np.asarray(_PYTHIA_STEPS_LIST, dtype=np.int64)
-OLMO_STEPS_32 = np.asarray(_OLMO_STEPS_LIST, dtype=np.int64)
 
 ACTIVE_NORM_THR = 0.01
 ALIVE_FRAC_THR = 0.30
 RATE_ACTIVE_THR = 1e-3
 EARLY_CUTOFF_STEP = 1000
 LATE_CUTOFF_STEP = 3000
-
-
-@dataclass(frozen=True)
-class Run:
-    key: str
-    label: str
-    slug: str
-    steps: np.ndarray
-    rates_path: Path
-    xticks: tuple[int, ...]
-    rates_key: str | None = None
-    geometry_key: str | None = None
 
 
 RUNS: tuple[Run, ...] = (
@@ -119,37 +106,10 @@ def nearest_step_idx(steps: np.ndarray, target: int) -> int:
     return int(np.argmin(np.abs(steps - target)))
 
 
-def load_rates(run: Run) -> np.ndarray:
-    if not run.rates_path.exists():
-        raise FileNotFoundError(run.rates_path)
-    blob = torch.load(run.rates_path, map_location="cpu", weights_only=False)
-    if "rates" in blob:
-        rates = blob["rates"]
-    elif "rates_per_seed" in blob:
-        if run.rates_key is not None:
-            rates = blob["rates_per_seed"][run.rates_key]
-        else:
-            rates = next(iter(blob["rates_per_seed"].values()))
-    else:
-        raise KeyError(f"{run.rates_path} has no rates or rates_per_seed")
-    if isinstance(rates, torch.Tensor):
-        rates = rates.detach().cpu().numpy()
-    rates = rates.astype(np.float64)
-    if rates.shape != (run.steps.size, rates.shape[1]):
-        raise ValueError(f"{run.slug}: bad rates shape {rates.shape}")
-    return rates
-
-
 def load_arrays(run: Run) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    norms_path = CACHE / f"{run.key}_decoder_norms.npy"
-    rotation_key = run.geometry_key or run.key
-    rotation_path = CACHE / f"{rotation_key}_adjacent_rotation_radians.npy"
-    if not norms_path.exists():
-        raise FileNotFoundError(norms_path)
-    if not rotation_path.exists():
-        raise FileNotFoundError(rotation_path)
-    rates = load_rates(run)
-    norms = np.load(norms_path).astype(np.float64)
+    rates = load_rates(run, dtype=np.float64)
+    norms = load_decoder_norms(run, dtype=np.float64)
+    rotation_path, _ = ensure_geometry_cache(run)
     rotation = np.load(rotation_path).astype(np.float64)
     if norms.shape != rates.shape:
         raise ValueError(f"{run.slug}: norms {norms.shape}, rates {rates.shape}")
@@ -350,6 +310,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=OUT_DEFAULT)
     parser.add_argument("--configs", nargs="+", default=None)
     args = parser.parse_args()
+    log_run_provenance()
 
     runs = list(RUNS)
     if args.configs:

@@ -21,7 +21,9 @@ import time
 import torch
 from safetensors.torch import load_file
 
+from readout.core.model_specs import DEFAULT_STEPS_32
 from readout.core.paths import repo_root, ssd_root
+from readout.core.repro import git_commit, log_run_provenance
 
 REPO = repo_root()
 SSD = ssd_root()
@@ -31,40 +33,7 @@ SLUG = "EleutherAI_pythia-160m"
 OUT = REPO / "experiments/crosscoders/crosscoder_main/derived/appendix_validation/persnap_fidelity.csv"
 DEV = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
-PYTHIA_STEPS = [
-    0,
-    1,
-    2,
-    4,
-    8,
-    16,
-    32,
-    64,
-    128,
-    256,
-    512,
-    1000,
-    2000,
-    3000,
-    4000,
-    5000,
-    6000,
-    7000,
-    8000,
-    9000,
-    14000,
-    21000,
-    27000,
-    34000,
-    47000,
-    61000,
-    75000,
-    89000,
-    102000,
-    116000,
-    130000,
-    143000,
-]
+PYTHIA_STEPS = DEFAULT_STEPS_32
 
 
 def load_snap(step):
@@ -226,6 +195,10 @@ def eval_singlesnap_on_all(ckpt_rel, train_step, eval_steps):
 
 
 def main():
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.with_suffix(".provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
     rows = []
 
     targets = [

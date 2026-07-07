@@ -33,6 +33,7 @@ from pathlib import Path
 import torch
 from safetensors.torch import load_file
 
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder import inference
 
 
@@ -179,9 +180,7 @@ def evaluate_jumprelu(sd, snap_paths, training_batch_size, dev, vchunk=4096):
     }
 
 
-def evaluate_batchtopk(
-    sd, snap_paths, batchtopk_k, training_batch_size, dev, vchunk=4096
-):
+def evaluate_batchtopk(sd, snap_paths, batchtopk_k, training_batch_size, dev, vchunk=4096):
     K = len(snap_paths)
     W_E = sd["W_E"].float()
     b_E = sd["b_E"].float()
@@ -387,9 +386,7 @@ def main():
     ap.add_argument("--out-csv", required=True)
     ap.add_argument(
         "--device",
-        default="mps"
-        if torch.backends.mps.is_available()
-        else ("cuda" if torch.cuda.is_available() else "cpu"),
+        default="mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"),
     )
     ap.add_argument("--filter", default=None)
     ap.add_argument(
@@ -407,6 +404,9 @@ def main():
 
     out = Path(args.out_csv)
     out.parent.mkdir(parents=True, exist_ok=True)
+    out.with_suffix(".provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
     rows = []
     done = set()
     if out.exists():
@@ -496,9 +496,7 @@ def main():
             if act == "jumprelu":
                 r = evaluate_jumprelu(sd, snap_paths, train_bs, dev)
             elif act == "batchtopk":
-                r = evaluate_batchtopk(
-                    sd, snap_paths, config.get("batchtopk_k", 64), train_bs, dev
-                )
+                r = evaluate_batchtopk(sd, snap_paths, config.get("batchtopk_k", 64), train_bs, dev)
             elif act == "gated":
                 r = evaluate_gated(sd, snap_paths, train_bs, dev)
         except Exception as e:

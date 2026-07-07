@@ -17,17 +17,19 @@
 #   ~2-4 minutes per (ckpt, snapshot) pair on Apple Silicon CPU; 32 snapshots
 #   total per crosscoder. Run on GPU if available via --device cuda.
 
-set -u
-set -o pipefail
+set -euo pipefail
 
 REPO="$(git rev-parse --show-toplevel)"
 SSD="${UM_SSD_ROOT:?set UM_SSD_ROOT to your storage root (see docs/DATA.md)}"
 WU_CACHE=$SSD/snapshots
 WE_CACHE=$SSD/we_snapshots
-LOG=$REPO/extract_rates_phase2.log
+# Log lives in the gitignored results dir so runs never dirty the tree
+# (a dirty tree poisons later git-dirty provenance checks).
+LOG=$REPO/results/experiments/capacity/pareto_frontier_ev_l0/extract_rates_phase2.log
 DEVICE="${EXTRACT_RATES_DEVICE:-cpu}"  # set EXTRACT_RATES_DEVICE=cuda for GPU
 
 cd "$REPO"
+mkdir -p "$(dirname "$LOG")"
 export PYTHONPATH="$REPO/src:$REPO:${PYTHONPATH:-}"
 
 log()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG" ; }

@@ -21,6 +21,7 @@ import run_1b_pilot as PILOT  # noqa: E402
 
 from readout.core.data import write_csv
 from readout.core.paths import repo_root  # noqa: E402
+from readout.core.repro import git_commit  # noqa: E402
 
 REPO = repo_root()
 
@@ -59,9 +60,7 @@ def main() -> None:
     ap.add_argument("--out-dir", type=Path, default=None)
     args = ap.parse_args()
     if args.out_dir is None:
-        args.out_dir = (
-            args.pilot_root / f"specificity_step{args.snapshot_step}_h{args.h_step}"
-        )
+        args.out_dir = args.pilot_root / f"specificity_step{args.snapshot_step}_h{args.h_step}"
 
     ctx = PILOT.make_ctx()
     pieces = PILOT.load_pieces(args.snapshot_step, args.device)
@@ -79,42 +78,27 @@ def main() -> None:
     pool = PILOT.TPM.build_pools(meta, W_terminal)
 
     source_features = {
-        concept: read_top_features(args.pilot_root, concept, args.snapshot_step)
-        for concept in args.concepts
+        concept: read_top_features(args.pilot_root, concept, args.snapshot_step) for concept in args.concepts
     }
 
     rows: list[dict] = []
     for measured in args.concepts:
         concept = registry[measured]
-        in_C, null_C = PILOT.concept_rows(
-            meta, concept, pool, args.n_concept_tokens, args.seed
-        )
+        in_C, null_C = PILOT.concept_rows(meta, concept, pool, args.n_concept_tokens, args.seed)
         row_ids = np.concatenate([in_C, null_C]).astype(np.int64)
         n_in = len(in_C)
-        row_recon = PILOT.encode_reconstruct_rows(row_ids, pieces, args.device)
-        _h_sel, h_eval = PILOT.collect_h_splits(
-            args.h_step, ids_seqs, concept, args.max_contexts, args.seed
-        )
-        orig = PILOT.concept_mass_from_rows(
-            h_eval, W_snapshot[row_ids].to(args.device), n_in, args.device
-        )
-        full = PILOT.concept_mass_from_rows(
-            h_eval, row_recon.W_full, n_in, args.device
-        )
-        bias = PILOT.concept_mass_from_rows(
-            h_eval, row_recon.W_bias, n_in, args.device
-        )
+        row_recon = PILOT.encode_reconstruct_rows(ctx, row_ids, pieces, args.device)
+        _h_sel, h_eval = PILOT.collect_h_splits(ctx, args.h_step, ids_seqs, concept, args.max_contexts, args.seed)
+        orig = PILOT.concept_mass_from_rows(h_eval, W_snapshot[row_ids].to(args.device), n_in, args.device)
+        full = PILOT.concept_mass_from_rows(h_eval, row_recon.W_full, n_in, args.device)
+        bias = PILOT.concept_mass_from_rows(h_eval, row_recon.W_bias, n_in, args.device)
         for source in args.concepts:
             for k in args.ks:
                 feats = source_features[source][:k]
                 W_ablate = PILOT.edited_rows(row_recon, pieces, feats, "ablate")
                 W_only = PILOT.edited_rows(row_recon, pieces, feats, "only")
-                cm_ablate = PILOT.concept_mass_from_rows(
-                    h_eval, W_ablate, n_in, args.device
-                )
-                cm_only = PILOT.concept_mass_from_rows(
-                    h_eval, W_only, n_in, args.device
-                )
+                cm_ablate = PILOT.concept_mass_from_rows(h_eval, W_ablate, n_in, args.device)
+                cm_only = PILOT.concept_mass_from_rows(h_eval, W_only, n_in, args.device)
                 rows.extend(
                     [
                         {
@@ -160,9 +144,7 @@ def main() -> None:
                     )
                 ):
                     Wc_ablate = PILOT.edited_rows(row_recon, pieces, ctrl, "ablate")
-                    cm_c_ablate = PILOT.concept_mass_from_rows(
-                        h_eval, Wc_ablate, n_in, args.device
-                    )
+                    cm_c_ablate = PILOT.concept_mass_from_rows(h_eval, Wc_ablate, n_in, args.device)
                     rows.append(
                         {
                             "snapshot_step": args.snapshot_step,
@@ -193,6 +175,7 @@ def main() -> None:
         "max_contexts": args.max_contexts,
         "n_concept_tokens": args.n_concept_tokens,
         "pilot_root": str(args.pilot_root),
+        "git_commit": git_commit(),
     }
     (args.out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
     print(f"[specificity] wrote {args.out_dir / 'specificity.csv'}", flush=True)
@@ -200,4 +183,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

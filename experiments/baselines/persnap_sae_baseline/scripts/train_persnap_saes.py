@@ -15,7 +15,6 @@ Outputs:
 
 import argparse
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -23,9 +22,8 @@ from pathlib import Path
 import torch
 
 from readout.core.paths import ssd_path, ssd_root
-
-ROOT = Path(__file__).resolve().parents[1]
-from readout.crosscoder.wu_adapter import (  # noqa: E402
+from readout.core.repro import git_commit
+from readout.crosscoder.wu_adapter import (
     DEFAULT_CACHE,
     DEFAULT_MODEL,
     DEFAULT_STEPS,
@@ -36,17 +34,6 @@ from readout.crosscoder.wu_adapter import (  # noqa: E402
 )
 
 DEFAULT_OUTPUT_DIR = ssd_path("wu_crosscoder", "per_snap_sae")
-
-
-def git_hash() -> str:
-    try:
-        out = subprocess.check_output(
-            ["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL,
-        )
-        return out.decode().strip()
-    except Exception:
-        return "unknown"
 
 
 def require_external_ssd(path: Path) -> None:
@@ -153,7 +140,7 @@ def train_one_snapshot(
                 "elapsed_seconds": elapsed,
             },
             "preprocess_stats": preprocess_stats,
-            "git_hash": git_hash(),
+            "git_hash": git_commit() or "unknown",
         },
         output_path,
     )
@@ -214,7 +201,7 @@ def main() -> int:
 
     require_external_ssd(args.output_dir)
 
-    print(f"git_hash={git_hash()} torch={torch.__version__} device={args.device}")
+    print(f"git_hash={git_commit() or 'unknown'} torch={torch.__version__} device={args.device}")
     print(f"output_dir={args.output_dir}")
     print(f"cache_dir={args.cache_dir}")
 

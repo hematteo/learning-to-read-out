@@ -20,10 +20,14 @@ SEED="${SEED:-0}"
 
 mkdir -p "${OUT_DIR}" "${NULL_CACHE}"
 
+# uv resolves the project from cwd; run everything from the repo root
+# (matches run_olmo_pilot.sh / run_olmo_production.sh).
+cd "${REPO_ROOT}"
+
 # Generate Gaussian snapshots matched in per-snapshot Frobenius norm to the
 # real OLMo W_U snapshots. Saved to NULL_CACHE in the same naming convention,
 # so wu_adapter.load_snapshots picks them up transparently.
-"${REPO_ROOT}/.venv/bin/python" - <<PYEOF
+uv run python - <<PYEOF
 import torch
 from pathlib import Path
 
@@ -60,9 +64,7 @@ STEPS="150 600 700 850 900 1000 \
        425000 488000 614000 677000 740000 803000 \
        866000 928000"
 
-cd "${REPO_ROOT}"
-
-"${REPO_ROOT}/.venv/bin/python" scripts/train/train_crosscoder.py \
+uv run python scripts/train/train_crosscoder.py \
     --model allenai/OLMo-2-1124-7B \
     --cache-dir "${NULL_CACHE}" \
     --steps ${STEPS} \
@@ -87,8 +89,7 @@ cd "${REPO_ROOT}"
 
 # Evaluate against the pilot decision rules. We expect this to FAIL (r~0,
 # p>0.1, EV likely 0). Failing is the desired outcome for a null control.
-cd "${REPO_ROOT}"
-"${REPO_ROOT}/.venv/bin/python" experiments/crosscoders/crosscoder_olmo/scripts/eval_decision_rules.py \
+uv run python experiments/crosscoders/crosscoder_olmo/scripts/eval_decision_rules.py \
     --crosscoder "${OUT_DIR}/cc_null_dsae16384_seed${SEED}.pt" \
     --wu-cache "${NULL_CACHE}" \
     --stage pilot \

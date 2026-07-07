@@ -11,8 +11,8 @@ EV is invariant to it). This makes the resulting EV(rank) curves
 directly comparable to the dictionary EV in `quality_inventory.csv`.
 
 Output:
-  - figures/run5/a_instrument_validation/pca_static.csv
-  - figures/run5/a_instrument_validation/pca_static.pt
+  - figures/crosscoder_main/appendix_validation/pca_static.csv
+  - figures/crosscoder_main/appendix_validation/pca_static.pt
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ _sys.path.insert(0, str(_P(__file__).resolve().parent))  # this dir for `baselin
 
 import argparse
 import csv
+import json
 import time
 from pathlib import Path
 
@@ -38,6 +39,8 @@ from baseline_utils import (
     ensure_dirs,
     iter_snapshots,
 )
+
+from readout.core.repro import git_commit, log_run_provenance
 
 DEFAULT_RANKS = [16, 32, 64, 128, 256, 512, 1024]
 
@@ -94,6 +97,9 @@ def main() -> None:
 
     dev = torch.device("cpu") if args.cpu else device()
     ensure_dirs()
+    (FIG_DIR / f"{args.out_stem}.provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
 
     rows = []
     spectra: dict[tuple[str, int], torch.Tensor] = {}
@@ -106,9 +112,7 @@ def main() -> None:
             steps = args.steps
         else:
             steps = auto_steps_for(spec, snap_dir=args.snap_dir)
-        print(
-            f"[{spec.label}] d_model={spec.d_model} V={spec.vocab} steps={len(steps)} dev={dev}"
-        )
+        print(f"[{spec.label}] d_model={spec.d_model} V={spec.vocab} steps={len(steps)} dev={dev}")
         t_model = time.time()
         for step, W in iter_snapshots(spec, steps=steps, snap_dir=args.snap_dir):
             t0 = time.time()
@@ -126,10 +130,7 @@ def main() -> None:
                         "ev": ev,
                     }
                 )
-            print(
-                f"  step {step:>6d}: SVD in {time.time() - t0:5.1f}s "
-                f"S[:5]={[round(x, 3) for x in S[:5].tolist()]}"
-            )
+            print(f"  step {step:>6d}: SVD in {time.time() - t0:5.1f}s S[:5]={[round(x, 3) for x in S[:5].tolist()]}")
         print(f"[{spec.label}] done in {time.time() - t_model:.1f}s")
 
     csv_path = FIG_DIR / f"{args.out_stem}.csv"

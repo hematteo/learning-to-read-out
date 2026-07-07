@@ -39,6 +39,7 @@ import torch
 
 from readout.core.data import center_scale_stats, explained_variance
 from readout.core.model_specs import DEFAULT_STEPS_32
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import load_checkpoint
 from readout.crosscoder.snapshots import load_snapshot_at
@@ -54,9 +55,7 @@ HELD_OUT = [10000, 23000, 33000, 43000, 73000, 93000, 113000, 123000]
 # ──────────────────────────────────────────────────────────────────────
 
 
-def load_snapshot(
-    cache_dir: Path, step: int, model_slug: str = "EleutherAI_pythia-160m"
-):
+def load_snapshot(cache_dir: Path, step: int, model_slug: str = "EleutherAI_pythia-160m"):
     return load_snapshot_at(cache_dir / f"{model_slug}_step{step}_wu.pt")
 
 
@@ -145,13 +144,12 @@ def run_eval(
     device: str = "cpu",
     model_slug: str = "EleutherAI_pythia-160m",
     self_check: bool = True,
+    seed: int = 0,
 ):
     out_dir.mkdir(parents=True, exist_ok=True)
     overlap = set(trained_steps) & set(held_out)
     if overlap:
-        raise ValueError(
-            f"held_out steps overlap with trained_steps: {sorted(overlap)}"
-        )
+        raise ValueError(f"held_out steps overlap with trained_steps: {sorted(overlap)}")
     print(f"[eval] trained_steps (K={len(trained_steps)}): {trained_steps}")
     print(f"[eval] held_out: {held_out}")
 
@@ -164,14 +162,8 @@ def run_eval(
     state = {k: v.to(device) for k, v in state.items()}
     K = state["W_E"].shape[0]
     if K != len(trained_steps):
-        raise ValueError(
-            f"Crosscoder has K={K} heads but trained_steps has {len(trained_steps)}."
-        )
-    if (
-        raw_meta is not None
-        and "steps" in raw_meta
-        and list(raw_meta["steps"]) != trained_steps
-    ):
+        raise ValueError(f"Crosscoder has K={K} heads but trained_steps has {len(trained_steps)}.")
+    if raw_meta is not None and "steps" in raw_meta and list(raw_meta["steps"]) != trained_steps:
         raise ValueError("Saved training steps do not match TRAINED_STEPS.")
     W_E = state["W_E"]  # (K, d, D)
     b_E = state["b_E"]  # (K, D)
@@ -185,7 +177,9 @@ def run_eval(
     #    the crosscoder state, not by K*V*d.
     print(f"[eval] streaming pass over {len(trained_steps)} trained snaps...")
     trained_stats: dict[int, tuple[torch.Tensor, torch.Tensor]] = {}
-    raw0 = load_snapshot(snapshot_dir, trained_steps[0], model_slug)
+    # .to(device) here keeps the first iteration's matmul (and its
+    # trained_stats entry) on the same device as every later snapshot.
+    raw0 = load_snapshot(snapshot_dir, trained_steps[0], model_slug).to(device)
     V, d = raw0.shape
     D = W_E.shape[-1]
     print(f"[eval] V={V}, d={d}, D={D}")
@@ -197,11 +191,7 @@ def run_eval(
     pca_buf = torch.empty(rows_per_snap * K, d, dtype=torch.float32, device=device)
     rng = torch.Generator(device="cpu").manual_seed(0)
     for k, s in enumerate(trained_steps):
-        raw = (
-            raw0
-            if s == trained_steps[0]
-            else load_snapshot(snapshot_dir, s, model_slug).to(device)
-        )
+        raw = raw0 if s == trained_steps[0] else load_snapshot(snapshot_dir, s, model_slug).to(device)
         m, sc = center_scale_stats(raw)
         trained_stats[s] = (m, sc)
         normed = (raw - m) / sc
@@ -217,6 +207,7 @@ def run_eval(
     print(f"[eval] PCA fit (r={pca_rank}) on {pca_buf.shape[0]} subsampled rows...")
     rows_mean = pca_buf.mean(dim=0, keepdim=True)
     centered = pca_buf - rows_mean
+    torch.manual_seed(seed)  # svd_lowrank draws a random test matrix
     _, _, V_r = torch.svd_lowrank(centered, q=pca_rank, niter=5)  # V_r: (d, r)
     del centered, pca_buf
     gc.collect()
@@ -228,9 +219,7 @@ def run_eval(
     ceiling_ev_raw: dict[int, float] = {}
     print("[eval] computing trained-head ceiling EV (norm + raw)...")
     for k, s in enumerate(trained_steps):
-        recon_norm = decode_with_head(
-            hp_trained_sum, W_D[k], b_D[k], threshold, batch_size=batch_size
-        )
+        recon_norm = decode_with_head(hp_trained_sum, W_D[k], b_D[k], threshold, batch_size=batch_size)
         m_k, sc_k = trained_stats[s]
         raw_k = load_snapshot(snapshot_dir, s, model_slug).to(device)
         recon_raw = recon_norm * sc_k + m_k
@@ -241,10 +230,7 @@ def run_eval(
     if self_check:
         mean_ev_norm = sum(ceiling_ev_norm.values()) / len(ceiling_ev_norm)
         print(f"  mean trained EV (normalized) across {K} heads = {mean_ev_norm:.4f}")
-    print(
-        f"[eval] trained-snap raw-EV range: "
-        f"{min(ceiling_ev_raw.values()):.4f} – {max(ceiling_ev_raw.values()):.4f}"
-    )
+    print(f"[eval] trained-snap raw-EV range: {min(ceiling_ev_raw.values()):.4f} – {max(ceiling_ev_raw.values()):.4f}")
 
     # 7. Endpoint raw snaps (kept until end of held-out loop).
     first_step, last_step = trained_steps[0], trained_steps[-1]
@@ -274,9 +260,7 @@ def run_eval(
         hp_synth = held_norm @ syn_W_E + syn_b_E  # (V, D)
         accumulated = hp_trained_sum + hp_synth  # (V, D)
 
-        recon_synth_norm = decode_with_head(
-            accumulated, syn_W_D, syn_b_D, threshold, batch_size=batch_size
-        )
+        recon_synth_norm = decode_with_head(accumulated, syn_W_D, syn_b_D, threshold, batch_size=batch_size)
         recon_synth_raw = recon_synth_norm * held_scale + held_mean
         ev_synth = explained_variance(held_raw, recon_synth_raw)
         del hp_synth, recon_synth_norm
@@ -286,9 +270,7 @@ def run_eval(
         nn_idx = trained_steps.index(nn_step)
         nn_hp = held_norm @ W_E[nn_idx] + b_E[nn_idx]
         nn_accum = hp_trained_sum + nn_hp
-        recon_nn_norm = decode_with_head(
-            nn_accum, W_D[nn_idx], b_D[nn_idx], threshold, batch_size=batch_size
-        )
+        recon_nn_norm = decode_with_head(nn_accum, W_D[nn_idx], b_D[nn_idx], threshold, batch_size=batch_size)
         recon_nn_raw = recon_nn_norm * held_scale + held_mean
         ev_nn = explained_variance(held_raw, recon_nn_raw)
         del nn_hp, nn_accum, recon_nn_norm
@@ -363,7 +345,9 @@ def run_eval(
             "ceiling_ev_norm": ceiling_ev_norm,
             "residuals": recon_pt,
             "pca_rank": pca_rank,
+            "seed": seed,
             "crosscoder_path": str(crosscoder_path),
+            "git_commit": git_commit(),
         },
         pt_path,
     )
@@ -380,7 +364,9 @@ def main():
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--model-slug", default="EleutherAI_pythia-160m")
     p.add_argument("--no-self-check", action="store_true")
+    p.add_argument("--seed", type=int, default=0, help="seeds the svd_lowrank PCA fit")
     args = p.parse_args()
+    log_run_provenance(seed=args.seed)
     run_eval(
         crosscoder_path=args.crosscoder,
         snapshot_dir=args.snapshot_dir,
@@ -390,6 +376,7 @@ def main():
         device=args.device,
         model_slug=args.model_slug,
         self_check=not args.no_self_check,
+        seed=args.seed,
     )
 
 

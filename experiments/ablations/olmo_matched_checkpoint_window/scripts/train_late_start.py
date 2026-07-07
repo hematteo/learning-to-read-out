@@ -15,6 +15,7 @@ from readout.core.paths import (
     repo_root,  # noqa: E402
     ssd_path,
 )
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder import wu_adapter
 
 REPO = repo_root()
@@ -99,6 +100,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    log_run_provenance(seed=args.seed)
     model_short = args.model.split("/")[-1]  # e.g. "pythia-1b"
     model_tag = model_short.replace("-", "")  # e.g. "pythia1b"
     if args.cache_dir is None:
@@ -182,6 +184,7 @@ def main() -> int:
                 "schedule_note": f"32 {model_short} W_U snapshots starting at step 256",
             },
             "preprocess_stats": preprocess_stats,
+            "git_commit": git_commit(),
         },
         args.output,
     )

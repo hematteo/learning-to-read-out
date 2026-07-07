@@ -24,15 +24,21 @@ import torch
 
 from readout.core.data import write_csv
 from readout.core.paths import repo_root
+from readout.core.repro import log_run_provenance
+from readout.dynamics.lifecycle import (
+    PROFILE_LABELS,
+    PROFILE_ORDER,
+    classify_profiles_refined,
+    lifecycle_stats,
+)
 
 REPO = repo_root()
 OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
 SOURCE = OUT / "selected_decoder_norm_trajectories.pt"
 
-ALIVE_THR = 0.50
+# Thresholds of the legacy "current" ruleset only. The paper's refined ruleset
+# (tab:lifecycle-profile-rules) lives in readout.dynamics.lifecycle.
 PERSISTENT_ALIVE_FRAC_THR = 0.40
-EARLY_TAU = 0.35
-LATE_TAU = 0.65
 EARLY_LEVEL_THR = 0.45
 LATE_LEVEL_THR = 0.45
 LOW_LEVEL_THR = 0.35
@@ -55,22 +61,6 @@ RUNS = (
     Run("olmo2_7b_d32768", "OLMo-2-7B", (150, 1000, 14000, 928000)),
 )
 
-PROFILE_ORDER = (
-    "early_decay",
-    "late_emerge",
-    "persistent",
-    "transitional",
-    "mixed",
-)
-
-PROFILE_LABELS = {
-    "early_decay": "early-decaying",
-    "late_emerge": "late-emerging",
-    "persistent": "persistent",
-    "transitional": "transitional",
-    "mixed": "mixed/ambiguous",
-}
-
 
 def fmt_step(step: int) -> str:
     if step < 1000:
@@ -78,52 +68,6 @@ def fmt_step(step: int) -> str:
     if step % 1000 == 0:
         return f"{step // 1000}k"
     return f"{step / 1000:.0f}k"
-
-
-def tau_from_steps(steps: np.ndarray) -> np.ndarray:
-    log_steps = np.log10(steps.astype(np.float64) + 1.0)
-    return (log_steps - log_steps.min()) / np.clip(log_steps.max() - log_steps.min(), 1e-12, None)
-
-
-def lifecycle_stats(
-    traj: np.ndarray,
-    steps: np.ndarray,
-) -> dict[str, np.ndarray]:
-    tau = tau_from_steps(steps)
-    alive = traj >= ALIVE_THR
-    peak_idx = traj.argmax(axis=0)
-    first_alive = alive.argmax(axis=0)
-    last_alive = alive.shape[0] - 1 - alive[::-1].argmax(axis=0)
-    alive_frac = alive.mean(axis=0)
-    support_span = tau[last_alive] - tau[first_alive]
-    peak_tau = tau[peak_idx]
-    birth_tau = tau[first_alive]
-    death_tau = tau[last_alive]
-    early_level = traj[tau <= EARLY_TAU].mean(axis=0)
-    late_level = traj[tau >= LATE_TAU].mean(axis=0)
-    mid_mask = (tau > EARLY_TAU) & (tau < LATE_TAU)
-    mid_peak = traj[mid_mask].max(axis=0) if mid_mask.any() else np.zeros(traj.shape[1])
-    mid_mean = traj[mid_mask].mean(axis=0) if mid_mask.any() else np.zeros(traj.shape[1])
-    trajectory_range = traj.max(axis=0) - traj.min(axis=0)
-
-    return {
-        "peak_idx": peak_idx.astype(np.int16),
-        "peak_step": steps[peak_idx].astype(np.int64),
-        "birth_idx": first_alive.astype(np.int16),
-        "birth_step": steps[first_alive].astype(np.int64),
-        "death_idx": last_alive.astype(np.int16),
-        "death_step": steps[last_alive].astype(np.int64),
-        "peak_tau": peak_tau.astype(np.float32),
-        "birth_tau": birth_tau.astype(np.float32),
-        "death_tau": death_tau.astype(np.float32),
-        "support_span_tau": support_span.astype(np.float32),
-        "alive_fraction": alive_frac.astype(np.float32),
-        "early_level": early_level.astype(np.float32),
-        "late_level": late_level.astype(np.float32),
-        "mid_peak": mid_peak.astype(np.float32),
-        "mid_mean": mid_mean.astype(np.float32),
-        "trajectory_range": trajectory_range.astype(np.float32),
-    }
 
 
 def classify_profiles_current(
@@ -155,47 +99,6 @@ def classify_profiles_current(
     profile[early_decay] = "early_decay"
     profile[late_emerge] = "late_emerge"
     profile[transitional] = "transitional"
-    return {"profile": profile, **stats}
-
-
-def classify_profiles_refined(
-    traj: np.ndarray,
-    steps: np.ndarray,
-) -> dict[str, np.ndarray]:
-    stats = lifecycle_stats(traj, steps)
-    early_level = stats["early_level"]
-    late_level = stats["late_level"]
-    mid_peak = stats["mid_peak"]
-    mid_mean = stats["mid_mean"]
-    peak_tau = stats["peak_tau"]
-    alive_frac = stats["alive_fraction"]
-    trajectory_range = stats["trajectory_range"]
-
-    profile = np.full(traj.shape[1], "mixed", dtype=object)
-    persistent = ((alive_frac >= 0.70) & (trajectory_range <= 0.35)) | (
-        np.minimum(np.minimum(early_level, mid_mean), late_level) >= 0.45
-    )
-    profile[persistent] = "persistent"
-
-    unmatched = profile == "mixed"
-    transitional = (
-        unmatched
-        & (mid_peak >= 0.75)
-        & ((mid_peak - np.maximum(early_level, late_level)) >= 0.35)
-        & (late_level <= 0.30)
-        & (stats["support_span_tau"] <= 0.35)
-        & (peak_tau > 0.35)
-        & (peak_tau < 0.65)
-    )
-    profile[transitional] = "transitional"
-
-    unmatched = profile == "mixed"
-    early_decay = unmatched & (early_level >= 0.50) & ((early_level - late_level) >= 0.30) & (peak_tau <= 0.45)
-    profile[early_decay] = "early_decay"
-
-    unmatched = profile == "mixed"
-    late_emerge = unmatched & (late_level >= 0.50) & ((late_level - early_level) >= 0.30) & (peak_tau >= 0.55)
-    profile[late_emerge] = "late_emerge"
     return {"profile": profile, **stats}
 
 
@@ -297,6 +200,7 @@ def build_outputs(
 
 
 def main() -> None:
+    log_run_provenance()
     OUT.mkdir(parents=True, exist_ok=True)
     source = torch.load(SOURCE, map_location="cpu", weights_only=False)
     build_outputs(source, classify_profiles_current, CURRENT_STEM, "current")

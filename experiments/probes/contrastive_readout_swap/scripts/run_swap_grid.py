@@ -35,6 +35,7 @@ from readout.core.hf_revisions import resolve_revision
 from readout.core.model_specs import (  # noqa: E402
     DEFAULT_STEPS_32 as PYTHIA_STEPS_32,
 )
+from readout.core.model_specs import MODEL_HF_NAMES as MODEL_HF  # noqa: E402
 from readout.core.model_specs import (
     OLMO_STEPS_32 as OLMO_STEPS,
 )
@@ -51,13 +52,6 @@ from readout.probes import contrastive_tasks as CT  # noqa: E402
 from readout.probes import readout_swap as RS  # noqa: E402
 
 REPO = repo_root()
-
-MODEL_HF = {
-    "pythia-160m": "EleutherAI/pythia-160m",
-    "pythia-1b": "EleutherAI/pythia-1b",
-    "pythia-6.9b": "EleutherAI/pythia-6.9b",
-    "olmo-2-7b": "allenai/OLMo-2-1124-7B",
-}
 
 # OLMo HF revisions use the format "stage1-step{N}-tokens{T}B"; the {T}B suffix
 # is looked up at runtime. The step schedule is the canonical OLMO_STEPS_32
@@ -223,23 +217,17 @@ def main() -> None:
     shard_dir = args.out_dir / "shards"
     shard_dir.mkdir(parents=True, exist_ok=True)
     model_hf = MODEL_HF[args.model]
-    dtype_t = {"fp32": torch.float32, "bf16": torch.bfloat16, "fp16": torch.float16}[
-        args.dtype
-    ]
+    dtype_t = {"fp32": torch.float32, "bf16": torch.bfloat16, "fp16": torch.float16}[args.dtype]
 
     # Discover families.
     if args.families is None:
         family_paths = sorted(args.datasets_dir.glob("*.jsonl"))
-        family_paths = [
-            p for p in family_paths if not p.name.endswith("_corrupt.jsonl")
-        ]
+        family_paths = [p for p in family_paths if not p.name.endswith("_corrupt.jsonl")]
         families = [p.stem for p in family_paths]
     else:
         families = args.families
     if not families:
-        raise FileNotFoundError(
-            f"no <family>.jsonl files found under {args.datasets_dir}"
-        )
+        raise FileNotFoundError(f"no <family>.jsonl files found under {args.datasets_dir}")
     print(f"[setup] model={model_hf} families={families}", flush=True)
     print(
         f"[setup] h_steps={args.h_steps} s_steps={s_steps} alignments={args.alignments}",
@@ -262,11 +250,7 @@ def main() -> None:
 
     # Cells: (family, alignment, h_step, s_step). One shard per cell.
     items: list[tuple[str, str, int, int]] = [
-        (f, al, h, s)
-        for f in families
-        for al in args.alignments
-        for h in args.h_steps
-        for s in s_steps
+        (f, al, h, s) for f in families for al in args.alignments for h in args.h_steps for s in s_steps
     ]
 
     def shard_path(item) -> Path:

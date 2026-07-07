@@ -29,7 +29,8 @@ from pathlib import Path
 
 import torch
 
-from readout.core.paths import ssd_path
+from readout.core.paths import repo_root, ssd_path
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder import inference  # noqa: E402
 from readout.crosscoder.checkpoints import unwrap_ckpt
 
@@ -37,7 +38,7 @@ SSD = ssd_path()
 WU_CACHE = SSD / "snapshots"
 WE_CACHE = SSD / "we_snapshots"
 
-OUT = Path("results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json")
+OUT = repo_root() / "results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json"
 
 
 @dataclass
@@ -88,7 +89,8 @@ ARMS: list[Arm] = [
     Arm(
         "t1_5_bt",
         "T1.5 BatchTopK (160M W_U d=8192, BatchTopK k=203)",
-        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/architecture-comparison/d8192/batchtopk/seed0.safetensors",
+        SSD
+        / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/architecture-comparison/d8192/batchtopk/seed0.safetensors",
         WU_CACHE,
         "WU8192",
         is_new=True,
@@ -96,7 +98,8 @@ ARMS: list[Arm] = [
     Arm(
         "t1_5_gt",
         "T1.5 Gated retune (160M W_U d=8192, Gated lambda=0.05)",
-        SSD / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/architecture-comparison/d8192/gated-retuned/seed0.safetensors",
+        SSD
+        / "hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/architecture-comparison/d8192/gated-retuned/seed0.safetensors",
         WU_CACHE,
         "WU8192",
         is_new=True,
@@ -278,9 +281,10 @@ def compute_arm(arm: Arm, device: torch.device) -> dict:
 
 
 def main() -> None:
+    log_run_provenance()
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"device={device}", flush=True)
-    out: dict = {"device": str(device), "arms": {}}
+    out: dict = {"device": str(device), "git_commit": git_commit(), "arms": {}}
     for arm in ARMS:
         out["arms"][arm.name] = compute_arm(arm, device)
     OUT.parent.mkdir(parents=True, exist_ok=True)

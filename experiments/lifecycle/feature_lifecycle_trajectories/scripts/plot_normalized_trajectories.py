@@ -24,6 +24,7 @@ import numpy as np
 from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST
 from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST
 from readout.core.paths import repo_root, ssd_path
+from readout.core.repro import log_run_provenance
 
 CMAP_NAME = "RdBu_r"
 SELECTED_CMAP_NAME = "viridis"
@@ -279,6 +280,7 @@ def stratified_sample(norms: np.ndarray, n: int, rng: np.random.Generator) -> np
 
 
 def main() -> None:
+    log_run_provenance()
     norms_160 = np.load(SSD / "derived/rates/wu-d8192-multiseed/decoder_norms_all_seeds.npy")[0].astype(np.float32)
     norms_1b = np.load(SSD / "derived/rates/wu-1b-d24576/decoder_norms_dsae24576_seed0.npy").astype(np.float32)
 

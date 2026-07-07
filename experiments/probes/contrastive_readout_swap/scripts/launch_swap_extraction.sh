@@ -74,6 +74,8 @@ done
 
 [[ -z "$MODEL" || -z "$OUT_ROOT" ]] && usage
 
+# Short-label -> HF-id map: keep in sync with readout.core.model_specs.MODEL_HF_NAMES
+# (the Python source of truth; bash can't import it).
 case "$MODEL" in
     pythia-160m) HF_MODEL="EleutherAI/pythia-160m" ;;
     pythia-1b)   HF_MODEL="EleutherAI/pythia-1b"   ;;

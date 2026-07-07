@@ -30,16 +30,14 @@ from safetensors.torch import safe_open
 
 from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32
 from readout.core.paths import repo_root, ssd_root
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder import inference  # noqa: E402
 
 REPO = repo_root()
 SSD = ssd_root()
 HF = SSD / "hf_release/parameter-trajectory-crosscoders"
 SNAPSHOTS = SSD / "snapshots"
-DEFAULT_OUT = (
-    REPO
-    / "experiments/crosscoders/crosscoder_main/derived/appendix_validation/per_snap_eval"
-)
+DEFAULT_OUT = REPO / "experiments/crosscoders/crosscoder_main/derived/appendix_validation/per_snap_eval"
 
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 
@@ -56,11 +54,7 @@ def load_ckpt_state(ckpt_path: Path) -> tuple[dict, dict | None]:
     else:
         ck = torch.load(ckpt_path, map_location="cpu", weights_only=False, mmap=True)
         sd = ck["state_dict"]
-        cfg = {
-            k: ck[k]
-            for k in ("steps", "preprocess_stats", "model_name", "config")
-            if k in ck
-        }
+        cfg = {k: ck[k] for k in ("steps", "preprocess_stats", "model_name", "config") if k in ck}
     return sd, cfg
 
 
@@ -70,17 +64,13 @@ def reconstruct_preprocess_stats(snap_dir: Path, prefix: str, steps: list[int]) 
 
 
 def load_snap(snap_dir: Path, prefix: str, step: int) -> torch.Tensor:
-    return torch.load(
-        snap_dir / f"{prefix}_step{step}_wu.pt", map_location="cpu", weights_only=True
-    ).float()
+    return torch.load(snap_dir / f"{prefix}_step{step}_wu.pt", map_location="cpu", weights_only=True).float()
 
 
 # ─── eval implementations ──────────────────────────────────────────────────────
 
 
-def eval_cross_snapshot(
-    ckpt_path: Path, snap_dir: Path, snap_prefix: str, device: str = DEVICE
-) -> list[dict]:
+def eval_cross_snapshot(ckpt_path: Path, snap_dir: Path, snap_prefix: str, device: str = DEVICE) -> list[dict]:
     """Joint-encoder per-snap (EV, L0, dead_rate)."""
     sd, cfg = load_ckpt_state(ckpt_path)
     steps = list(cfg["steps"]) if cfg and "steps" in cfg else PYTHIA_STEPS_32
@@ -138,9 +128,7 @@ def eval_cross_snapshot(
         # Per-feature firing rate over V; dead = rate < 1e-4
         rate = (acts_i > 0).float().mean(dim=0)
         dead = (rate < 1e-4).float().mean().item()
-        rows.append(
-            {"step": s, "ev": ev, "l0": l0, "dead_rate": dead, "kind": "cross-snap"}
-        )
+        rows.append({"step": s, "ev": ev, "l0": l0, "dead_rate": dead, "kind": "cross-snap"})
         del W_raw, x_i, acts_i, recon, x_centered
     return rows
 
@@ -197,16 +185,12 @@ def eval_final_snapshot(
         l0 = (acts > 0).float().sum(dim=1).mean().item()
         rate = (acts > 0).float().mean(dim=0)
         dead = (rate < 1e-4).float().mean().item()
-        rows.append(
-            {"step": s, "ev": ev, "l0": l0, "dead_rate": dead, "kind": "final-snap"}
-        )
+        rows.append({"step": s, "ev": ev, "l0": l0, "dead_rate": dead, "kind": "final-snap"})
         del W_raw, x, pre, acts, recon
     return rows
 
 
-def eval_one_per_snap_sae(
-    ckpt_path: Path, snap_dir: Path, snap_prefix: str, step: int, device: str = DEVICE
-) -> dict:
+def eval_one_per_snap_sae(ckpt_path: Path, snap_dir: Path, snap_prefix: str, step: int, device: str = DEVICE) -> dict:
     """Per-snapshot SAE evaluated on its own snapshot only."""
     sd, _ = load_ckpt_state(ckpt_path)
     W_E = sd["W_E"].to(device).float()
@@ -257,9 +241,7 @@ def write_csv(rows: list[dict], out: Path, ckpt_id: str):
         w = csv.writer(f)
         w.writerow(["ckpt_id", "step", "kind", "ev", "l0", "dead_rate"])
         for r in rows:
-            w.writerow(
-                [ckpt_id, r["step"], r["kind"], r["ev"], r["l0"], r["dead_rate"]]
-            )
+            w.writerow([ckpt_id, r["step"], r["kind"], r["ev"], r["l0"], r["dead_rate"]])
     print(f"  → {out}")
 
 
@@ -277,9 +259,7 @@ def run_job(job: Job, force: bool = False):
     elif job.family == "per-snap":
         # per-snap files are named step<N>.safetensors; one row per ckpt
         step = int(job.ckpt_path.stem.replace("step", ""))
-        rows = [
-            eval_one_per_snap_sae(job.ckpt_path, job.snap_dir, job.snap_prefix, step)
-        ]
+        rows = [eval_one_per_snap_sae(job.ckpt_path, job.snap_dir, job.snap_prefix, step)]
     else:
         raise ValueError(f"unknown family: {job.family}")
     write_csv(rows, out, job.ckpt_id)
@@ -328,9 +308,7 @@ def jobs_for_160m_d8192_family() -> list[Job]:
         )
     )
     # per-snap-saes d=8192 (32 step files)
-    for p in sorted(
-        (HF / "pythia-160m/W_U/per-snapshot-saes/d8192").glob("step*.safetensors")
-    ):
+    for p in sorted((HF / "pythia-160m/W_U/per-snapshot-saes/d8192").glob("step*.safetensors")):
         if p.name.startswith("._"):
             continue
         step_id = p.stem
@@ -359,6 +337,10 @@ def main():
         jobs = jobs_for_160m_d8192_family()
     else:
         raise SystemExit("only 160m_d8192_family wired so far")
+    DEFAULT_OUT.mkdir(parents=True, exist_ok=True)
+    (DEFAULT_OUT / "provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
     print(f"running {len(jobs)} eval jobs on {DEVICE}")
     for j in jobs:
         run_job(j, force=args.force)

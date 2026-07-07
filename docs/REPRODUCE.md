@@ -98,7 +98,7 @@ its metrics is in that experiment's README "Figures produced" ledger. This table
 | <a id="fig:main-sparse-feature-causal-summary"></a>`fig:main-sparse-feature-causal-summary` | sparse_feature_causal_tests | paper/figures/sparse_feature_causal_tests/sparse_feature_causal_summary.pdf |
 | <a id="fig:main-wordnet-matched-controls"></a>`fig:main-wordnet-matched-controls` | concept_evolution_validation | paper/figures/vocabulary_family_probes/wordnet_matched_controls_160m.pdf |
 | <a id="sec:app-we-crosscoders"></a>`sec:app-we-crosscoders` | crosscoder_we | (produced; see experiments.yaml / tables below) |
-| <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | experiments/causal/contrastive_task_feature_rescue/.../run0_pythia1b_s1000_h1000/shards/sva__h1000__s1000.json |
+| <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json |
 | <a id="tab:app-wordnet-supersense-1b"></a>`tab:app-wordnet-supersense-1b` | concept_evolution_validation | experiments/probes/concept_evolution_validation/derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv |
 | <a id="tab:checkpoint-suite-comparison"></a>`tab:checkpoint-suite-comparison` | (thesis-tree only) | (thesis-tree only) |
 | <a id="tab:full-inventory"></a>`tab:full-inventory` | crosscoder_main | experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv |

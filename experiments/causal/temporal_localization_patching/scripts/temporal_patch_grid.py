@@ -35,6 +35,7 @@ import csv
 import json
 import math
 import time
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -42,6 +43,7 @@ import torch
 import torch.nn.functional as F
 
 import readout.dynamics.temporal_patch as TPM  # noqa: E402
+from readout.core.repro import git_commit, seed_everything  # noqa: E402
 
 DEVICE = TPM.DEVICE
 
@@ -136,9 +138,7 @@ def main():
     )
     ap.add_argument("--d-sae", type=int, default=24576)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument(
-        "--h-eval-steps", type=int, nargs="+", default=[256, 512, 1000, 2000, 143000]
-    )
+    ap.add_argument("--h-eval-steps", type=int, nargs="+", default=[256, 512, 1000, 2000, 143000])
     ap.add_argument(
         "--steps",
         type=int,
@@ -155,10 +155,9 @@ def main():
     )
     ap.add_argument("--n-match", type=int, default=99)
     ap.add_argument("--n-concept-tokens", type=int, default=256)
-    ap.add_argument(
-        "--out-dir", type=Path, default=Path("results/temporal_patch_grid/run0")
-    )
+    ap.add_argument("--out-dir", type=Path, default=Path("results/temporal_patch_grid/run0"))
     args = ap.parse_args()
+    seed_everything(args.seed)
 
     cfg_by_model = {
         "pythia-160m": (TPM.CFG_PYTHIA_160M, 8192),
@@ -209,19 +208,13 @@ def main():
     # If a token belongs to multiple concepts (shouldn't happen with the current
     # disjoint predicates but be safe), use first match.
     print("  assigning per-target-token concept index...", flush=True)
-    concept_membership = np.stack(
-        [concepts[n].member_mask for n in concept_names]
-    )  # (C, V)
+    concept_membership = np.stack([concepts[n].member_mask for n in concept_names])  # (C, V)
     target_concept_ix = np.full(len(targets_flat), -1, dtype=np.int32)
     for c, name in enumerate(concept_names):
         m = concept_membership[c, targets_flat]
         # Only assign if not already (first concept wins).
-        target_concept_ix = np.where(
-            (target_concept_ix == -1) & m, c, target_concept_ix
-        )
-    counts = {
-        n: int((target_concept_ix == c).sum()) for c, n in enumerate(concept_names)
-    }
+        target_concept_ix = np.where((target_concept_ix == -1) & m, c, target_concept_ix)
+    counts = {n: int((target_concept_ix == c).sum()) for c, n in enumerate(concept_names)}
     print("  per-target concept counts:", counts, flush=True)
     print(f"  unassigned targets: {int((target_concept_ix == -1).sum()):,}", flush=True)
 
@@ -230,14 +223,14 @@ def main():
     print("  building per-concept candidate sets (fixed across cells)...", flush=True)
     concept_sets: dict[str, dict] = {}
     for cn, c in concepts.items():
-        det_rng = np.random.default_rng(hash(("concept_sample", cn)) % 2**32)
+        # Stable per-concept-name seed: zlib.crc32 is process-independent,
+        # unlike Python hash() which is salted per interpreter run.
+        det_rng = np.random.default_rng(zlib.crc32(f"concept_sample:{cn}".encode()))
         in_C_all = np.where(c.member_mask)[0]
         if len(in_C_all) > args.n_concept_tokens:
             w = meta.log_freq[in_C_all] + 1e-3
             w = w / w.sum()
-            in_C = np.sort(
-                det_rng.choice(in_C_all, size=args.n_concept_tokens, replace=False, p=w)
-            )
+            in_C = np.sort(det_rng.choice(in_C_all, size=args.n_concept_tokens, replace=False, p=w))
         else:
             in_C = in_C_all
         null_C = TPM.build_concept_null(c, meta, pool, in_C, rng)
@@ -254,6 +247,7 @@ def main():
         "max_cm_contexts": args.max_cm_contexts,
         "concept_names": concept_names,
         "concept_target_counts": counts,
+        "git_commit": git_commit(),
     }
     (args.out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
@@ -300,13 +294,15 @@ def main():
             )
 
             # Concept-mass per concept under this (h_t, W_U_s).
+            # NB: do not name the loop variable `ctx` — that would shadow the
+            # PatchContext used by TPM.load_snapshot on the next snap_step.
             cm_per_concept: dict[str, float] = {}
             for cn, cs in concept_sets.items():
-                ctx = ctx_by_concept[cn]
-                if ctx["h"].numel() == 0:
+                cm_ctx = ctx_by_concept[cn]
+                if cm_ctx["h"].numel() == 0:
                     cm_per_concept[cn] = float("nan")
                     continue
-                cm = TPM.concept_mass_score(ctx["h"], W, cs["in_C"], cs["null_C"])
+                cm = TPM.concept_mass_score(cm_ctx["h"], W, cs["in_C"], cs["null_C"])
                 cm_per_concept[cn] = float(cm.mean())
 
             # Global row.

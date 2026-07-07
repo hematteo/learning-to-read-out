@@ -29,6 +29,7 @@ from pathlib import Path
 import torch
 
 from readout.core.paths import ssd_path
+from readout.core.repro import log_run_provenance
 
 
 def main():
@@ -66,6 +67,7 @@ def main():
         help="where sae_pareto.txt is written",
     )
     args = ap.parse_args()
+    log_run_provenance()
 
     rows = []
     for f in sorted(args.sae_dir.glob("sae_*_seed0.pt")):

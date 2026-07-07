@@ -33,16 +33,25 @@ with rare sharply transitional mid-training profiles. Evidence is strongest for
 Pythia-160M and Pythia-1B; sparse Pythia-6.9B and OLMo are used as scale and
 cross-family checks.
 
-## Reproduce (representative; scripts bootstrap the repo onto `sys.path`)
-- Decoder-norm trajectories: `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py`
-- Profile composition (consumes `selected_decoder_norm_trajectories.pt`): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py`
-- Wishbone scores/clusters: `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_selected_wishbone.py`
-- Reorganization steps: `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py`
+## Reproduce (in order; scripts bootstrap the repo onto `sys.path`)
+1. Decoder-norm trajectories (bootstrap — also writes the per-run
+   `<key>_decoder_norms.npy` caches under
+   `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/` that
+   steps 3–4 consume): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py`
+2. Profile composition (consumes `selected_decoder_norm_trajectories.pt`): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py`
+3. Wishbone scores/clusters: `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_selected_wishbone.py`
+4. Reorganization steps: `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py`
+
+Steps 3–4 also need the decoder-geometry caches
+(`<key>_adjacent_rotation_radians.npy`, `<key>_cos_to_terminal.npy`) in the
+same cache dir; on first run they are derived automatically from the released
+crosscoder checkpoints listed under Inputs (see `scripts/lifecycle_common.py`).
 
 ## Inputs (SSD canonical paths)
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors`
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors`
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors`
+- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.safetensors`
 - `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.{json,csv}`
 - `${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-{1b_d24576,160m_d24576}_seed0.pt`
 

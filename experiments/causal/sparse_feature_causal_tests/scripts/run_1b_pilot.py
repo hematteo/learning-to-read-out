@@ -27,6 +27,7 @@ from safetensors import safe_open
 
 from readout.core.data import write_csv
 from readout.core.paths import repo_root, ssd_path
+from readout.core.repro import git_commit
 
 REPO = repo_root()
 import readout.dynamics.temporal_patch as TPM  # noqa: E402
@@ -151,7 +152,9 @@ def concept_rows(
     return in_C.astype(np.int64), null_C.astype(np.int64)
 
 
-def encode_reconstruct_rows(ctx: TPM.PatchContext, row_ids: np.ndarray, pieces: CrosscoderPieces, device: str) -> RowRecon:
+def encode_reconstruct_rows(
+    ctx: TPM.PatchContext, row_ids: np.ndarray, pieces: CrosscoderPieces, device: str
+) -> RowRecon:
     """Canonical cross-snapshot encode for a small row subset.
 
     The crosscoder encoder first sums preactivations from every snapshot head.
@@ -499,6 +502,7 @@ def main() -> None:
         "n_in_C": int(len(in_C)),
         "n_null_C": int(len(null_C)),
         "top_features": top_max[:20],
+        "git_commit": git_commit(),
         "elapsed_s": round(time.time() - t0, 2),
     }
     (args.out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))

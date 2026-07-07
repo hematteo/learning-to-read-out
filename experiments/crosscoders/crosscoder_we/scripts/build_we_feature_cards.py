@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import json
 
 # Same-experiment sibling module; the insert makes this robust to import
 # from outside the scripts/ dir (direct file execution already has it first).
@@ -33,14 +34,15 @@ from we_common import (  # noqa: E402
     MODEL_SHORT,
     STEPS_32,
     _load_we_rates_and_norms,
+    _write_csv,
 )
 
-from readout.core.data import write_csv
 from readout.core.paths import (  # noqa: E402
     release_path,
     repo_root,  # noqa: E402
     ssd_root,
 )
+from readout.core.repro import git_commit, log_run_provenance  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
 
 REPO = repo_root()
@@ -262,10 +264,6 @@ def _csv_rows(cards: list[dict]) -> list[dict]:
     return rows
 
 
-def _write_csv(path: Path, rows: list[dict]) -> None:
-    write_csv(path, rows, require_rows=True)
-
-
 def _write_sidecars(name: str, cards: list[dict], bases: list[Path]) -> None:
     rows = _csv_rows(cards)
     payload = {
@@ -299,6 +297,10 @@ def _bases(name: str) -> list[Path]:
 
 
 def build() -> None:
+    RESULT_OUT.mkdir(parents=True, exist_ok=True)
+    (RESULT_OUT / "build_we_feature_cards.provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
     we_rates, we_norms = _load_we_rates_and_norms(ssd_root())
     rates = we_rates[SEED]
     norms = we_norms[SEED]

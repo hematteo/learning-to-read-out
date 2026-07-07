@@ -24,7 +24,9 @@
 #   paper_labels:     list of \label{fig:...} or \label{tab:...} strings this experiment produces
 #   paper_figures:    list of "<path-relative-to-paper/main.tex \graphicspath> -> <label>" mappings
 #   entry:            primary CLI command(s) in execution order (optional)
-#   cited_in:         which prose files reference these figures
+#   cited_in:         which prose files reference these figures. Convention: every
+#                     experiment carrying a fig:main-* label lists paper/main.tex;
+#                     [] means no shipped prose file cites the experiment's figures
 #
 # ─── CODE-ONLY RELEASE ───────────────────────────────────────────────────────
 # This repository ships code only — no data and no metrics. Each experiment
@@ -142,8 +144,12 @@ experiments:
       - "paper/figures/sparse_feature_causal_tests/contrastive_task_localization_1x3.pdf -> fig:lr-localization"
     entry:
       - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py
-      - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000
-    cited_in: []
+      - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000
+      # The paper-facing audit is the mature-step-143k specificity pass above (see
+      # paper_intent and the step-143k manifest under inputs:). The earlier step-1000
+      # non-Latin pilot pass is a historical setup run (README "Reproduce"):
+      #   uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000
+    cited_in: [paper/main.tex]
 
   - id: concept_evolution_validation
     status: active
@@ -242,6 +248,9 @@ experiments:
     inputs:
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt
+      # OLMo decoder-norm geometry cache read by build_late_start_vs_olmo_figures.py;
+      # produced by feature_lifecycle_trajectories' plot_normalized_trajectories.py — run that first.
+      - figures/feature_lifecycle_trajectories/section52_lifecycle/cache/olmo2_7b_d32768_decoder_norms.npy
     paper_labels:
       - fig:app-olmo-window-metric-grid
       - fig:app-olmo-window-population
@@ -506,7 +515,7 @@ experiments:
     paper_labels:
       - tab:app-contrastive-localisation-ledger
     paper_figures:
-      - "experiments/causal/contrastive_task_feature_rescue/.../run0_pythia1b_s1000_h1000/shards/sva__h1000__s1000.json -> tab:app-contrastive-localisation-ledger"
+      - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:app-contrastive-localisation-ledger"  # one shard per family under run0/shards/; sva shown as the representative ledger row
     cited_in: []
     entry:
       - uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py --model pythia-1b --d-sae 24576 --seed 0 --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden --snapshot-step 1000 --h-step 1000

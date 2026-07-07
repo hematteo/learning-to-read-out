@@ -26,7 +26,11 @@ Pipeline (per task family, per (h_step, snapshot_step) cell):
      top-k ablation evaluated on this task's examples. Diagonal-heavy means
      the rescue is task-specific.
 
-Outputs per cell (resume-safe shards under ``shards/``):
+Outputs per cell (resume-safe shards under ``shards/``: a family whose
+.json + .pt shard pair already exists is skipped on rerun — delete the pair
+to force a recompute; per-family splits and matched controls are derived
+from stable per-(family, K) seeds, so partial reruns reproduce the exact
+numbers a fresh full run would produce):
   - feature_scores: (D_sae,) attribution per feature
   - top_k_indices: list[int] of length K
   - margins:       baseline / ablate / preserve / control_ablate / control_preserve
@@ -44,11 +48,14 @@ from __future__ import annotations
 
 import argparse
 import gc
+import json
+import zlib
 from pathlib import Path
 
 import numpy as np
 import torch
 
+from readout.core.model_specs import MODEL_HF_NAMES  # noqa: E402
 from readout.core.paths import (
     release_path,  # noqa: E402
     repo_root,  # noqa: E402
@@ -177,6 +184,17 @@ def margins_with_W(
 # ---------------------------------------------------------------------------
 # Matched-random control
 # ---------------------------------------------------------------------------
+def stable_rng(base_seed: int, *parts: object) -> np.random.Generator:
+    """Order/subset-independent RNG keyed on ``parts`` (e.g. family, K).
+
+    Uses zlib.crc32 (process-stable, unlike salted ``hash()``) so control
+    selection for a given (family, K) does not depend on which other
+    families/Ks are evaluated in the same run (``--families`` subsets).
+    """
+    key = ":".join(str(p) for p in parts)
+    return np.random.default_rng([base_seed, zlib.crc32(key.encode())])
+
+
 def matched_random_features(
     target_idx: np.ndarray,  # (K,)
     decoder_norms: np.ndarray,  # (D,)
@@ -184,7 +202,8 @@ def matched_random_features(
     rng: np.random.Generator,
     *,
     sign_filter: np.ndarray | None = None,  # bool mask, True = eligible (e.g., positive attr)
-) -> np.ndarray:
+    return_relaxed: bool = False,
+) -> np.ndarray | tuple[np.ndarray, dict]:
     """Pick K features outside ``target_idx`` whose (norm, rate) closely match.
 
     1-NN in the (log-norm, log-rate) plane; sample without replacement.
@@ -192,6 +211,10 @@ def matched_random_features(
     ``sign_filter == True`` (e.g., the set of features whose attribution
     has the same sign as the top-K) — this catches sign-confounding in
     the matched-control comparison.
+
+    With ``return_relaxed=True`` also returns an info dict recording whether
+    the sign-matching constraint had to be dropped (pool smaller than K) and
+    the eligible-pool size, so callers can persist the relaxation.
     """
     D = decoder_norms.shape[0]
     target_set = set(int(x) for x in target_idx)
@@ -200,9 +223,12 @@ def matched_random_features(
     if sign_filter is not None:
         eligible &= sign_filter
     available = np.flatnonzero(eligible)
+    n_filtered_pool = int(len(available))
+    relaxed = False
     if len(available) < len(target_idx):
         # Not enough sign-matched candidates; fall back to unfiltered pool
-        # (caller is responsible for noticing the dropped constraint).
+        # (recorded via `relaxed` for return_relaxed callers).
+        relaxed = sign_filter is not None
         eligible = np.ones(D, dtype=bool)
         eligible[list(target_set)] = False
         available = np.flatnonzero(eligible)
@@ -220,18 +246,16 @@ def matched_random_features(
         pick = int(np.argmin(d2))
         chosen.append(int(available[pick]))
         used.add(pick)
-    return np.asarray(chosen, dtype=np.int64)
+    out = np.asarray(chosen, dtype=np.int64)
+    if return_relaxed:
+        return out, {"sign_filter_relaxed": relaxed, "n_eligible_pool": n_filtered_pool}
+    return out
 
 
 # ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
-MODEL_HF = {
-    "pythia-160m": "EleutherAI/pythia-160m",
-    "pythia-1b": "EleutherAI/pythia-1b",
-    "pythia-6.9b": "EleutherAI/pythia-6.9b",
-    "olmo-2-7b": "allenai/OLMo-2-1124-7B",
-}
+MODEL_HF = MODEL_HF_NAMES  # short label -> HF id (readout.core.model_specs)
 
 
 def main() -> None:
@@ -315,6 +339,12 @@ def main() -> None:
         "--snapshot-dtype",
         choices=["fp32", "bf16", "fp16"],
         default="bf16",
+        help="Storage dtype for the loaded W_U snapshots. The default bf16 "
+        "round-trips the fp32 snapshots through bf16 before casting back to "
+        "fp32 for the encoder/margin math (halves peak memory), so feature "
+        "activations, reconstructions, and native-W_U margins carry bf16 "
+        "quantization (~3 significant decimal digits). Use fp32 for "
+        "bit-exact snapshots.",
     )
     ap.add_argument(
         "--out-dir",
@@ -465,13 +495,30 @@ def main() -> None:
     scale_step = None if stats is None else stats["scale"][target_idx].cpu().float()
 
     # ---- Per-family: load examples, hidden states, attribution + interventions.
-    rng = np.random.default_rng(args.rng_seed)
-    split_rng = np.random.default_rng(args.split_seed)
+    # All per-family randomness (splits, matched controls) is derived via
+    # stable_rng, so results are independent of family/K iteration order and
+    # of --families subsets — a requirement for the shard-level resume below.
     per_family_top: dict[str, np.ndarray] = {}
     per_family_results: dict[str, dict] = {}
     per_family_split_info: dict[str, dict] = {}
 
+    def fam_shard_path(fam: str) -> Path:
+        return shard_dir / f"{fam}__h{args.h_step}__s{args.snapshot_step}.json"
+
     for fam in families:
+        out_p = fam_shard_path(fam)
+        if out_p.exists() and out_p.with_suffix(".pt").exists():
+            # Resume: shard already computed. Reload the feature order the
+            # downstream specificity matrix needs, skip the recompute.
+            payload = torch.load(out_p.with_suffix(".pt"), map_location="cpu", weights_only=False)
+            per_family_top[fam] = np.asarray(payload["feature_order"])[: max(args.K)].astype(np.int64)
+            # Restore split provenance from the shard JSON so a resumed run's
+            # manifest.json per_family_split matches a fresh full run's.
+            shard_meta = json.loads(out_p.read_text())
+            if "split" in shard_meta:
+                per_family_split_info[fam] = shard_meta["split"]
+            print(f"[resume] {fam}: shard exists ({out_p.name}), skipping", flush=True)
+            continue
         ex = CT.load_examples(args.datasets_dir / f"{fam}.jsonl")
         if not ex:
             continue
@@ -501,7 +548,9 @@ def main() -> None:
         n_b = n_total - n_a
         use_split = args.split_frac < 1.0 and min(n_a, n_b) >= args.min_split_n
         if use_split:
-            perm = split_rng.permutation(n_total)
+            # Per-family stable derivation (not a shared sequential stream):
+            # the split for `fam` must not depend on which families ran first.
+            perm = stable_rng(args.split_seed, "split", fam).permutation(n_total)
             idx_a = np.sort(perm[:n_a])
             idx_b = np.sort(perm[n_a:])
         else:
@@ -567,13 +616,21 @@ def main() -> None:
             #              when --rank-by pos; |attr|-bucket when --rank-by abs).
             #              This catches the sign-confounding interpretation
             #              of preserve-K beating recon.
-            ctrl = matched_random_features(top, decoder_norms_np, rates, rng)
-            ctrl_sgn = matched_random_features(
+            # Per-(family, K) rngs so the controls are identical regardless of
+            # iteration order or --families subsets.
+            ctrl = matched_random_features(
                 top,
                 decoder_norms_np,
                 rates,
-                rng,
+                stable_rng(args.rng_seed, "ctrl", fam, K_),
+            )
+            ctrl_sgn, ctrl_sgn_info = matched_random_features(
+                top,
+                decoder_norms_np,
+                rates,
+                stable_rng(args.rng_seed, "ctrl_sgn", fam, K_),
                 sign_filter=pos_mask if args.rank_by == "pos" else None,
+                return_relaxed=True,
             )
 
             top_t = torch.from_numpy(top).long().to(args.device)
@@ -686,6 +743,10 @@ def main() -> None:
                 "top_indices": top.tolist(),
                 "ctrl_indices": ctrl.tolist(),
                 "ctrl_sign_matched_indices": ctrl_sgn.tolist(),
+                # True if the sign-matched pool was < K and the constraint was
+                # dropped (control drawn from the unfiltered pool instead).
+                "ctrl_sign_filter_relaxed": bool(ctrl_sgn_info["sign_filter_relaxed"]),
+                "ctrl_sign_eligible_pool": int(ctrl_sgn_info["n_eligible_pool"]),
                 # Eval-side baselines (split B; the rescue denominator)
                 "summary_h_native": RS.margin_summary(m_h_native),
                 "summary_native_s": RS.margin_summary(m_native_s),
@@ -733,8 +794,25 @@ def main() -> None:
                 flush=True,
             )
 
-        # Persist per-family attribution + interventions.
-        out_p = shard_dir / f"{fam}__h{args.h_step}__s{args.snapshot_step}.json"
+        # Persist per-family attribution + interventions. The companion .pt
+        # (full attribution vector + the K decoder rows we used — the decoder
+        # rows let downstream scripts run the converse intervention without
+        # reloading the full crosscoder) is written FIRST; the .json shard is
+        # the resume marker, so it must only land after the .pt is durable.
+        # W_D shape (D_sae, d); take the union of all top-K we evaluated.
+        K_max = max(args.K)
+        top_union = order[:K_max].astype(np.int64)
+        D_top = sd["W_D"][target_idx][torch.from_numpy(top_union).long()].cpu().float()
+        torch.save(
+            {
+                "attrs": attrs,
+                "feature_order": order,
+                "decoder_rows_top_Kmax": D_top,  # (K_max, d)
+                "decoder_rows_top_Kmax_indices": top_union,  # (K_max,)
+                "scale_step": (None if scale_step is None else scale_step.float()),
+            },
+            out_p.with_suffix(".pt"),
+        )
         atomic_write_json(
             out_p,
             {
@@ -753,24 +831,6 @@ def main() -> None:
                 "per_K": per_K,
             },
         )
-        # Companion .pt with full attribution vector + the K decoder rows
-        # we used. The decoder rows let downstream scripts run the converse
-        # intervention (project K directions out of h) without needing to
-        # reload the full crosscoder.
-        # W_D shape (D_sae, d); take the union of all top-K we evaluated.
-        K_max = max(args.K)
-        top_union = order[:K_max].astype(np.int64)
-        D_top = sd["W_D"][target_idx][torch.from_numpy(top_union).long()].cpu().float()
-        torch.save(
-            {
-                "attrs": attrs,
-                "feature_order": order,
-                "decoder_rows_top_Kmax": D_top,  # (K_max, d)
-                "decoder_rows_top_Kmax_indices": top_union,  # (K_max,)
-                "scale_step": (None if scale_step is None else scale_step.float()),
-            },
-            out_p.with_suffix(".pt"),
-        )
 
         per_family_top[fam] = order[: max(args.K)].astype(np.int64)
         per_family_results[fam] = per_K
@@ -783,7 +843,6 @@ def main() -> None:
         fam_list = list(per_family_top.keys())
         n = len(fam_list)
         spec = np.full((n, n), np.nan, dtype=np.float64)
-        spec_split_rng = np.random.default_rng(args.split_seed)  # re-derive splits
         spec_split_cache: dict[str, dict] = {}
 
         def _eval_split(eval_fam: str):
@@ -802,7 +861,9 @@ def main() -> None:
             n_b = n_eval - n_a
             use_split_local = args.split_frac < 1.0 and min(n_a, n_b) >= args.min_split_n
             if use_split_local:
-                p = spec_split_rng.permutation(n_eval)
+                # Same stable per-family derivation as the main loop, so this
+                # split-B is exactly the held-out set used above.
+                p = stable_rng(args.split_seed, "split", eval_fam).permutation(n_eval)
                 idx_b_local = np.sort(p[n_a:])
             else:
                 idx_b_local = np.arange(n_eval)

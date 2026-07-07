@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +32,7 @@ from readout.core.paths import (
     repo_root,  # noqa: E402
     snapshot_path,  # noqa: E402
 )
+from readout.core.repro import git_commit  # noqa: E402
 from readout.crosscoder.snapshots import load_snapshot  # noqa: E402
 
 REPO = repo_root()
@@ -47,25 +47,12 @@ class Top2Audit:
     v1: torch.Tensor
 
 
-def _git_commit() -> str | None:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=REPO, text=True
-        ).strip()
-    except Exception:
-        return None
-
-
-def _x_for_centered_q(
-    w: torch.Tensor, q: torch.Tensor, mu: torch.Tensor
-) -> torch.Tensor:
+def _x_for_centered_q(w: torch.Tensor, q: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
     y = w @ q
     return y - (mu @ q).unsqueeze(0)
 
 
-def _xt_for_centered_z(
-    w: torch.Tensor, z: torch.Tensor, mu: torch.Tensor
-) -> torch.Tensor:
+def _xt_for_centered_z(w: torch.Tensor, z: torch.Tensor, mu: torch.Tensor) -> torch.Tensor:
     return w.T @ z - mu.unsqueeze(1) @ z.sum(dim=0, keepdim=True)
 
 
@@ -135,9 +122,7 @@ def _unit_sum_chunked(
             if row_norm_sq is None:
                 norms = chunk.norm(dim=1)
             else:
-                norms = torch.sqrt(
-                    torch.clamp(row_norm_sq[start : start + chunk_size], min=eps)
-                )
+                norms = torch.sqrt(torch.clamp(row_norm_sq[start : start + chunk_size], min=eps))
             unit = chunk / norms.unsqueeze(1).clamp_min(eps)
         else:
             centered = chunk - mu
@@ -176,26 +161,16 @@ def compute_one(
     centered_median_row_norm = float(centered_row_norm.median().item())
     center_scale = (centered_row_norm_sq.mean() / float(d_model)).sqrt().item()
 
-    raw_unit_sum = _unit_sum_chunked(
-        w, mu=None, row_norm_sq=row_norm_sq, chunk_size=chunk_size
-    )
-    centered_unit_sum = _unit_sum_chunked(
-        w, mu=mu, row_norm_sq=None, chunk_size=chunk_size
-    )
+    raw_unit_sum = _unit_sum_chunked(w, mu=None, row_norm_sq=row_norm_sq, chunk_size=chunk_size)
+    centered_unit_sum = _unit_sum_chunked(w, mu=mu, row_norm_sq=None, chunk_size=chunk_size)
 
-    raw_top = estimate_top2(
-        w, mu=None, q_dim=q_dim, n_iter=n_iter, seed=seed + step + 17
-    )
-    centered_top = estimate_top2(
-        w, mu=mu, q_dim=q_dim, n_iter=n_iter, seed=seed + step + 31
-    )
+    raw_top = estimate_top2(w, mu=None, q_dim=q_dim, n_iter=n_iter, seed=seed + step + 17)
+    centered_top = estimate_top2(w, mu=mu, q_dim=q_dim, n_iter=n_iter, seed=seed + step + 31)
 
     if mu_norm > 0:
         mu_unit = mu / mu.norm()
         raw_v1_mean_alignment = abs(float(torch.dot(mu_unit, raw_top.v1).item()))
-        centered_v1_mean_alignment = abs(
-            float(torch.dot(mu_unit, centered_top.v1).item())
-        )
+        centered_v1_mean_alignment = abs(float(torch.dot(mu_unit, centered_top.v1).item()))
     else:
         raw_v1_mean_alignment = float("nan")
         centered_v1_mean_alignment = float("nan")
@@ -222,16 +197,11 @@ def compute_one(
         "raw_spectral_gap": raw_top.s1 / raw_top.s2,
         "centered_spectral_gap": centered_top.s1 / centered_top.s2,
         "raw_stable_rank_top2": raw_fro_sq / (raw_top.s1 * raw_top.s1),
-        "centered_stable_rank_top2": centered_fro_sq
-        / (centered_top.s1 * centered_top.s1),
+        "centered_stable_rank_top2": centered_fro_sq / (centered_top.s1 * centered_top.s1),
         "raw_v1_mean_alignment": raw_v1_mean_alignment,
         "centered_v1_mean_alignment": centered_v1_mean_alignment,
-        "raw_mean_pairwise_cos": _mean_pairwise_cosine_from_unit_sum(
-            raw_unit_sum, n_rows
-        ),
-        "centered_mean_pairwise_cos": _mean_pairwise_cosine_from_unit_sum(
-            centered_unit_sum, n_rows
-        ),
+        "raw_mean_pairwise_cos": _mean_pairwise_cosine_from_unit_sum(raw_unit_sum, n_rows),
+        "centered_mean_pairwise_cos": _mean_pairwise_cosine_from_unit_sum(centered_unit_sum, n_rows),
         "top2_method": "block_power_iteration",
         "top2_q_dim": q_dim,
         "top2_n_iter": n_iter,
@@ -249,9 +219,7 @@ def _parse_models(values: Iterable[str]) -> list[tuple[str, str]]:
     out = []
     for value in values:
         if value not in MODEL_NAMES:
-            raise ValueError(
-                f"unknown model {value}; expected one of {sorted(MODEL_NAMES)}"
-            )
+            raise ValueError(f"unknown model {value}; expected one of {sorted(MODEL_NAMES)}")
         out.append((value, MODEL_NAMES[value]))
     return out
 
@@ -285,11 +253,7 @@ def main() -> int:
     rows: list[dict] = []
     model_pairs = _parse_models(args.models)
     for model_label, model_name in model_pairs:
-        model_steps = (
-            list(args.steps)
-            if args.steps is not None
-            else DEFAULT_STEPS_BY_MODEL[model_label]
-        )
+        model_steps = list(args.steps) if args.steps is not None else DEFAULT_STEPS_BY_MODEL[model_label]
         for step in model_steps:
             path = snapshot_path(model_name, step, kind="wu")
             if not path.exists():
@@ -322,13 +286,11 @@ def main() -> int:
     torch.save({"rows": rows}, pt_path)
     provenance = {
         "script": str(Path(__file__).resolve()),
-        "git_commit": _git_commit(),
+        "git_commit": git_commit(),
         "models": args.models,
         "steps": args.steps,
         "steps_by_model": {
-            model_label: list(args.steps)
-            if args.steps is not None
-            else DEFAULT_STEPS_BY_MODEL[model_label]
+            model_label: list(args.steps) if args.steps is not None else DEFAULT_STEPS_BY_MODEL[model_label]
             for model_label, _ in model_pairs
         },
         "top2_method": "block_power_iteration",

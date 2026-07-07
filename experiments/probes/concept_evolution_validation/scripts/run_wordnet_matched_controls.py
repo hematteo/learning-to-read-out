@@ -35,17 +35,17 @@ from transformers import AutoTokenizer
 
 from readout.core.data import write_csv
 from readout.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES
-from readout.core.paths import repo_root, snapshot_path
+from readout.core.paths import repo_root, snapshot_path, ssd_path
 from readout.core.repro import git_commit
 from readout.crosscoder.snapshots import load_snapshot
 from readout.probes.wu_probes_gpu import probe_balanced_accuracy_batched
 
 REPO = repo_root()
 
-DEFAULT_EVAL_TOKENS = (
-    REPO / "_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt"
-)
-FALLBACK_EVAL_TOKENS = REPO / "results/derived/eval_corpus/eval_tokens.pt"
+# Canonical released Pythia eval corpus — same resolution as
+# readout.dynamics.temporal_patch.CORPUS_TOKENS_PYTHIA (see docs/DATA.md);
+# override with --eval-tokens.
+DEFAULT_EVAL_TOKENS = ssd_path("hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt")
 
 
 @dataclass(frozen=True)
@@ -68,9 +68,7 @@ def load_eval_counts(path: Path, vocab_size: int) -> np.ndarray:
     return np.bincount(ids, minlength=vocab_size).astype(np.int64)
 
 
-def ranked_bins(
-    values: np.ndarray, n_bins: int, *, zero_bin: bool = False
-) -> np.ndarray:
+def ranked_bins(values: np.ndarray, n_bins: int, *, zero_bin: bool = False) -> np.ndarray:
     values = np.asarray(values)
     bins = np.zeros(len(values), dtype=np.int32)
     if zero_bin:
@@ -116,9 +114,7 @@ def coarse_class_of(text: str, *, special: bool) -> str:
     return "non_ascii"
 
 
-def build_token_covariates(
-    tokenizer, counts: np.ndarray, vocab_size: int
-) -> TokenCovariates:
+def build_token_covariates(tokenizer, counts: np.ndarray, vocab_size: int) -> TokenCovariates:
     text: list[str] = []
     char_len = np.zeros(vocab_size, dtype=np.int32)
     has_space = np.zeros(vocab_size, dtype=bool)
@@ -305,8 +301,7 @@ def sample_matched_set(
         "overlap_with_source": overlap,
         "exact_frac": level_counts[0] / max(len(concept), 1),
         "relax_mean": (
-            sum(level * count for level, count in level_counts.items())
-            / max(sum(level_counts.values()), 1)
+            sum(level * count for level, count in level_counts.items()) / max(sum(level_counts.values()), 1)
         ),
     }
 
@@ -352,9 +347,7 @@ def summarize_null(values: list[float], observed: float) -> dict[str, object]:
         "p50": round(float(np.percentile(arr, 50)), 6),
         "p95": round(float(np.percentile(arr, 95)), 6),
         "max": round(float(arr.max()), 6),
-        "p_ge_observed": round(
-            float((1 + np.sum(arr >= observed)) / (1 + arr.size)), 6
-        ),
+        "p_ge_observed": round(float((1 + np.sum(arr >= observed)) / (1 + arr.size)), 6),
     }
 
 
@@ -379,20 +372,14 @@ def run(args: argparse.Namespace) -> None:
 
     model_name = MODEL_HF_NAMES[args.model]
     steps = parse_steps(args)
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name, local_files_only=args.local_files_only
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=args.local_files_only)
     concepts_all, audit_rows = build_wordnet_concepts(
         tokenizer,
         min_word_len=args.min_word_len,
         min_token_chars=args.min_token_chars,
         dominance_threshold=args.dominance_threshold,
     )
-    concepts = {
-        name: toks
-        for name, toks in concepts_all.items()
-        if len(toks) >= args.min_probe_tokens
-    }
+    concepts = {name: toks for name, toks in concepts_all.items() if len(toks) >= args.min_probe_tokens}
     concepts = {name: concepts[name] for name in LEXNAME_ORDER if name in concepts}
 
     probe_path = snapshot_path(model_name, steps[0])
@@ -401,12 +388,11 @@ def run(args: argparse.Namespace) -> None:
         raise FileNotFoundError(probe_path)
 
     eval_tokens = Path(args.eval_tokens)
-    if (
-        not eval_tokens.exists()
-        and eval_tokens == DEFAULT_EVAL_TOKENS
-        and FALLBACK_EVAL_TOKENS.exists()
-    ):
-        eval_tokens = FALLBACK_EVAL_TOKENS
+    if not eval_tokens.exists():
+        raise FileNotFoundError(
+            f"eval-tokens corpus not found at {eval_tokens}; pass --eval-tokens "
+            "or set UM_SSD_ROOT so the released corpus resolves (see docs/DATA.md)."
+        )
     counts = load_eval_counts(eval_tokens, vocab_size)
     cov = build_token_covariates(tokenizer, counts, vocab_size)
 
@@ -473,9 +459,7 @@ def run(args: argparse.Namespace) -> None:
             max_iter=args.max_iter,
             chunk_size=args.chunk_size,
         )
-        by_control: dict[tuple[str, str], list[float]] = {
-            (cname, "matched_random"): [] for cname in concepts
-        }
+        by_control: dict[tuple[str, str], list[float]] = {(cname, "matched_random"): [] for cname in concepts}
         by_control.update({(cname, "label_shuffle"): [] for cname in concepts})
         for key, vals in null_res.items():
             cname, kind, perm_i, q = synth_meta[key]
@@ -562,9 +546,7 @@ def parse_args() -> argparse.Namespace:
         "--out-dir",
         default="experiments/probes/concept_evolution_validation/derived/wordnet_matched_controls_160m",
     )
-    parser.add_argument(
-        "--steps", default=None, help="Comma-separated subset of 32 schedule steps."
-    )
+    parser.add_argument("--steps", default=None, help="Comma-separated subset of 32 schedule steps.")
     parser.add_argument("--all-steps", action="store_true")
     parser.add_argument("--n-perm", type=int, default=20)
     parser.add_argument("--chunk-size", type=int, default=160)
@@ -575,13 +557,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-token-chars", type=int, default=3)
     parser.add_argument("--dominance-threshold", type=float, default=0.6)
     parser.add_argument("--min-probe-tokens", type=int, default=20)
-    parser.add_argument(
-        "--preprocess", choices=["none", "center", "center_scale"], default="center"
-    )
+    parser.add_argument("--preprocess", choices=["none", "center", "center_scale"], default="center")
     parser.add_argument("--eval-tokens", type=Path, default=DEFAULT_EVAL_TOKENS)
-    parser.add_argument(
-        "--local-files-only", action=argparse.BooleanOptionalAction, default=True
-    )
+    parser.add_argument("--local-files-only", action=argparse.BooleanOptionalAction, default=True)
     return parser.parse_args()
 
 

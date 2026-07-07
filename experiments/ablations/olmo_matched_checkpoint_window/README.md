@@ -71,6 +71,11 @@ uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/build
   — precomputed firing-rate blob (keys `rates`, optional `norms`, `steps`) for
   the trained late-start crosscoder, read by `build_late_start_vs_olmo_figures.py`;
   derive it from the trained checkpoint with `scripts/extract/extract_rates.py`.
+- `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/olmo2_7b_d32768_decoder_norms.npy`
+  — cross-experiment dependency: the OLMo-2-7B decoder-norm cache built by the
+  lifecycle experiment
+  (`experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py`);
+  run that script first if the cache is missing.
 
 ## Outputs
 

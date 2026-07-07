@@ -23,6 +23,7 @@ import torch
 from safetensors import safe_open
 
 from readout.core.paths import repo_root, ssd_root
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder import inference  # noqa: E402
 
 REPO = repo_root()
@@ -156,6 +157,9 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="cpu")
     args = ap.parse_args()
+    (OUT / "persnap_1b.provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
     for d in args.d_saes:
         out = OUT / f"persnap_1b_d{d}_seed{args.seed}.csv"
         if out.exists():

@@ -13,8 +13,8 @@ giving a baseline directly comparable to the cross-snap dictionary's
 total-trajectory EV.
 
 Output:
-  - figures/run5/a_instrument_validation/concat_pca.csv
-  - figures/run5/a_instrument_validation/concat_pca.pt
+  - figures/crosscoder_main/appendix_validation/concat_pca.csv
+  - figures/crosscoder_main/appendix_validation/concat_pca.pt
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ _sys.path.insert(0, str(_P(__file__).resolve().parent))  # this dir for `baselin
 
 import argparse
 import csv
+import json
 import time
 from pathlib import Path
 
@@ -38,6 +39,8 @@ from baseline_utils import (
     ensure_dirs,
     iter_snapshots,
 )
+
+from readout.core.repro import git_commit, log_run_provenance
 
 
 def streaming_randomized_svd(
@@ -69,9 +72,7 @@ def streaming_randomized_svd(
     F2 = 0.0
     snap_cache_means: list[torch.Tensor] = []
 
-    for k, (step, Wt) in enumerate(
-        iter_snapshots(spec, steps=steps, snap_dir=snap_dir)
-    ):
+    for k, (step, Wt) in enumerate(iter_snapshots(spec, steps=steps, snap_dir=snap_dir)):
         if V is None:
             V = Wt.shape[0]
             Y = torch.zeros(V, m, dtype=torch.float32)
@@ -85,15 +86,11 @@ def streaming_randomized_svd(
     for _ in range(n_power_iters):
         Q, _ = torch.linalg.qr(Y, mode="reduced")
         Z = torch.zeros(K * d, m, dtype=torch.float32)
-        for k, (step, Wt) in enumerate(
-            iter_snapshots(spec, steps=steps, snap_dir=snap_dir)
-        ):
+        for k, (step, Wt) in enumerate(iter_snapshots(spec, steps=steps, snap_dir=snap_dir)):
             Wc = Wt - snap_cache_means[k]
             Z[k * d : (k + 1) * d, :] = Wc.T @ Q
         Y = torch.zeros(V, m, dtype=torch.float32)
-        for k, (step, Wt) in enumerate(
-            iter_snapshots(spec, steps=steps, snap_dir=snap_dir)
-        ):
+        for k, (step, Wt) in enumerate(iter_snapshots(spec, steps=steps, snap_dir=snap_dir)):
             Wc = Wt - snap_cache_means[k]
             Y += Wc @ Z[k * d : (k + 1) * d, :]
 
@@ -101,9 +98,7 @@ def streaming_randomized_svd(
 
     # Pass 2: B = Q^T A, streamed.
     B = torch.zeros(m, K * d, dtype=torch.float32)
-    for k, (step, Wt) in enumerate(
-        iter_snapshots(spec, steps=steps, snap_dir=snap_dir)
-    ):
+    for k, (step, Wt) in enumerate(iter_snapshots(spec, steps=steps, snap_dir=snap_dir)):
         Wc = Wt - snap_cache_means[k]
         B[:, k * d : (k + 1) * d] = Q.T @ Wc
 
@@ -163,6 +158,9 @@ def main() -> None:
 
     ranks = [r for r in args.ranks if r <= args.n_components]
     ensure_dirs()
+    (FIG_DIR / f"{args.out_stem}.provenance.json").write_text(
+        json.dumps({**log_run_provenance(seed=args.seed), "git_commit": git_commit()}, indent=2)
+    )
 
     rows = []
     raw = {}
@@ -212,10 +210,7 @@ def main() -> None:
             "frob_sq": out["frob_sq"],
             "steps": steps,
         }
-        print(
-            f"  S[:5]={[round(x, 3) for x in out['singular_values'][:5].tolist()]} "
-            f"F2={out['frob_sq']:.3e}"
-        )
+        print(f"  S[:5]={[round(x, 3) for x in out['singular_values'][:5].tolist()]} F2={out['frob_sq']:.3e}")
         for req, eff, ev in ev_at_ranks(out, ranks):
             print(f"  rank {req:>4d} (eff {eff:>4d}): EV={ev:.4f}")
         print(f"[{spec.label}] done in {time.time() - t0:.1f}s")

@@ -39,6 +39,7 @@ import torch
 import torch.nn.functional as F
 
 import readout.dynamics.temporal_patch as TPM  # noqa: E402
+from readout.core.model_specs import MODEL_HF_NAMES  # noqa: E402
 from readout.core.paths import (
     release_path,  # noqa: E402
     repo_root,  # noqa: E402
@@ -235,21 +236,29 @@ def main() -> None:
     ap.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("results/experiments/causal/readout_feature_rescue/run0_pythia1b_d24576_seed0"),
+        default=REPO
+        / "results/experiments/causal/temporal_localization_patching/feature_rescue/run0_pythia1b_d24576_seed0",
     )
     ap.add_argument(
         "--eval-tokens",
         type=Path,
-        default=REPO / "_archive/legacy_crosscoder_160m/intervention/eval_tokens.pt",
+        # Canonical released Pythia eval corpus (see docs/DATA.md).
+        default=TPM.CORPUS_TOKENS_PYTHIA,
     )
     args = ap.parse_args()
 
+    # Short-label -> ModelCfg extras; the HF ids themselves are owned by
+    # readout.core.model_specs.MODEL_HF_NAMES (single source of truth).
     cfg_by_model = {
         "pythia-1b": TPM.CFG_PYTHIA_1B,
         "pythia-160m": TPM.CFG_PYTHIA_160M,
         "pythia-6.9b": TPM.CFG_PYTHIA_6_9B,
     }
     ctx = TPM.PatchContext(cfg=cfg_by_model[args.model], d_sae=args.d_sae)
+    if ctx.cfg.model_name != MODEL_HF_NAMES[args.model]:
+        raise ValueError(
+            f"ModelCfg for {args.model} names {ctx.cfg.model_name!r}; model_specs says {MODEL_HF_NAMES[args.model]!r}"
+        )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     shard_dir = args.out_dir / "shards"

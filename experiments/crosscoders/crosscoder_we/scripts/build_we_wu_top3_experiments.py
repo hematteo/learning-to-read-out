@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 
 # Same-experiment sibling module; the insert makes this robust to import
 # from outside the scripts/ dir (direct file execution already has it first).
@@ -45,6 +46,7 @@ from we_common import (  # noqa: E402
 )
 
 from readout.core.paths import release_path, repo_root, ssd_root
+from readout.core.repro import git_commit, log_run_provenance
 from readout.crosscoder.snapshots import load_snapshot
 from readout.dynamics.metrics import lifecycle
 
@@ -354,6 +356,9 @@ def main() -> None:
     fig_dir = root / "figures" / "crosscoder_we"
     result_dir = root / "results" / "experiments" / "crosscoder_we"
     result_dir.mkdir(parents=True, exist_ok=True)
+    (result_dir / "build_we_wu_top3_experiments.provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
 
     we_rates, we_norms = _load_we_rates_and_norms(args.ssd_root)
     wu_rates, wu_norms = _load_wu_rates_and_norms(args.ssd_root)

@@ -36,6 +36,8 @@ import numpy as np
 import torch
 from transformers import GPTNeoXConfig, GPTNeoXForCausalLM
 
+from readout.core.repro import git_commit
+
 MODEL_SIZES = {
     "14M": dict(
         num_hidden_layers=6,
@@ -350,6 +352,7 @@ def main():
                     "n_params": n_params,
                     "tokens_per_step": tps,
                     "wu_weight_decay_effective": wu_wd if wu_wd is not None else args.weight_decay,
+                    "git_commit": git_commit(),
                 },
                 indent=2,
             )

@@ -19,21 +19,23 @@ full pipeline.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-
 import numpy as np
 import torch
+from lifecycle_common import (
+    OLMO_STEPS_32,
+    PYTHIA_STEPS_32,
+    REPO,
+    Run,
+    ensure_geometry_cache,
+    load_decoder_norms,
+    load_rates,
+)
 
 from readout.core.data import write_csv
-from readout.core.paths import repo_root, ssd_path
-
-REPO = repo_root()
-from readout.core.model_specs import DEFAULT_STEPS_32 as _PYTHIA_STEPS_LIST  # noqa: E402
-from readout.core.model_specs import OLMO_STEPS_32 as _OLMO_STEPS_LIST  # noqa: E402
+from readout.core.paths import ssd_path
+from readout.core.repro import log_run_provenance
 
 OUT = REPO / "results/experiments/lifecycle/feature_lifecycle_trajectories"
-CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"
 
 ACTIVE_THR = 0.01
 BOOTSTRAPS = 400
@@ -44,54 +46,38 @@ LOG10_WINDOW = 0.5
 RNG_SEED = 20260503
 TOPK_FRAC = 0.10
 
-PYTHIA_STEPS_32 = np.asarray(_PYTHIA_STEPS_LIST, dtype=np.int64)
-OLMO_STEPS_32 = np.asarray(_OLMO_STEPS_LIST, dtype=np.int64)
-
-
-@dataclass(frozen=True)
-class Run:
-    key: str
-    label: str
-    d_model: int
-    rates_path: Path
-    steps: np.ndarray
-    xticks: tuple[int, ...]
-
 
 RUNS = (
     Run(
-        "pythia160m_d24576",
-        "Pythia-160M",
-        768,
-        Path(str(ssd_path("derived", "aggregates", "aggregates_pythia-160m_d24576_seed0.pt"))),
-        PYTHIA_STEPS_32,
-        (1, 1000, 14000, 143000),
+        key="pythia160m_d24576",
+        label="Pythia-160M",
+        rates_path=ssd_path("derived", "aggregates", "aggregates_pythia-160m_d24576_seed0.pt"),
+        steps=PYTHIA_STEPS_32,
+        xticks=(1, 1000, 14000, 143000),
     ),
     Run(
-        "pythia1b_d24576",
-        "Pythia-1B",
-        2048,
-        Path(str(ssd_path("derived", "aggregates", "aggregates_pythia-1b_d24576_seed0.pt"))),
-        PYTHIA_STEPS_32,
-        (1, 1000, 14000, 143000),
+        key="pythia1b_d24576",
+        label="Pythia-1B",
+        rates_path=ssd_path("derived", "aggregates", "aggregates_pythia-1b_d24576_seed0.pt"),
+        steps=PYTHIA_STEPS_32,
+        xticks=(1, 1000, 14000, 143000),
     ),
     Run(
-        "pythia69b_d32768",
-        "Pythia-6.9B",
-        4096,
-        REPO
+        key="pythia69b_d32768",
+        label="Pythia-6.9B",
+        rates_path=REPO
         / "experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/p69b_sparse_d32768_seed0.pt",
-        PYTHIA_STEPS_32,
-        (1, 1000, 14000, 143000),
+        steps=PYTHIA_STEPS_32,
+        xticks=(1, 1000, 14000, 143000),
+        geometry_key="pythia69b_sparse_d32768",
     ),
     Run(
-        "olmo2_7b_d32768",
-        "OLMo-2-7B",
-        4096,
-        REPO
+        key="olmo2_7b_d32768",
+        label="OLMo-2-7B",
+        rates_path=REPO
         / "experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt",
-        OLMO_STEPS_32,
-        (150, 1000, 14000, 928000),
+        steps=OLMO_STEPS_32,
+        xticks=(150, 1000, 14000, 928000),
     ),
 )
 
@@ -107,32 +93,12 @@ def fmt_step(step: float) -> str:
     return f"{step_i / 1000:.0f}k"
 
 
-def cache_key_for(run: Run, *, geometry: bool = False) -> str:
-    if geometry and run.key == "pythia69b_d32768":
-        return "pythia69b_sparse_d32768"
-    return run.key
-
-
-def load_rates(run: Run) -> np.ndarray:
-    blob = torch.load(run.rates_path, map_location="cpu", weights_only=False)
-    if "rates" in blob:
-        rates = blob["rates"]
-    else:
-        rates = next(iter(blob["rates_per_seed"].values()))
-    if isinstance(rates, torch.Tensor):
-        rates = rates.detach().cpu().numpy()
-    rates = rates.astype(np.float32)
-    if rates.shape[0] != run.steps.size:
-        raise ValueError(f"{run.key}: rates shape {rates.shape}, steps {run.steps.shape}")
-    return rates
-
-
 def load_arrays(run: Run) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    norms = np.load(CACHE / f"{run.key}_decoder_norms.npy").astype(np.float32)
-    rotation_key = cache_key_for(run, geometry=True)
-    rotation = np.load(CACHE / f"{rotation_key}_adjacent_rotation_radians.npy").astype(np.float32)
-    cos_terminal = np.load(CACHE / f"{rotation_key}_cos_to_terminal.npy").astype(np.float32)
-    rates = load_rates(run)
+    norms = load_decoder_norms(run, dtype=np.float32)
+    rotation_path, cos_terminal_path = ensure_geometry_cache(run)
+    rotation = np.load(rotation_path).astype(np.float32)
+    cos_terminal = np.load(cos_terminal_path).astype(np.float32)
+    rates = load_rates(run, dtype=np.float32)
     if norms.shape[0] != run.steps.size:
         raise ValueError(f"{run.key}: norms shape {norms.shape}, steps {run.steps.shape}")
     if rotation.shape[0] != run.steps.size - 1:
@@ -456,6 +422,7 @@ def add_bootstrap_intervals(summary_rows: list[dict[str, object]], bootstrap_row
 
 
 def main() -> None:
+    log_run_provenance()
     OUT.mkdir(parents=True, exist_ok=True)
     pair_rows: list[dict[str, object]] = []
     window_rows: list[dict[str, object]] = []

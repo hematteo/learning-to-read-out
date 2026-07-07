@@ -22,6 +22,7 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 from readout.core.paths import ssd_path
+from readout.core.repro import log_run_provenance
 from readout.crosscoder.extract_rates import compute_rates_canonical  # noqa: E402,F401
 
 DEVICE = "cpu"
@@ -114,6 +115,7 @@ def main() -> int:
         default=Path("figures/pareto_frontier_ev_l0"),
     )
     args = ap.parse_args()
+    log_run_provenance()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     snap_dir = args.release_root / "snapshots"

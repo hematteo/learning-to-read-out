@@ -13,8 +13,8 @@ crosscoder isn't gaining much from cross-snapshot feature sharing
 beyond endpoint linear interpolation.
 
 Output:
-  - figures/run5/a_instrument_validation/endpoint_linear.csv
-  - figures/run5/a_instrument_validation/endpoint_linear.pt
+  - figures/crosscoder_main/appendix_validation/endpoint_linear.csv
+  - figures/crosscoder_main/appendix_validation/endpoint_linear.pt
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ _sys.path.insert(0, str(_P(__file__).resolve().parent))  # this dir for `baselin
 
 import argparse
 import csv
+import json
 import time
 from pathlib import Path
 
@@ -40,6 +41,8 @@ from baseline_utils import (
     load_snapshot,
     snap_path_for,
 )
+
+from readout.core.repro import git_commit, log_run_provenance
 
 
 def evaluate_endpoint_linear(
@@ -56,9 +59,7 @@ def evaluate_endpoint_linear(
     rows = []
     alpha_matrix = torch.zeros(len(steps), W1.shape[0], dtype=torch.float32)
 
-    for i, (step, Wt) in enumerate(
-        iter_snapshots(spec, steps=steps, snap_dir=snap_dir)
-    ):
+    for i, (step, Wt) in enumerate(iter_snapshots(spec, steps=steps, snap_dir=snap_dir)):
         diff_t = Wt - W1
         alpha = ((diff_t * delta).sum(dim=1) / denom).float()  # (V,)
         recon = W1 + alpha.unsqueeze(1) * delta  # (V, d)
@@ -115,6 +116,9 @@ def main() -> None:
     args = ap.parse_args()
 
     ensure_dirs()
+    (FIG_DIR / f"{args.out_stem}.provenance.json").write_text(
+        json.dumps({**log_run_provenance(), "git_commit": git_commit()}, indent=2)
+    )
 
     all_rows = []
     raw = {}
@@ -126,9 +130,7 @@ def main() -> None:
             steps = args.steps
         else:
             steps = auto_steps_for(spec, snap_dir=args.snap_dir)
-        print(
-            f"[{spec.label}] d_model={spec.d_model} V={spec.vocab} steps={len(steps)}"
-        )
+        print(f"[{spec.label}] d_model={spec.d_model} V={spec.vocab} steps={len(steps)}")
         t0 = time.time()
         rows, cache = evaluate_endpoint_linear(spec, steps, args.snap_dir)
         all_rows.extend(rows)

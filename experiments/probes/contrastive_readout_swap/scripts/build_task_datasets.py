@@ -29,7 +29,12 @@ REPO = repo_root()
 
 
 def _maybe_load_terminal_W_U(model_name: str) -> torch.Tensor | None:
-    """Use the terminal-step W_U row norms for matched-norm filtering, if available."""
+    """Use the terminal-step W_U row norms for matched-norm filtering, if available.
+
+    Only missing/unreadable snapshot files are tolerated (returns None); any
+    other failure (bad payload shape, dtype, ...) propagates so it can't
+    silently disable the row-norm-matched filtering the README advertises.
+    """
     try:
         # Pythia uses step 143000 as terminal.
         p = snapshot_path(model_name, step=143000, kind="wu")
@@ -38,8 +43,8 @@ def _maybe_load_terminal_W_U(model_name: str) -> torch.Tensor | None:
             if isinstance(W, dict):
                 W = W.get("W_U") or W.get("weight") or next(iter(W.values()))
             return W.float()
-    except Exception:
-        pass
+    except (FileNotFoundError, OSError) as e:
+        print(f"[warn] failed to read terminal W_U snapshot ({e})", flush=True)
     return None
 
 
@@ -76,7 +81,10 @@ def main() -> None:
     W_U = None if args.no_norm_match else _maybe_load_terminal_W_U(args.model)
     if W_U is None and not args.no_norm_match:
         print(
-            f"[warn] no terminal W_U found for {args.model}; skipping norm-match filter",
+            f"[WARN] no terminal W_U found for {args.model}: the row-norm-matched "
+            "distractor filtering advertised in the README is DISABLED for this "
+            "build. Pass --no-norm-match to acknowledge, or make the terminal "
+            "snapshot available (see docs/DATA.md).",
             flush=True,
         )
 
@@ -115,13 +123,9 @@ def main() -> None:
         # MCQ-letter families: also emit a label-permutation control where
         # y_minus is a uniformly random non-gold letter token. This is the
         # stronger control for piqa / arc_easy / arc_challenge / sciq.
-        label_perm = CT.mcq_label_permutation_distractor_ids(
-            tokenizer, examples, rng_seed=args.rng_seed
-        )
+        label_perm = CT.mcq_label_permutation_distractor_ids(tokenizer, examples, rng_seed=args.rng_seed)
         if label_perm is not None:
-            (args.out_dir / f"{family}_label_permutation.json").write_text(
-                json.dumps(label_perm)
-            )
+            (args.out_dir / f"{family}_label_permutation.json").write_text(json.dumps(label_perm))
 
         row = {
             "family": family,
