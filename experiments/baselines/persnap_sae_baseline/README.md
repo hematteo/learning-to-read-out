@@ -3,12 +3,12 @@
 Per-snapshot SAE baseline: trains an independent SAE on each Pythia snapshot and
 compares it against the cross-snapshot crosscoder. This experiment computes metrics only — it
 computes and persists the per-snapshot recovery / explained-variance / L0 numbers
-that back the appendix figures, but ships no figure-rendering code. The thesis
+that back the appendix figures, but ships no figure-rendering code. The paper
 LaTeX tree renders the figures from these artifacts.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-persnap-sae-trajectory` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |
 | `fig:app-snapshot-fidelity` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |

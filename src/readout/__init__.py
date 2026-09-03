@@ -1,4 +1,4 @@
-"""Sparse readout formation in LM pretraining via W_U parameter-trajectory crosscoders.
+"""Learning to Read Out: W_U trajectory crosscoders across pretraining checkpoints.
 
 Subpackages:
     core        - SAE model zoo, data loading, paths, reproducibility/provenance

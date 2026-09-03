@@ -1,4 +1,4 @@
-# Front door for the learning-to-read-out code release (thesis Chapter 4).
+# Front door for the learning-to-read-out code release.
 # Targets are ordered to mirror the reproduction pipeline:
 #   install -> test -> audit -> extract -> train -> analyze
 # `make help` lists them. This is a code-only release (no data, no metrics shipped):
@@ -44,7 +44,7 @@ train:  ## Stage 2: train a trajectory crosscoder from snapshots (needs GPU for 
 analyze:  ## Stage 3: compute & persist the metrics behind each figure (no figures rendered)
 	@echo "Per-experiment metric commands are in docs/REPRODUCE.md (mapped from experiments.yaml)."
 	@echo "Code-only release: metrics are regenerated on run (gitignored), not shipped;"
-	@echo "thesis figures are rendered in the thesis LaTeX tree from those metrics."
+	@echo "paper figures are rendered in the paper LaTeX tree from those metrics."
 
 clean:  ## Remove caches and build artefacts (keeps source and results)
 	rm -rf .pytest_cache .ruff_cache .mypy_cache

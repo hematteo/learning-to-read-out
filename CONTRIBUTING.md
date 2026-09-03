@@ -1,6 +1,6 @@
 # Contributing / development workflow
 
-This is the code release for a thesis chapter; the bar for changes is that a
+This is the code release for a paper; the bar for changes is that a
 future researcher can still reproduce and extend the published analyses.
 
 ## Setup and gates
@@ -29,7 +29,7 @@ Code is placed by **reuse**, and `make audit` enforces the skeleton:
 
 Outputs are metrics only (CSV/JSON/`.pt`), written under the experiment's
 gitignored `derived/` (or `results/`); no figure-rendering code ships —
-thesis figures render in the separate LaTeX tree from these metrics.
+paper figures render in the separate LaTeX tree from these metrics.
 
 ## Adding an experiment
 

@@ -9,7 +9,7 @@ compares its activation-rate geometry against the canonical OLMo-2-7B run.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | fig:app-olmo-window-metric-grid | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_metric_grid.csv` (with `.json`/`.pt` sidecars) | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
 | fig:app-olmo-window-population | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_population_lifecycle_diagnostics_*.csv` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |

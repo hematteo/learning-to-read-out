@@ -6,7 +6,7 @@ that the chosen `(d_sae, lambda)` operating point sits on the frontier.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-instrument-pareto` | `results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json` | `experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py` |
 | `fig:app-lambda-sweep` | `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` | `experiments/capacity/pareto_frontier_ev_l0/scripts/plot_l0_ev_phase_plane.py` |
@@ -21,7 +21,7 @@ the chosen `(d_sae, lambda)` operating point sits on the frontier.
 ## Metrics produced
 This experiment computes metrics only: its scripts compute and persist the EV/L0
 numbers behind the Pareto figures. The figures themselves are rendered in the
-separate thesis LaTeX tree from these metrics, not here.
+separate paper LaTeX tree from these metrics, not here.
 
 - `results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json` —
   per-arm, per-snapshot EV and L0 (plus NRMSE, arm-level EV mean/min/max,

@@ -8,7 +8,7 @@ cross-family context, not a matched Pythia scaling comparison.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:main-multimodel-validation` | `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.{json,csv}` | `experiments/crosscoders/crosscoder_olmo/scripts/eval_decision_rules.py` |
 | `fig:main-selected-normalized-trajectories` (OLMo context) | OLMo eval sidecars: `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.{json,csv}` | `experiments/crosscoders/crosscoder_olmo/scripts/eval_decision_rules.py` |
@@ -16,7 +16,7 @@ cross-family context, not a matched Pythia scaling comparison.
 
 This experiment supplies upstream cross-family signal: it persists the OLMo
 metric sidecars; the selected-trajectory and reorganization-window panels are
-rendered in the thesis LaTeX tree from those sidecars together with the Pythia
+rendered in the paper LaTeX tree from those sidecars together with the Pythia
 lifecycle metrics. See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the
 full figure → metric map.
 
@@ -25,7 +25,7 @@ full figure → metric map.
 Cross-family check on OLMo: corroborating evidence that the W_U lifecycle pattern is
 not unique to Pythia (cross-family context, not a matched scaling replication). This
 experiment computes metrics only: it persists the artifacts below but renders
-no figures. Thesis figures are rendered in the separate thesis LaTeX tree from these
+no figures. Paper figures are rendered in the separate paper LaTeX tree from these
 metrics.
 
 ## Reproduce

@@ -8,11 +8,10 @@ one-to-one to sparse features.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-wordnet-supersense-probes-160m-inventory` | `derived/wordnet_supersense_160m/wordnet_supersense_probe_trajectory_160m.csv` | `experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py` |
 | `fig:main-wordnet-matched-controls` | `derived/wordnet_matched_controls_160m/wordnet_matched_control_summary_160m.csv` | `experiments/probes/concept_evolution_validation/scripts/run_wordnet_matched_controls.py` |
-| `fig:lr-wordnet` | `derived/wordnet_matched_controls_160m/wordnet_matched_control_summary_160m.csv` | `experiments/probes/concept_evolution_validation/scripts/run_wordnet_matched_controls.py` |
 | `fig:app-wordnet-supersense-probes-1b` | `derived/wordnet_supersense_1b/wordnet_supersense_probe_trajectory_1b.csv` | `experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py` |
 | `tab:app-wordnet-supersense-1b` | `derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv` | `experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py` |
 
@@ -25,7 +24,7 @@ this timing is not explained by frequency or string-overlap confounds. The
 result corroborates the readout-emergence timing in the paper.
 
 This experiment computes metrics only (no figure rendering): the scripts persist the metrics below as the
-reproducible artifacts. Thesis figures are rendered in the separate thesis LaTeX
+reproducible artifacts. Paper figures are rendered in the separate thesis LaTeX
 tree from these metrics; no figure-rendering code ships here. The probe scripts
 read WordNet 3.0 through NLTK (`../../../src/readout/probes/concept_gazetteer.py`); before
 the first run, download the corpus once with

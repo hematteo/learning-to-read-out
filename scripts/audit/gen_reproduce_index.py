@@ -44,16 +44,16 @@ def render_table() -> str:
             by_label_src.setdefault(lbl.strip(), set()).add(src.strip())
 
     lines = [
-        "| Label | Experiment | Rendered figure (thesis tree) |",
+        "| Label | Experiment | Rendered figure (paper LaTeX tree) |",
         "|---|---|---|",
     ]
     for lbl in sorted(set(by_label_exp) | paper_only):
-        exps_col = ", ".join(sorted(by_label_exp.get(lbl, ()))) or "(thesis-tree only)"
+        exps_col = ", ".join(sorted(by_label_exp.get(lbl, ()))) or "(paper LaTeX tree only)"
         srcs = sorted(by_label_src.get(lbl, ()))
         if srcs:
             src_col = "; ".join(srcs)
         elif lbl in paper_only and lbl not in by_label_exp:
-            src_col = "(thesis-tree only)"
+            src_col = "(paper LaTeX tree only)"
         else:
             src_col = "(produced; see experiments.yaml / tables below)"
         lines.append(f'| <a id="{lbl}"></a>`{lbl}` | {exps_col} | {src_col} |')

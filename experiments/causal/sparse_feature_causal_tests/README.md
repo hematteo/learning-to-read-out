@@ -9,13 +9,11 @@ decoder-norm/firing-rate matched controls.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
-| fig:main-sparse-feature-causal-summary | `results/experiments/sparse_feature_causal_tests/.../summary.csv` | `experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py` |
 | fig:app-sparse-feature-causal-curves | `results/experiments/sparse_feature_causal_tests/.../summary.csv` | `experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py` |
-| fig:app-sparse-feature-causal-specificity-k16 | `results/experiments/sparse_feature_causal_tests/.../specificity.csv` | `experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py` |
 | fig:app-sparse-feature-causal-specificity-k32 | `results/experiments/sparse_feature_causal_tests/.../specificity.csv` | `experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py` |
-| fig:lr-localization | `results/experiments/sparse_feature_causal_tests/.../{summary.csv,specificity.csv}` | `experiments/causal/sparse_feature_causal_tests/scripts/{run_1b_pilot.py,run_specificity_from_pilots.py}` |
+| fig:app-contrastive-task-localization | `results/experiments/sparse_feature_causal_tests/.../{summary.csv,specificity.csv}` | `experiments/causal/sparse_feature_causal_tests/scripts/{run_1b_pilot.py,run_specificity_from_pilots.py}` |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
@@ -38,7 +36,7 @@ uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specifi
 
 The entry points above compute and persist the localization metrics
 (`summary.csv` / `raw.pt` from the pilot, `specificity.csv` from the specificity
-pass). The `fig:lr-localization` main-text figure draws its localization metrics
+pass). The `fig:app-contrastive-task-localization` main-text figure draws its localization metrics
 from these same entry points. The CSV-aggregation step that the appendix
 specificity panels assume is not shipped (see the "Metrics not computable in
 this repo" section in [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md)).

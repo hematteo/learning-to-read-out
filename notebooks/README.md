@@ -7,8 +7,8 @@ layout required.
 
 | Notebook | What it shows | Runtime / downloads |
 |---|---|---|
-| [`01_availability_expression_lag.ipynb`](01_availability_expression_lag.ipynb) | The **availability–expression lag**: contrastive readout-swap grids over Pythia-160M pretraining checkpoints — task signal is decodable from early hidden states before the native readout expresses it (live miniature of `experiments/probes/contrastive_readout_swap/`, thesis figure `fig:lr-lag`). | ~10–15 min CPU; ~2.3 GB (6 checkpoints, cached) |
-| [`02_wu_trajectory_crosscoders.ipynb`](02_wu_trajectory_crosscoders.ipynb) | The **instrument**: trains a $W_U$ parameter-trajectory crosscoder — first on a toy with planted structure (recovers it), then on real Pythia-160M snapshots — and reads out feature lifecycles, formation timing, and vocabulary families (miniature of `experiments/crosscoders/` + `experiments/lifecycle/`). | ~12 min T4 (GPU recommended; CPU auto-falls back to a rougher 30-epoch run); ~3 GB (8 checkpoints, cached) |
+| [`01_availability_expression_lag.ipynb`](01_availability_expression_lag.ipynb) | The **availability–expression lag**: contrastive readout-swap grids over Pythia-160M pretraining checkpoints — task signal is decodable from early hidden states before the native readout expresses it (live miniature of `experiments/probes/contrastive_readout_swap/`, paper figure `fig:app-contrastive-readout-lag`). | ~10–15 min CPU; ~2.3 GB (6 checkpoints, cached) |
+| [`02_wu_trajectory_crosscoders.ipynb`](02_wu_trajectory_crosscoders.ipynb) | The **instrument**: trains a $W_U$ trajectory crosscoder — first on a toy with planted structure (recovers it), then on real Pythia-160M snapshots — and reads out feature lifecycles, formation timing, and vocabulary families (miniature of `experiments/crosscoders/` + `experiments/lifecycle/`). | ~12 min T4 (GPU recommended; CPU auto-falls back to a rougher 30-epoch run); ~3 GB (8 checkpoints, cached) |
 
 Both notebooks cache everything they extract or train (readouts, hidden
 states, the demo crosscoder) under the repo's gitignored `local_snapshots/`,

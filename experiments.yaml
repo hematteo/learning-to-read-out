@@ -1,7 +1,7 @@
 # Machine-readable experiment manifest. Single source of truth for:
 #   - which experiment dir produces which paper figure
 #   - canonical input/output paths
-#   - the thesis-figure labels each experiment's metrics back
+#   - the paper-figure labels each experiment's metrics back
 #
 # Maintained / checked by:
 #   uv run python scripts/audit/check_layout.py    # validates schema + paper-label coverage
@@ -34,20 +34,56 @@
 # those regenerated files are the reproducible artifacts (gitignored, not
 # shipped) — and ships NO figure-rendering code. The `paper_labels:` and
 # `paper_figures:` fields below are documentational: they map each experiment's
-# metrics to the thesis figures they back, which are rendered in the separate
-# thesis LaTeX tree, not in this repo.
+# metrics to the paper figures they back, which are rendered in the separate
+# paper LaTeX tree, not in this repo.
 
 # Top-level paper_only_labels are labels owned by the paper itself, not produced
 # by an experiment pipeline.
 paper_only_labels:
-  - fig:lr-method-schematic
-  # Hand-authored thesis tables (typeset in the LaTeX tree, no experiment pipeline produces them):
-  - tab:lr-model-roles            # App A: model/role inventory
-  - tab:checkpoint-suite-comparison  # App A: public checkpoint-suite survey
-  - tab:repro-compute             # App A: compute envelope
-  - tab:lr-validation             # Ch4: main-text validation summary
-  - tab:lr-localization-ledger    # Ch4: main-text localisation ledger
-  - tab:lifecycle-profile-rules   # App C: rule-based lifecycle-profile definitions
+  - fig:method-cross-snapshot-schematic   # method schematic (TikZ, hand-drawn)
+  - fig:app-timing-triangulation          # TikZ summary of three reported timing estimates; see the three experiments listed in docs/REPRODUCE.md
+  # Hand-authored paper tables (typeset in the LaTeX tree, no experiment pipeline produces them):
+  - tab:model-roles                  # reproducibility appendix: model/role inventory
+  - tab:checkpoint-suite-comparison  # reproducibility appendix: public checkpoint-suite survey
+  - tab:compute-resources            # reproducibility appendix: compute envelope
+  - tab:lifecycle-profile-rules      # lifecycle appendix: rule-based profile definitions
+  - tab:main-evidence-map            # main text: evidence map
+  - tab:app-terminology-glossary     # scope appendix: glossary
+  - tab:app-method-comparison        # extended related work: method comparison
+  # Paper figures with no metrics producer in this release (see docs/REPRODUCE.md "Paper-only figure groups"):
+  - fig:app-fidelity-strata-audit    # producing script not included in this release
+  - fig:app-feature-cards-representative  # feature atlas pipeline not shipped
+  - tab:app-curated-atlas-features        # feature atlas pipeline not shipped
+  - fig:app-logit-proto-decomposition          # readout prism: companion repo github.com/hematteo/sparse-readout-prism
+  - fig:app-logit-proto-dense-table            # readout prism: companion repo
+  - fig:app-logit-proto-dense-table-dickens    # readout prism: companion repo
+  # Availability/expression appendix: report figures assembled in the LaTeX tree from
+  # Pythia-6.9B probe summaries; the upstream probe/swap data comes from contrastive_readout_swap.
+  - fig:app-ae-grid
+  - fig:app-ae-spectrum
+  - fig:app-ae-numeric
+  - fig:app-ae-capacity
+  - fig:app-ae-floor
+  - fig:app-ae-confound
+  - fig:app-ae-rank
+  - fig:app-ae-scale
+  - tab:app-ae-tasks
+  - tab:app-ae-binary
+  - tab:app-ae-openvocab
+  # Recipe control: only the W_U-geometry view (fig:app-recipe-control-geometry) is computed in-repo.
+  # The lifecycle / swap / probe views need the per-condition trajectory crosscoders and probe
+  # runs, which are not part of this release; the trained 31M checkpoints are on Hugging Face
+  # (hematteo/readout-recipe-control).
+  - fig:main-recipe-dose-response
+  - fig:app-recipe-control-median
+  - fig:app-recipe-control-trajectories
+  - fig:app-recipe-control-peakstep
+  - fig:app-recipe-control-reorg
+  - fig:app-recipe-control-basin
+  - fig:app-recipe-control-explag
+  - fig:app-recipe-control-temperature
+  - fig:app-recipe-control-gauge-landscape
+  - tab:app-recipe-control-summary
 
 # Naming principle: experiment ids describe the experiment object, not its paper position.
 #   GOOD: feature_lifecycle_trajectories, temporal_localization_patching
@@ -60,7 +96,7 @@ experiments:
   - id: crosscoder_main
     status: active
     description: |
-      Multiscale main analysis (160M / 1B / 6.9B parameter-trajectory crosscoders).
+      Multiscale main analysis (160M / 1B / 6.9B trajectory crosscoders).
       Umbrella experiment for the shared multiscale analyses. The lifecycle,
       temporal-localization, EV/L0-pareto, and per-snapshot baseline analyses each
       live in their own claim-anchored experiment; this entry holds the rest.
@@ -82,6 +118,7 @@ experiments:
       # now live on those experiments (feature_lifecycle_trajectories,
       # temporal_localization_patching, pareto_frontier_ev_l0, persnap_sae_baseline).
       - fig:main-multimodel-validation
+      - tab:main-panel-a
       - fig:app-fidelity-curves
       - fig:app-pca-static
       - fig:app-concat-pca
@@ -92,12 +129,11 @@ experiments:
       - fig:app-p69b-dense-vs-sparse
       - fig:app-large-l0-token-distribution
       - fig:app-large-feature-rate-distribution
-      - fig:app-selected-normalized-trajectories
-      - tab:repro-hparams
+      - tab:repro-dictionary-hparams
       - tab:full-inventory
-      - fig:lr-validation
     paper_figures:
       - "paper/figures/multimodel_validation/instrument_validation_summary.pdf -> fig:main-multimodel-validation"
+      - "experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv -> tab:main-panel-a"  # main-text instrument table is the paper-facing subset of the inventory
       - "paper/figures/readout_functional_fidelity/fidelity_curves.pdf -> fig:app-fidelity-curves"
       - "paper/figures/dense_baselines/static_pca_baseline.pdf -> fig:app-pca-static"
       - "paper/figures/dense_baselines/concatenated_trajectory_pca.pdf -> fig:app-concat-pca"
@@ -109,7 +145,6 @@ experiments:
       - "paper/figures/large_model/token_active_feature_distribution.pdf -> fig:app-large-l0-token-distribution"
       - "paper/figures/large_model/feature_activation_rate_distribution.pdf -> fig:app-large-feature-rate-distribution"
       - "experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv -> tab:full-inventory"
-      - "paper/figures/multimodel_validation/instrument_validation_summary.pdf -> fig:lr-validation"
     cited_in:
       - paper/main.tex
 
@@ -131,17 +166,13 @@ experiments:
       - ${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-1b_d24576_seed0.pt
       - results/experiments/sparse_feature_causal_tests/specificity_step143000_h143000/manifest.json
     paper_labels:
-      - fig:main-sparse-feature-causal-summary
+      - fig:app-contrastive-task-localization
       - fig:app-sparse-feature-causal-curves
-      - fig:app-sparse-feature-causal-specificity-k16
       - fig:app-sparse-feature-causal-specificity-k32
-      - fig:lr-localization
     paper_figures:
-      - "paper/figures/sparse_feature_causal_tests/sparse_feature_causal_summary.pdf -> fig:main-sparse-feature-causal-summary"
+      - "paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf -> fig:app-contrastive-task-localization"
       - "paper/figures/sparse_feature_causal_tests/control_corrected_ablation_curves.pdf -> fig:app-sparse-feature-causal-curves"
-      - "paper/figures/sparse_feature_causal_tests/specificity_heatmaps_k16.pdf -> fig:app-sparse-feature-causal-specificity-k16"
       - "paper/figures/sparse_feature_causal_tests/specificity_heatmaps_k32.pdf -> fig:app-sparse-feature-causal-specificity-k32"
-      - "paper/figures/sparse_feature_causal_tests/contrastive_task_localization_1x3.pdf -> fig:lr-localization"
     entry:
       - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py
       - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000
@@ -166,17 +197,16 @@ experiments:
     inputs:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors
     paper_labels:
-      - fig:app-wordnet-supersense-probes-160m-inventory
       - fig:main-wordnet-matched-controls
+      - fig:app-wordnet-supersense-probes-160m-inventory
       - fig:app-wordnet-supersense-probes-1b
       - tab:app-wordnet-supersense-1b
-      - fig:lr-wordnet
+      - fig:app-timing-triangulation  # WordNet separability onset row of the triangulation figure
     paper_figures:
-      - "paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_160m.pdf -> fig:app-wordnet-supersense-probes-160m-inventory"
       - "paper/figures/vocabulary_family_probes/wordnet_matched_controls_160m.pdf -> fig:main-wordnet-matched-controls"
+      - "paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_160m.png -> fig:app-wordnet-supersense-probes-160m-inventory"
       - "paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_1b.pdf -> fig:app-wordnet-supersense-probes-1b"
       - "experiments/probes/concept_evolution_validation/derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv -> tab:app-wordnet-supersense-1b"
-      - "paper/figures/vocabulary_family_probes/wordnet_matched_controls_160m.pdf -> fig:lr-wordnet"
     cited_in:
       - paper/main.tex
 
@@ -262,33 +292,36 @@ experiments:
   - id: pretraining_recipe_control
     status: active
     description: |
-      From-scratch pretraining sensitivity check: four matched 31M Pythia-style
-      runs (baseline, long_warmup, wu_lr_0p25, wu_lr_4x) sharing one tokenized
-      slice, seed, and data order, each perturbing one optimizer-recipe axis.
-      Tests whether readout-feature timing and the availability-expression lag
-      are stable under, or sensitive to, plausible recipe perturbations —
-      especially the output-readout (W_U) learning-rate multiplier. Uses a hybrid
-      HF GPTNeoXForCausalLM trainer (the Pythia architecture on the modern torch
+      From-scratch recipe control: matched 31M Pythia-style runs sharing one
+      tokenized Pile slice, initialization seed, and data order, each changing one
+      recipe factor. The paper reports four arms (baseline, warmup_short, wu_lr_0p25,
+      wu_lr_4x); a fifth complete arm (warmup_long) is released alongside them.
+      Tests whether readout reorganization timing and the availability/expression
+      gap track the output-readout (W_U) learning-rate multiplier. Uses a hybrid HF
+      GPTNeoXForCausalLM trainer (the Pythia architecture on the modern torch
       stack); a Pythia-style proxy, not a reproduction of the public Pythia run.
     paper_intent: |
-      Sensitivity/falsification control for the Chapter 4 learning-to-read-out
-      claim. Not cited in the paper; produces W_U readout geometry across
-      conditions x token-milestone checkpoints (downstream lag-probe analysis
-      pending).
+      Main-text Finding 2 (the output readout learning rate sets the reorganization
+      timing at matched validation loss) and the recipe-control appendix. In-repo
+      this experiment ships the trainer, the slice builders, and the W_U-geometry
+      analysis behind fig:app-recipe-control-geometry; the per-condition trajectory
+      crosscoder fits, lifecycle statistics, readout swaps, and probes behind the
+      other recipe-control figures are not part of this release. The trained
+      checkpoints are on Hugging Face (hematteo/readout-recipe-control).
     scripts_dir: experiments/ablations/pretraining_recipe_control/scripts/
     figures_dir: figures/pretraining_recipe_control/
     results_dir: results/experiments/ablations/pretraining_recipe_control/
     inputs:
       - ${UM_SSD_ROOT}/pile_slice/pile_neox20b.bin  # tokenized uint16 Pile slice (or Pythia-preshuffled prefix)
-      - ${UM_SSD_ROOT}/runs/{baseline,long_warmup,wu_lr_0p25,wu_lr_4x}/ckpts/step*/model_fp16.pt  # trainer outputs (analysis input)
+      - ${UM_SSD_ROOT}/runs/{baseline,warmup_short,warmup_long,wu_lr_0p25,wu_lr_4x}/ckpts/step*/model_fp16.pt  # trainer outputs; released at hf.co/hematteo/readout-recipe-control
     paper_labels:
-      # Only the F1 W_U-geometry view is reproducible in-repo (from the regenerated
-      # readout_geometry_pythia.csv). The other App-CC recipe-control figures and
-      # tab:app-recipe-control-summary are thesis-tree-only — see docs/REPRODUCE.md.
+      # Only the W_U-geometry view is reproducible in-repo (from the regenerated
+      # readout_geometry_pythia.csv). The other recipe-control figures and
+      # tab:app-recipe-control-summary are listed under paper_only_labels above.
       - fig:app-recipe-control-geometry
     paper_figures:
-      - "figures/pretraining_recipe_control/readout_geometry_trajectories.pdf -> fig:app-recipe-control-geometry"
-    cited_in: []
+      - "paper/figures/recipe_control/F1_geometry_trajectories.pdf -> fig:app-recipe-control-geometry"
+    cited_in: [paper/main.tex]
 
   # ─── Companion / Replication ────────────────────────────────────────────────
 
@@ -309,27 +342,11 @@ experiments:
       - fig:app-we-read-write-asymmetry
       - fig:app-we-quality-pareto
       - fig:app-we-lead-lag-family
-      - fig:app-we-token-overlap
-      - fig:app-we-feature-cards-representative
-      - fig:app-we-geometry
-      - fig:app-we-seed-correspondence
-      - fig:app-we-capacity-note
-      - fig:app-we-d24576-rate-timing
-      - fig:app-we-matched-control-lead-lag
-      - fig:app-we-procrustes
       - sec:app-we-crosscoders
     paper_figures:
-      - "paper/figures/read_write/we_read_write_asymmetry.pdf -> fig:app-we-read-write-asymmetry"
-      - "paper/figures/read_write/we_quality_pareto.pdf -> fig:app-we-quality-pareto"
-      - "paper/figures/read_write/we_lead_lag_family_heatmap.pdf -> fig:app-we-lead-lag-family"
-      - "paper/figures/read_write/we_token_overlap_jaccard.pdf -> fig:app-we-token-overlap"
-      - "paper/figures/feature_interpretation/we_feature_cards_pythia160m_d8192_representative.pdf -> fig:app-we-feature-cards-representative"
-      - "paper/figures/read_write/we_wu_geometry_160m.pdf -> fig:app-we-geometry"
-      - "paper/figures/read_write/we_multiseed_hungarian.pdf -> fig:app-we-seed-correspondence"
-      - "paper/figures/read_write/we_capacity_note.pdf -> fig:app-we-capacity-note"
-      - "paper/figures/read_write/we_d24576_rate_timing.pdf -> fig:app-we-d24576-rate-timing"
-      - "paper/figures/read_write/we_matched_control_lead_lag.pdf -> fig:app-we-matched-control-lead-lag"
-      - "paper/figures/read_write/we_procrustes_alignment.pdf -> fig:app-we-procrustes"
+      - "paper/figures/read_write/we_read_write_asymmetry.png -> fig:app-we-read-write-asymmetry"
+      - "paper/figures/read_write/we_quality_pareto.png -> fig:app-we-quality-pareto"
+      - "paper/figures/read_write/we_lead_lag_family_heatmap.png -> fig:app-we-lead-lag-family"
     cited_in:
       - "Appendix \\cref{sec:app-we-crosscoders}"
 
@@ -360,7 +377,7 @@ experiments:
       - paper/main.tex
 
   # ─── Claim-anchored experiments ─────────────────────────────────────────────
-  # Each backs a specific Chapter 4 claim and has its own README + scripts/.
+  # Each backs a specific paper claim and has its own README + scripts/.
 
   - id: feature_lifecycle_trajectories
     status: active
@@ -370,33 +387,26 @@ experiments:
     figures_dir: figures/feature_lifecycle_trajectories/
     results_dir: results/experiments/lifecycle/feature_lifecycle_trajectories/
     paper_labels:
-      - fig:main-section52-selected-heatmaps
       - fig:main-selected-normalized-trajectories
+      - fig:app-selected-decoder-norm-heatmaps
       - fig:app-prepost-reorganization-peakstep
-      - fig:app-selected-normalized-trajectories
       - fig:app-selected-population-lifecycle-diagnostics
       - fig:app-reorganization-window-metrics
       - fig:app-lifecycle-profile-composition
       - fig:app-metric-lifecycle-combined
-      - fig:app-selected-decoder-norm-heatmaps
       - fig:app-wishbone-manual-corner-split
       - fig:app-wishbone-pca
-      - fig:lr-trajectories
-      - fig:lr-reorg-window
+      - fig:app-timing-triangulation  # crosscoder reorganization-window row of the triangulation figure
     paper_figures:
-      - "paper/figures/feature_lifecycle/selected_decoder_norm_heatmaps.pdf -> fig:main-section52-selected-heatmaps"
       - "paper/figures/feature_lifecycle/selected_decoder_norm_trajectories.pdf -> fig:main-selected-normalized-trajectories"
+      - "paper/figures/feature_lifecycle/selected_decoder_norm_heatmaps.pdf -> fig:app-selected-decoder-norm-heatmaps"
       - "paper/figures/feature_lifecycle/prepost_reorganization_peakstep_1x4.pdf -> fig:app-prepost-reorganization-peakstep"
-      - "paper/figures/feature_lifecycle/selected_decoder_norm_trajectories_full.pdf -> fig:app-selected-normalized-trajectories"
       - "paper/figures/feature_lifecycle/selected_population_lifecycle_diagnostics.pdf -> fig:app-selected-population-lifecycle-diagnostics"
       - "paper/figures/feature_lifecycle/reorganization_window_metrics_selected.pdf -> fig:app-reorganization-window-metrics"
       - "paper/figures/feature_lifecycle/selected_lifecycle_profile_composition.pdf -> fig:app-lifecycle-profile-composition"
       - "paper/figures/feature_lifecycle/selected_lifecycle_metric_diagnostics.pdf -> fig:app-metric-lifecycle-combined"
-      - "paper/figures/feature_lifecycle/selected_decoder_norm_heatmaps.pdf -> fig:app-selected-decoder-norm-heatmaps"
-      - "paper/figures/feature_lifecycle/selected_wishbone_manual_corner_split.png -> fig:app-wishbone-manual-corner-split"
-      - "paper/figures/feature_lifecycle/selected_wishbone_plain_hexbin_grid.png -> fig:app-wishbone-pca"
-      - "paper/figures/feature_lifecycle/selected_decoder_norm_trajectories.pdf -> fig:lr-trajectories"
-      - "paper/figures/feature_lifecycle/reorganization_window_metrics_selected.pdf -> fig:lr-reorg-window"
+      - "paper/figures/feature_lifecycle/wishbone/selected_wishbone_manual_corner_split.png -> fig:app-wishbone-manual-corner-split"
+      - "paper/figures/feature_lifecycle/wishbone/selected_wishbone_plain_hexbin_grid_viridis.png -> fig:app-wishbone-pca"
     inputs: []
     cited_in: [paper/main.tex]
 
@@ -410,21 +420,18 @@ experiments:
     paper_labels:
       - fig:main-readout-coordination
       - fig:app-readout-swap-nll-kl-grid
-      - fig:app-readout-swap-concept-mass
+      - fig:app-readout-swap-family-logit-mass
       - fig:app-readout-swap-target-nll
       - fig:app-aligned-readout-swap
       - fig:app-readout-swap-160m-target-nll
-      - fig:app-readout-swap-family-logit-mass
-      - fig:lr-swap
+      - fig:app-timing-triangulation  # readout-swap optimum row of the triangulation figure
     paper_figures:
-      - "paper/figures/readout_coordination/temporal_patch_grid_coordination.pdf -> fig:main-readout-coordination"
-      - "paper/figures/readout_coordination/readout_swap_nll_kl_grid.pdf -> fig:app-readout-swap-nll-kl-grid"
-      - "paper/figures/readout_coordination/temporal_patch_grid_concept_mass_appendix.pdf -> fig:app-readout-swap-concept-mass"
+      - "paper/figures/readout_coordination/temporal_patch_grid_coordination.png -> fig:main-readout-coordination"
+      - "paper/figures/readout_coordination/readout_swap_nll_kl_grid.png -> fig:app-readout-swap-nll-kl-grid"
+      - "paper/figures/readout_coordination/temporal_patch_grid_concept_mass_appendix.pdf -> fig:app-readout-swap-family-logit-mass"
       - "paper/figures/readout_coordination/temporal_patch_grid_target_nll_by_concept_appendix.pdf -> fig:app-readout-swap-target-nll"
       - "results/experiments/causal/temporal_localization_patching/aligned_swap_grid/summary.csv -> fig:app-aligned-readout-swap"  # data-reproducible-only; run_aligned_swap_grid.py emits summary.csv (+manifest.json), no figure
-      - "paper/figures/readout_coordination/160m/temporal_patch_grid_target_nll_by_concept_appendix.pdf -> fig:app-readout-swap-160m-target-nll"
-      - "paper/figures/readout_coordination/temporal_patch_grid_concept_mass_appendix.pdf -> fig:app-readout-swap-family-logit-mass"
-      - "paper/figures/readout_coordination/temporal_patch_grid_coordination.pdf -> fig:lr-swap"
+      - "paper/figures/readout_coordination_160m/temporal_patch_grid_target_nll_by_concept_appendix.pdf -> fig:app-readout-swap-160m-target-nll"
     inputs: []
     cited_in: [paper/main.tex]
 
@@ -476,9 +483,11 @@ experiments:
       Tests whether early hidden states already contain task-relevant signal that
       a same-checkpoint readout has not yet expressed.
     paper_intent: |
-      Capability-level readout-validation appendix; supports stronger
-      "task-relevant signals" framing if multiple families show positive,
-      gauge-aligned, temporally-localized rescue.
+      Main-text Finding 3 (hidden state availability precedes native readout
+      expression) and the availability/expression appendix. The swap grids and
+      controlled hidden-state probes computed here are the upstream data; the
+      Pythia-6.9B narrative figures are assembled in the paper LaTeX tree from
+      the probe summaries.
     scripts_dir: experiments/probes/contrastive_readout_swap/scripts/
     figures_dir: figures/contrastive_readout_swap/
     results_dir: results/experiments/probes/contrastive_readout_swap/
@@ -486,10 +495,12 @@ experiments:
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - ${UM_SSD_ROOT}/snapshots/pythia-160m/EleutherAI_pythia-160m_step*_wu.pt
     paper_labels:
-      - fig:lr-lag
+      - fig:app-contrastive-readout-lag
+      - fig:main-sva-availability-expression
     paper_figures:
-      - "paper/figures/contrastive_readout/readout_lag_narrative.pdf -> fig:lr-lag"
-    cited_in: []
+      - "paper/figures/readout_coordination/readout_lag_narrative_69b.pdf -> fig:app-contrastive-readout-lag"
+      - "paper/figures/readout_coordination/sva_availability_expression_69b.pdf -> fig:main-sva-availability-expression"
+    cited_in: [paper/main.tex]
     entry:
       - uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py --model EleutherAI/pythia-1b --out-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b
       - uv run python experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py --model pythia-1b --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --out-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b --alignments none scale row_norm procrustes
@@ -503,7 +514,7 @@ experiments:
       Specificity matrix tests whether ablations chosen for one family transfer.
     paper_intent: |
       Causal companion to contrastive_readout_swap: localizes the rescue effect
-      to a small set of W_U crosscoder features in the parameter-trajectory gauge.
+      to a small set of W_U crosscoder features in the trajectory crosscoder gauge.
     scripts_dir: experiments/causal/contrastive_task_feature_rescue/scripts/
     figures_dir: figures/contrastive_task_feature_rescue/
     results_dir: results/experiments/causal/contrastive_task_feature_rescue/
@@ -513,9 +524,11 @@ experiments:
       - results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden/  # produced by Exp 1
       - results/experiments/probes/contrastive_readout_swap/datasets/     # produced by Exp 1
     paper_labels:
+      - tab:main-localization-ledger
       - tab:app-contrastive-localisation-ledger
     paper_figures:
+      - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:main-localization-ledger"  # per-family shards under run0/shards/ feed both ledgers
       - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:app-contrastive-localisation-ledger"  # one shard per family under run0/shards/; sva shown as the representative ledger row
-    cited_in: []
+    cited_in: [paper/main.tex]
     entry:
       - uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py --model pythia-1b --d-sae 24576 --seed 0 --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden --snapshot-step 1000 --h-step 1000

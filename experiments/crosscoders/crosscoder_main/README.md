@@ -2,40 +2,39 @@
 
 Multiscale W_U crosscoder dynamics analysis across Pythia-160M, Pythia-1B, the
 selected sparse/high-lambda Pythia-6.9B run, and OLMo cross-family checks. This
-umbrella experiment is the source for the majority of the thesis
+umbrella experiment is the source for the majority of the paper
 instrument-validation, multimodel-comparison, and baseline metrics; the
 lifecycle, temporal-localization, EV/L0-pareto, and per-snapshot baseline
 analyses each live in their own claim-anchored experiment.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:main-multimodel-validation` | `derived/appendix_validation/` + `derived/main_1b/` sidecars (canonical table: `derived/aggregates/analysis_table.manifest.json`) | `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py` |
-| `fig:lr-validation` | `derived/appendix_validation/` + `derived/main_1b/` sidecars (same instrument-validation summary as above) | `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py` |
 | `fig:app-fidelity-curves` | `derived/appendix_validation/persnap_fidelity.csv` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_persnap_fidelity.py` |
 | `fig:app-pca-static` | `derived/appendix_validation/` baseline EV metrics | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_pca_static.py` |
 | `fig:app-concat-pca` | `derived/appendix_validation/` baseline EV metrics | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_concat_pca.py` |
 | `fig:app-endpoint-linear` | `derived/appendix_validation/` baseline EV metrics | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_endpoint_linear.py` |
 | `fig:app-norm-pareto`, `fig:app-norm-pareto-raw-vs-pct` | `derived/appendix_validation/lambda_sweep.csv` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py` |
 | `fig:app-large-selected-persnap`, `fig:app-large-l0-token-distribution`, `fig:app-large-feature-rate-distribution`, `fig:app-p69b-dense-vs-sparse` | `derived/appendix_validation/large_evals/*.json` + `*_per_snap.csv` (1B/6.9B/OLMo diagnostics) | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py`, `scripts/appendix_validation/eval_per_snap.py` |
+| `tab:main-panel-a` | `derived/appendix_validation/full_inventory.csv` (main-text instrument table is the paper-facing subset) | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py` |
 | `tab:full-inventory` | `derived/appendix_validation/full_inventory.csv` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py` |
-| `tab:repro-hparams` | `derived/aggregates/analysis_table.manifest.json` (run/hparam provenance) | `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py` |
-| `fig:app-selected-normalized-trajectories` | upstream signal only — the rendered figure is produced by `feature_lifecycle_trajectories`; this experiment supplies the aggregate tensors it reads | `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py` |
+| `tab:repro-dictionary-hparams` | `derived/aggregates/analysis_table.manifest.json` (run/hparam provenance) | `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py` |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
 ## Claim
 Multiscale W_U crosscoder dynamics analysis across Pythia-160M, Pythia-1B, the
 selected sparse/high-lambda Pythia-6.9B run, and OLMo cross-family checks. This
-is the source for the majority of the thesis instrument-validation, lifecycle,
+is the source for the majority of the paper instrument-validation, lifecycle,
 multimodel-comparison, and baseline metrics.
 
 ## Metrics produced
 This experiment computes metrics only: the repo ships no figure-rendering code. The surviving
-compute/eval scripts persist the metrics behind the thesis figures as
-CSV/JSON/.pt artifacts; the thesis figures themselves are rendered in the
-separate thesis LaTeX tree from these metrics, not here. These metric files are
+compute/eval scripts persist the metrics behind the paper figures as
+CSV/JSON/.pt artifacts; the paper figures themselves are rendered in the
+separate paper LaTeX tree from these metrics, not here. These metric files are
 gitignored and **not shipped** in this code-only release — running the scripts
 regenerates them under `derived/`:
 - `derived/aggregates/analysis_table.manifest.json` — canonical analysis-table manifest
@@ -80,7 +79,7 @@ lives in `src/readout/dynamics/` — it is shared with sibling experiments
 (`crosscoder_we`) and the test suite, so per the repo's tier rule it sits in
 `src/`, not here. All analysis code lives
 under `scripts/` and the `*.csv` / `*.json` / `*.pt` sidecars the scripts write
-under `derived/` are the evidence the thesis tree renders figures from (the repo
+under `derived/` are the evidence the paper LaTeX tree renders figures from (the repo
 ships no figure-rendering code). They are gitignored and regenerated on run —
 **not shipped** in this code-only release; their locations are a de-facto data
 API and are kept stable.

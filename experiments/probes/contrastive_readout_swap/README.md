@@ -8,16 +8,18 @@ contain task-relevant signal that a same-checkpoint readout has not yet expresse
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
-| `fig:lr-lag` | `results/experiments/probes/contrastive_readout_swap/run0_pythia1b/summary.csv` (+ controlled-hidden-probe `<stem>.csv`) | `experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py` |
+| `fig:main-sva-availability-expression` | controlled hidden-state probe `<stem>.csv` (probe vs native readout accuracy per checkpoint) | `experiments/probes/contrastive_readout_swap/scripts/run_controlled_hidden_probes.py` |
+| `fig:app-contrastive-readout-lag` | `results/experiments/probes/contrastive_readout_swap/run0_pythia1b/summary.csv` (+ controlled-hidden-probe `<stem>.csv`) | `experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py` |
 
 This experiment computes and persists the swap-grid and controlled-hidden-probe
-metrics behind the readout-lag narrative figure. The thesis-tree Appendix-F
-availability/expression report (`availability_expression/rpt_*.pdf`,
-`tab:app-ae-*`) is rendered separately from probe-summary CSVs; this experiment
-generates the upstream probe signal but the report figures themselves are not
-shipped or regenerable here.
+metrics that the paper's availability/expression figures summarize. The
+Pythia-6.9B narrative figures (`fig:main-sva-availability-expression`,
+`fig:app-contrastive-readout-lag`) and the availability/expression appendix
+report (`fig:app-ae-*`, `tab:app-ae-*`) are rendered in the paper LaTeX tree from
+probe-summary CSVs; this experiment generates the upstream probe signal but the
+report figures themselves are not shipped or regenerable here.
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
@@ -93,7 +95,7 @@ uv run python experiments/probes/contrastive_readout_swap/scripts/run_controlled
 
 These steps compute and persist the metrics behind the experiment's figures
 (`summary.csv`, per-cell shards, controlled-probe CSV/.pt). The repo ships no
-figure-rendering code; thesis figures are rendered in the separate thesis LaTeX
+figure-rendering code; paper figures are rendered in the separate thesis LaTeX
 tree from these regenerated metrics (gitignored — not shipped in this
 code-only release).
 
