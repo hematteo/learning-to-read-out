@@ -8,13 +8,15 @@
 # sidecar olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.config.json. Its training
 # log ends at "[epoch 299 step 29400]", i.e. 300 epochs of 98 steps, which fixes
 # batch_size at 1024 (ceil(100352 / 1024) = 98); the paper's hyperparameter
-# table (29,400 optimizer steps) agrees. The committed launcher
+# table (29,400 optimizer steps) agrees. The launcher committed at release time
 # (experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh)
-# defaults to batch_size 2048 and n_epochs 250, so the run overrode both.
-# Optimizer: the checkpoint's embedded training dict records `adam`, while the
-# launcher passes `--optimizer sparse_adam` and the paper's table says
-# SparseAdam; the log does not name the optimizer, so this field is recorded
-# as the checkpoint has it and flagged as unresolved.
+# carried batch_size 2048, n_epochs 250, optimizer sparse_adam; on 2026-09-03 it
+# was aligned to the checkpoint record (1024 / 300 / adam). Optimizer caveat:
+# the checkpoint's embedded training dict records `adam` (written from the
+# run's CLI args by train_distributed.py), while the vast.ai launcher of the
+# time passed `--optimizer sparse_adam` and the log does not name the
+# optimizer; no copy of the trainer from before 2026-05-05 survives to rule out
+# a recording bug, so `adam` is recorded as the checkpoint has it.
 name: olmo-2-7b_wu_d32768_seed0
 model: allenai/OLMo-2-1124-7B
 matrix: W_U
