@@ -1,7 +1,22 @@
 # Settings-of-record for the cross-family OLMo-2-7B W_U trajectory crosscoder
-# (production run; 4x A100-80GB head-parallel). Field names mirror the
+# (production run; 4-GPU head-parallel). Field names mirror the
 # scripts/train/train_crosscoder.py / train_distributed.py CLI flags.
 # Documentation/record only; not auto-loaded. See configs/README.md.
+#
+# PROVENANCE NOTE. The run of record is the 2026-05-02 vast.ai run whose
+# checkpoint (cc_olmo27b_dsae32768_seed0.pt) was converted into the released
+# sidecar olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.config.json. Its training
+# log ends at "[epoch 299 step 29400]", i.e. 300 epochs of 98 steps, which fixes
+# batch_size at 1024 (ceil(100352 / 1024) = 98); the paper's hyperparameter
+# table (29,400 optimizer steps) agrees. The launcher committed at release time
+# (experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh)
+# carried batch_size 2048, n_epochs 250, optimizer sparse_adam; on 2026-09-03 it
+# was aligned to the checkpoint record (1024 / 300 / adam). Optimizer caveat:
+# the checkpoint's embedded training dict records `adam` (written from the
+# run's CLI args by train_distributed.py), while the vast.ai launcher of the
+# time passed `--optimizer sparse_adam` and the log does not name the
+# optimizer; no copy of the trainer from before 2026-05-05 survives to rule out
+# a recording bug, so `adam` is recorded as the checkpoint has it.
 name: olmo-2-7b_wu_d32768_seed0
 model: allenai/OLMo-2-1124-7B
 matrix: W_U
@@ -11,14 +26,14 @@ d_sae: 32768              # expansion_factor 8.0 at d_model=4096 (32768 / 4096)
 expansion_factor: 8.0
 n_snapshots: 32           # OLMo-2-7B 32-snapshot schedule (readout.core.model_specs.OLMO_STEPS_32)
 
-# Optimizer / schedule (verbatim from run_olmo_production.sh)
-batch_size: 2048
+# Optimizer / schedule (checkpoint-embedded training dict; see PROVENANCE NOTE)
+batch_size: 1024
 lr: 1.0e-5
-n_epochs: 250
+n_epochs: 300
 seed: 0
 input_preprocess: center_scale
 amp_dtype: fp32
-optimizer: sparse_adam
+optimizer: adam
 
 # JumpReLU dictionary hyperparameters
 l1_coefficient: 0.3
@@ -40,11 +55,12 @@ reported:
   n_params: 8591147008
 
 source: >
-  experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh
-  (verbatim flag-set: batch_size 2048, lr 1e-5, jumprelu_lr_factor 0.3,
-  l1_coefficient 0.3, tanh_stretch 1.0, init_threshold 0.1,
-  decoder_transpose_init 1.0, input_preprocess center_scale,
-  l1_warmup_fraction 0.1, lr_warmup_fraction 0.10, lr_decay_fraction 0.20,
-  optimizer sparse_adam, amp_dtype fp32, n_epochs 250, d_sae 32768);
+  released checkpoint sidecar olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.config.json
+  (training: lr 1e-5, l1_coefficient 0.3, tanh_stretch 1.0, jumprelu_lr_factor 0.3,
+  init_threshold 0.1, batch_size 1024, n_epochs 300, optimizer adam,
+  l1_warmup_fraction 0.1, lr_warmup_fraction 0.1, lr_decay_fraction 0.2,
+  amp_dtype fp32; quality: EV 0.8526, mean L0 557.3);
+  experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh (launcher,
+  aligned with the run of record); the run's train.log (final line: epoch 299 step 29400);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.json
-  (canon EV/L0); experiments.yaml: crosscoder_olmo.
+  (canon EV/L0, training_batch_size 1024); experiments.yaml: crosscoder_olmo.

@@ -1,4 +1,4 @@
-"""CLI front door for parameter-trajectory crosscoder training.
+"""CLI front door for trajectory crosscoder training.
 
 Thin wrapper around ``readout.crosscoder.wu_adapter.main`` so the trainer can be
 invoked as a script (the library module has no ``__main__`` block per the

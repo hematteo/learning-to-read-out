@@ -56,11 +56,20 @@ n_epochs: 300
 seed: 0
 input_preprocess: center_scale
 amp_dtype: bf16
+optimizer: adam
 
 # JumpReLU dictionary hyperparameters (shared Pythia W_U recipe)
 l1_coefficient: 0.3
 tanh_stretch: 1.0
 init_threshold: 0.1
+jumprelu_lr_factor: 0.1
+decoder_transpose_init: 1.0
+dead_window_steps: 2000
+
+# LR / L1 schedule (this run used the warmup/decay schedule of the large runs)
+l1_warmup_fraction: 0.1
+lr_warmup_fraction: 0.10
+lr_decay_fraction: 0.20
 
 # Reported instrument quality (checkpoint-embedded quality dict; an independent
 # recompute on 2026-06-12 reproduced the EV to 4e-4)
@@ -69,6 +78,9 @@ reported:
   mean_L0: 263.9
 
 source: >
+  released-checkpoint sidecar pythia-1b/W_U/cross-snapshot-32-matched-window/d24576/seed0.config.json
+  (optimizer adam, jumprelu_lr_factor 0.1, l1_warmup_fraction 0.1, lr_warmup_fraction 0.1,
+  lr_decay_fraction 0.2, decoder_transpose_init 1.0, dead_window_steps 2000);
   checkpoint-embedded `training`/`quality` dicts of the run of record,
   pythia1b_wu_late_start32_dsae24576_seed0.pt (lr=5e-5, batch_size=1024,
   n_epochs=300, amp_dtype=bf16, lambda=0.3, tanh_stretch=1.0,

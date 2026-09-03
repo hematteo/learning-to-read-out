@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "learning-to-read-out"
 version = "0.1.0"
-description = "Sparse readout formation in language model pretraining: parameter-trajectory crosscoders on the unembedding matrix"
+description = "Learning to Read Out: trajectory crosscoders on the unembedding matrix across pretraining checkpoints"
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Matteo He", email = "mh2274@cam.ac.uk" }]
@@ -49,7 +49,7 @@ torch = [
     { index = "pytorch-cu118", marker = "sys_platform == 'linux'" },
 ]
 # THIRD-PARTY: OpenMOSS Language-Model-SAEs / llamascopium (MIT, (c) 2024
-# OpenMOSS), vendored under lib/ and built from source. The thesis uses its
+# OpenMOSS), vendored under lib/ and built from source. The production trainer uses its
 # Crosscoder/CrosscoderConfig model and SparseAdam optimizer for the production
 # W_U dictionaries (src/readout/crosscoder/wu_adapter.py). The vendored copy carries one
 # local patch — a DTensor-safe init_encoder_with_decoder_transpose that avoids a

@@ -55,7 +55,7 @@ REPO = repo_root()
 
 # OLMo HF revisions use the format "stage1-step{N}-tokens{T}B"; the {T}B suffix
 # is looked up at runtime. The step schedule is the canonical OLMO_STEPS_32
-# (src/readout/core/model_specs.py), matching extract_wu_olmo.py and thesis Appendix A.
+# (src/readout/core/model_specs.py), matching extract_wu_olmo.py and the paper's reproducibility appendix.
 
 
 def _model_steps(model_short: str) -> list[int]:

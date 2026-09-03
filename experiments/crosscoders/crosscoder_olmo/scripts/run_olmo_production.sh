@@ -84,7 +84,7 @@ uv run torchrun \
         --cache-dir "${WU_CACHE}" \
         --steps ${STEPS} \
         --d-sae 32768 \
-        --batch-size 2048 \
+        --batch-size 1024 \
         --lr 1e-5 \
         --jumprelu-lr-factor 0.3 \
         --l1-coefficient 0.3 \
@@ -95,9 +95,9 @@ uv run torchrun \
         --l1-warmup-fraction 0.1 \
         --lr-warmup-fraction 0.10 \
         --lr-decay-fraction 0.20 \
-        --optimizer sparse_adam \
+        --optimizer adam \
         --amp-dtype fp32 \
-        --n-epochs 250 \
+        --n-epochs 300 \
         --seed "${SEED}" \
         --output "${OUT_DIR}/cc_olmo27b_dsae32768_seed${SEED}.pt" \
     2>&1 | tee "${OUT_DIR}/train_seed${SEED}.log"

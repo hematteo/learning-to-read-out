@@ -6,16 +6,14 @@ record the behavioral effect, isolating where in training the reorganization occ
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:main-readout-coordination` | `summary_global.csv`, `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
 | `fig:app-readout-swap-nll-kl-grid` | `summary_global.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:app-readout-swap-concept-mass` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
+| `fig:app-readout-swap-family-logit-mass` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
 | `fig:app-readout-swap-target-nll` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
 | `fig:app-aligned-readout-swap` | `aligned_swap_grid/summary.csv` | `experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py` |
 | `fig:app-readout-swap-160m-target-nll` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:app-readout-swap-family-logit-mass` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:lr-swap` | `summary_global.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
@@ -35,7 +33,7 @@ swapping in the early-window readout produces most of the behavioral effect.
 
 ## Outputs (metrics-only)
 This experiment computes metrics only: it computes and persists the metrics behind the figures but
-ships no figure-rendering code. Thesis figures are rendered in the separate thesis LaTeX
+ships no figure-rendering code. Paper figures are rendered in the separate thesis LaTeX
 tree from these metrics. Per `--out-dir`, the scripts persist:
 - `temporal_patch_grid.py` -> `manifest.json`, `summary_global.csv` (one row per `(h_t, W_U_s)`), `summary_concept.csv` (one row per `(h_t, W_U_s, concept)`), `raw.pt`
 - `temporal_patch_metrics.py` (CLI driver over `readout.dynamics.temporal_patch`) -> `manifest.json`, `subsets.json`, `summary.csv`, `selectivity.csv`, `paired_vs_random.csv`, `raw.pt`

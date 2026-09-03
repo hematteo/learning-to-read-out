@@ -10,7 +10,7 @@ simple SVD/PCA summaries.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-spectral-capacity` | `results/experiments/dense_readout_diagnostics/spectral_metrics.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_spectral_capacity.py` |
 | `fig:app-dense-reorg-pythia` | `results/experiments/dense_readout_diagnostics/dense_reorganization/subspace_metrics.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_dense_reorganization_timing.py` |
@@ -27,8 +27,8 @@ spectral-capacity diagnostic and the adjacent-subspace timing diagnostic show
 that centered W_U stays high-dimensional across Pythia and OLMo, and the
 mean-direction audit confirms the spectral-gap and stable-rank preprocessing
 choices. This experiment computes and persists the metrics behind these
-diagnostics; it renders no figures. Thesis figures are rendered in the separate
-thesis LaTeX tree from these regenerated metrics (gitignored — not shipped in
+diagnostics; it renders no figures. Paper figures are rendered in the separate
+paper LaTeX tree from these regenerated metrics (gitignored — not shipped in
 this code-only release).
 
 ## Reproduce
@@ -41,7 +41,7 @@ uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_mean
 ```
 
 `plot_spectral_capacity.py` renders no figures: it reads the spectral metrics
-and writes plot-ready numeric rows (CSV/.pt) for the thesis tree to render.
+and writes plot-ready numeric rows (CSV/.pt) for the paper LaTeX tree to render.
 
 The default run uses the 32 cross-snapshot checkpoint schedule and computes the
 top centered W_U right-singular directions with randomized PCA. OLMo uses its own
@@ -93,4 +93,4 @@ figures/dense_readout_diagnostics/
 ```
 
 The `figures/` path above holds plot-ready numeric tables (`.csv`/`.pt`)
-consumed by the thesis tree, not rendered images.
+consumed by the paper LaTeX tree, not rendered images.

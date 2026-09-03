@@ -51,7 +51,7 @@ def main() -> None:
     ap.add_argument(
         "--conditions",
         nargs="+",
-        default=["baseline", "long_warmup", "wu_lr_0p25", "wu_lr_4x"],
+        default=["baseline", "warmup_short", "wu_lr_0p25", "wu_lr_4x"],
     )
     ap.add_argument("--out-csv", type=Path, default=Path("readout_geometry.csv"))
     args = ap.parse_args()

@@ -7,7 +7,7 @@ trajectory structure, not just a fixed snapshot set).
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-heldout-checkpoints` | `heldout_ev.csv` / `heldout_ev.pt` (pythia-160m) | `experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py` |
 | `fig:app-heldout-checkpoints-1b` | `heldout_ev.csv` / `heldout_ev.pt` (pythia-1b) | `experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py` |
@@ -48,7 +48,7 @@ This writes `heldout_ev.csv` and `heldout_ev.pt` (see "Outputs").
 
 These regenerated metrics (gitignored — not shipped in this code-only release)
 are the reproducible artifacts. This repo ships no
-figure-rendering code; the thesis figures are rendered in the separate thesis
+figure-rendering code; the paper figures are rendered in the separate paper
 LaTeX tree from these metrics.
 
 ## Layout

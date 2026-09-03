@@ -2,7 +2,7 @@
 
 Research code grouped by theme; each experiment is
 `<topic>/<id>/{README.md,scripts/}`. The machine-readable index mapping every
-experiment to the thesis figures it backs is [`../experiments.yaml`](../experiments.yaml);
+experiment to the paper figures it backs is [`../experiments.yaml`](../experiments.yaml);
 the figure-by-figure reproduction map is [`../docs/REPRODUCE.md`](../docs/REPRODUCE.md).
 
 | Topic | What its experiments establish |
@@ -24,4 +24,4 @@ follow-up is `causal/contrastive_task_feature_rescue`.
 Naming note: scripts named `plot_*` / `build_*_plots` / `build_*_figures`
 compute and persist the *metrics behind* the figure they are named after
 (CSV/JSON/`.pt` sidecars); no figure-rendering code ships in this repo — the
-thesis LaTeX tree renders figures from those metrics.
+paper LaTeX tree renders figures from those metrics.

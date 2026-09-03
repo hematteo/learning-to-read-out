@@ -1,12 +1,12 @@
 # docs/
 
-Companion guides for the `learning-to-read-out` code release (thesis Chapter 4).
+Companion guides for the `learning-to-read-out` code release.
 This is a code-only release: it ships source, tests, and the manifest, but no
 data and no metrics. Start with the repo root [README](../README.md) for the
 overview and quickstart, then read these in order:
 
 1. [REPRODUCE.md](REPRODUCE.md) — figure -> experiment -> metric-producing
-   script map; companion to `experiments.yaml`. Start here to chase a Chapter 4
+   script map; companion to `experiments.yaml`. Start here to chase a paper
    figure.
 2. [DATA.md](DATA.md) — external models, checkpoints, and corpora, plus the
    `UM_SSD_ROOT` storage layout the analysis scripts read from.

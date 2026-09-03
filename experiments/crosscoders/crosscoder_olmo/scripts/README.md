@@ -1,7 +1,7 @@
 # Cross-family experiment — OLMo-2-7B-1124
 
-Cross-family validation of the step-1000 W_U reorganisation event for thesis
-Chapter 4: confirms the discrete event reproduces in a non-Pythia LM family
+Cross-family validation of the step-1000 W_U reorganisation event for the
+paper: confirms the discrete event reproduces in a non-Pythia LM family
 (OLMo-2-7B-1124), not just the Pythia suite.
 
 ## Files in this directory

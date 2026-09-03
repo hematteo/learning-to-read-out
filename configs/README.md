@@ -5,7 +5,7 @@ Configuration records for the learning-to-read-out pipeline.
 ## `runs/` — crosscoder training settings-of-record
 
 Each `runs/<id>.yaml` is the committed, version-controlled record of the exact
-training hyperparameters for one parameter-trajectory crosscoder used in the
+training hyperparameters for one trajectory crosscoder used in the
 paper's results. Before this directory existed, those settings lived only in CLI
 flags and inside the saved checkpoints; capturing them here means reproducibility
 no longer depends on a surviving checkpoint or shell-history fragment.
@@ -30,6 +30,10 @@ Values that are not re-derivable from files shipped in this repo (per-model
 `l1_coefficient`/`init_threshold`) were recovered from the released checkpoints'
 embedded training dicts and `.config.json` sidecars and are recorded as exact,
 with the `source:` field naming the artifact each value came from.
+
+Where two records of one run disagree, the file keeps both: the checkpoint's
+embedded training dict is the primary record and the other value is listed
+under a named sub-key with its origin (see the OLMo-2-7B config).
 
 ## `preregistration/` — preregistered concept sets
 

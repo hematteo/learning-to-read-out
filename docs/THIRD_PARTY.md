@@ -10,7 +10,7 @@ explicit.
 - **What:** the OpenMOSS *Language-Model-SAEs* framework, distributed on PyPI as
   `llamascopium`. Upstream: <https://github.com/OpenMOSS/Language-Model-SAEs>.
 - **Licence:** MIT, © 2024 OpenMOSS. See `lib/Language-Model-SAEs/LICENSE`.
-- **Why it is vendored rather than pulled from PyPI:** the thesis training path
+- **Why it is vendored rather than pulled from PyPI:** the production training path
   (`src/readout/crosscoder/wu_adapter.py`) uses this library's `Crosscoder` /
   `CrosscoderConfig` model and `SparseAdam` optimizer. The vendored copy carries
   **one local patch** — a DTensor-safe `init_encoder_with_decoder_transpose`
@@ -23,10 +23,10 @@ explicit.
   package's own dependency pins. Everything else under `lib/` is upstream code.
 - **What was trimmed from the upstream tree:** to keep the vendored copy to its
   import surface, the following non-essential components were removed (none are
-  imported by any thesis code — verified by grep across `src/`, `scripts/`,
+  imported by any first-party code — verified by grep across `src/`, `scripts/`,
   `experiments/`, `tests/`):
   - `server/` — the FastAPI web UI (16 files; optional `plotly`/`kaleido`/
-    `uvicorn`/`fastapi` deps the thesis never installs);
+    `uvicorn`/`fastapi` deps this release never installs);
   - `tests/` — the library's own unit/integration/distributed test suite
     (24 files);
   - `scripts/gen_ref_pages.py` — a docs-site generation helper (1 file);
@@ -37,7 +37,7 @@ explicit.
 
   What is **kept** is exactly the import surface plus build metadata:
   `src/llamascopium/` (the package, including the patched `Crosscoder` and
-  `SparseAdam` the thesis imports), `pyproject.toml`, `LICENSE`, and `README.md`.
+  `SparseAdam` the trainer imports), `pyproject.toml`, `LICENSE`, and `README.md`.
   The package's `uv_build` backend only discovers packages under
   `src/llamascopium/`, so dropping the above does not affect `uv sync` or the
   editable wheel; the `llamascopium` / `lm-saes` console-script entry points in
@@ -53,7 +53,7 @@ explicit.
   `pyproject.toml` were not individually recorded; diffing that file against the
   downloaded release's `pyproject.toml` recovers them.
 
-This library is cited in the thesis as the crosscoder architecture the trajectory
+This library is cited in the paper as the crosscoder architecture the trajectory
 dictionaries follow (`\citet{ge2026crosscoder}`).
 
 ## First-party crosscoder code

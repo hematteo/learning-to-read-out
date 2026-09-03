@@ -4,27 +4,22 @@ W_E (input embedding) variant of the crosscoder, multi-seed pilot. Companion to 
 W_U (output) crosscoder; it characterises read-write asymmetry by comparing when input
 embeddings reorganize versus when output unembeddings do. No figures are rendered here:
 the experiment computes and persists the metrics behind the WE appendix read/write
-asymmetry panels and feature-card grids, and the thesis LaTeX tree renders them from the
+asymmetry panels and feature-card grids, and the paper LaTeX tree renders them from the
 committed CSV/`.pt` artifacts. Each metric base is written with both a `.csv` and a `.pt`
 cache.
 
 ## Figures produced
 
-Backs the 11 `fig:app-we-*` read-write-asymmetry figures under `sec:app-we-crosscoders`.
+Backs the three `fig:app-we-*` read-write-asymmetry figures under `sec:app-we-crosscoders`.
+The extended-plot, top-3, and feature-card scripts below also persist token-overlap,
+W_E/W_U geometry, seed-correspondence, capacity, rate-timing, matched-control lead-lag,
+Procrustes, and W_E feature-card metrics that the current paper does not plot.
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-we-read-write-asymmetry` | `read_write_asymmetry.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_plots.py` |
 | `fig:app-we-quality-pareto` | `we_quality_pareto.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_plots.py` |
 | `fig:app-we-lead-lag-family` | `lead_lag_family_heatmap.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_extended_plots.py` |
-| `fig:app-we-token-overlap` | `token_overlap_jaccard.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_extended_plots.py` |
-| `fig:app-we-geometry` | `wu_we_geometry_160m.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_extended_plots.py` |
-| `fig:app-we-seed-correspondence` | `multiseed_hungarian.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_extended_plots.py` |
-| `fig:app-we-capacity-note` | `capacity_note.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_appendix_extended_plots.py` |
-| `fig:app-we-d24576-rate-timing` | `d24576_rate_timing.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_wu_top3_experiments.py` |
-| `fig:app-we-matched-control-lead-lag` | `matched_control_lead_lag.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_wu_top3_experiments.py` |
-| `fig:app-we-procrustes` | `procrustes_alignment.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_wu_top3_experiments.py` |
-| `fig:app-we-feature-cards-representative` | `we_feature_cards_pythia160m_d8192_representative.{csv,pt}` | `experiments/crosscoders/crosscoder_we/scripts/build_we_feature_cards.py` |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 

@@ -8,13 +8,10 @@ itself.
 
 ## Figures produced
 
-| Thesis label | Metric file | Producing script |
+| Paper label | Metric file | Producing script |
 |---|---|---|
-| `fig:main-section52-selected-heatmaps` | `selected_decoder_norm_trajectories.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
-| `fig:main-selected-normalized-trajectories` | `selected_decoder_norm_trajectories.{csv,pt}`, `normalized_trajectories.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
-| `fig:app-selected-normalized-trajectories` | `selected_decoder_norm_trajectories_full.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
 | `fig:app-selected-decoder-norm-heatmaps` | `selected_decoder_norm_trajectories.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
-| `fig:lr-trajectories` | `selected_decoder_norm_trajectories.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
+| `fig:main-selected-normalized-trajectories` | `selected_decoder_norm_trajectories.{csv,pt}`, `normalized_trajectories.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
 | `fig:app-lifecycle-profile-composition` | `selected_lifecycle_profile_composition_{summary,features}.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py` |
 | `fig:app-selected-population-lifecycle-diagnostics` | `selected_lifecycle_profile_composition_refined_{summary,features}.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py` |
 | `fig:app-metric-lifecycle-combined` | `selected_lifecycle_profile_composition_{summary,features}.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py` |
@@ -22,7 +19,6 @@ itself.
 | `fig:app-wishbone-pca` | `wishbone/selected_wishbone_k2_pca_clusters.pt`, `wishbone/*_scores_metrics.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_selected_wishbone.py` |
 | `fig:app-prepost-reorganization-peakstep` | `reorganization_step_peaks_selected.csv`, `reorganization_step_pair_metrics_selected.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py` |
 | `fig:app-reorganization-window-metrics` | `reorganization_window_metrics_selected.{csv,pt}`, `reorganization_window_summary_selected.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py` |
-| `fig:lr-reorg-window` | `reorganization_window_metrics_selected.{csv,pt}` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py` |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
@@ -57,7 +53,7 @@ crosscoder checkpoints listed under Inputs (see `scripts/lifecycle_common.py`).
 
 ## Outputs
 Scripts write metrics to `results/experiments/lifecycle/feature_lifecycle_trajectories/`
-(and its `wishbone/` subdir). Thesis figures are rendered in the separate thesis
+(and its `wishbone/` subdir). Paper figures are rendered in the separate paper
 LaTeX tree from these regenerated metrics (gitignored — not shipped in this
 code-only release).
 - `selected_decoder_norm_trajectories{,_full}.{csv,pt}` — decoder-norm trajectory quantiles per snapshot (§5.2 main + appendix)
