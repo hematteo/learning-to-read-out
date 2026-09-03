@@ -17,11 +17,20 @@ n_epochs: 300
 seed: 0
 input_preprocess: center_scale
 amp_dtype: fp32
+optimizer: adam
 
 # JumpReLU dictionary hyperparameters
 l1_coefficient: 0.3       # 'lambda' column in full_inventory.csv
 tanh_stretch: 1.0
 init_threshold: 0.1
+jumprelu_lr_factor: 0.2      # NB: 0.2 here vs 0.1 for the 160M recipe (sidecar)
+decoder_transpose_init: 1.0
+dead_window_steps: 100
+
+# LR / L1 schedule (sparsity warmup only; no LR warmup or decay)
+l1_warmup_fraction: 0.05
+lr_warmup_fraction: 0.0
+lr_decay_fraction: 0.0
 
 # Reported instrument quality (full_inventory.csv, for cross-checking a retrain)
 reported:
@@ -31,6 +40,9 @@ reported:
   n_params: 3222102016
 
 source: >
+  released-checkpoint sidecar pythia-1b/W_U/cross-snapshot-32/d24576/seed0.config.json
+  (optimizer adam, jumprelu_lr_factor 0.2, l1_warmup_fraction 0.05, lr_warmup_fraction 0.0,
+  lr_decay_fraction 0.0, decoder_transpose_init 1.0, dead_window_steps 100);
   released-checkpoint .config.json sidecar (pythia-1b W_U cross-snap-32 d24576
   seed0: lr=2e-5);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv

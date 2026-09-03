@@ -20,11 +20,20 @@ n_epochs: 300
 seed: 0
 input_preprocess: center_scale
 amp_dtype: fp32
+optimizer: adam
 
 # JumpReLU dictionary hyperparameters
 l1_coefficient: 0.3       # default-lambda comparison row in full_inventory.csv
 tanh_stretch: 1.0
 init_threshold: 0.1
+jumprelu_lr_factor: 0.3
+decoder_transpose_init: 1.0
+dead_window_steps: 2000
+
+# LR / L1 schedule (4-GPU head-parallel recipe, train_distributed.py)
+l1_warmup_fraction: 0.1
+lr_warmup_fraction: 0.10
+lr_decay_fraction: 0.20
 
 # Reported instrument quality (sidecar p69b_normal_d32768_seed0.json 'canon')
 reported:
@@ -34,6 +43,9 @@ reported:
   n_params: 8591147008
 
 source: >
+  released-checkpoint sidecar pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0.config.json
+  (optimizer adam, jumprelu_lr_factor 0.3, l1_warmup_fraction 0.1, lr_warmup_fraction 0.1,
+  lr_decay_fraction 0.2, decoder_transpose_init 1.0, dead_window_steps 2000);
   checkpoint-embedded training dict of the released dense 6.9B run (lr=1e-5);
   experiments.yaml: crosscoder_main inputs ("denser/default-lambda comparison only"
   pythia-6.9b W_U cross-snapshot-32 d32768 seed0);

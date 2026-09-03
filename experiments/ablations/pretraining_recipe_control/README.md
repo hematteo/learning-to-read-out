@@ -26,8 +26,10 @@ over these checkpoints, which were run outside this release. See
 ## Conditions
 
 Five conditions are trained at **31M parameters, global batch 1024 sequences
-(2,097,152 tokens/step), to a 10B-token budget (4,769 steps)**, sharing one
-tokenized Pile slice, parameter seed 0, and data order. The paper reports four;
+(2,097,152 tokens/step), to a 10B-token budget (4,769 steps)** on the first 10B
+tokens of the Pythia preshuffled Pile, read in Pythia's released order
+(`scripts/fetch_pythia_preshuffled.py`, `--sequential-data`), with parameter
+seed 0. Same data, same order, same initialization for every arm. The paper reports four;
 `warmup_long` is a fifth complete arm released alongside them.
 
 | id | name | perturbation vs. baseline | in the paper |
@@ -40,8 +42,9 @@ tokenized Pile slice, parameter seed 0, and data order. The paper reports four;
 
 Each arm keeps 16 checkpoints at steps
 `0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, ~2480, 4096, 4769`
-(the step near 2480 is the 5B-token milestone and differs by a few steps across
-arms because milestones are placed by token count).
+(the step near 2480 is where the first 11-hour job slot ended; the trainer
+checkpoints on slot stop, so this one step differs slightly across arms, from
+2464 to 2497).
 
 The trainer is a **hybrid** built on HF `GPTNeoXForCausalLM` (which *is* the
 Pythia architecture) on the modern torch stack, reproducing the Pythia recipe

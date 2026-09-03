@@ -166,11 +166,9 @@ experiments:
       - ${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-1b_d24576_seed0.pt
       - results/experiments/sparse_feature_causal_tests/specificity_step143000_h143000/manifest.json
     paper_labels:
-      - fig:app-contrastive-task-localization
       - fig:app-sparse-feature-causal-curves
       - fig:app-sparse-feature-causal-specificity-k32
     paper_figures:
-      - "paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf -> fig:app-contrastive-task-localization"
       - "paper/figures/sparse_feature_causal_tests/control_corrected_ablation_curves.pdf -> fig:app-sparse-feature-causal-curves"
       - "paper/figures/sparse_feature_causal_tests/specificity_heatmaps_k32.pdf -> fig:app-sparse-feature-causal-specificity-k32"
     entry:
@@ -292,8 +290,8 @@ experiments:
   - id: pretraining_recipe_control
     status: active
     description: |
-      From-scratch recipe control: matched 31M Pythia-style runs sharing one
-      tokenized Pile slice, initialization seed, and data order, each changing one
+      From-scratch recipe control: matched 31M Pythia-style runs sharing the first
+      10B tokens of the Pythia preshuffled Pile in Pythia's order, initialization seed, each changing one
       recipe factor. The paper reports four arms (baseline, warmup_short, wu_lr_0p25,
       wu_lr_4x); a fifth complete arm (warmup_long) is released alongside them.
       Tests whether readout reorganization timing and the availability/expression
@@ -524,9 +522,11 @@ experiments:
       - results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden/  # produced by Exp 1
       - results/experiments/probes/contrastive_readout_swap/datasets/     # produced by Exp 1
     paper_labels:
+      - fig:app-contrastive-task-localization
       - tab:main-localization-ledger
       - tab:app-contrastive-localisation-ledger
     paper_figures:
+      - "paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf -> fig:app-contrastive-task-localization"  # drawn in the paper tree from the tabulated shard values (ablate / keep / project-out at h1000, s1000)
       - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:main-localization-ledger"  # per-family shards under run0/shards/ feed both ledgers
       - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:app-contrastive-localisation-ledger"  # one shard per family under run0/shards/; sva shown as the representative ledger row
     cited_in: [paper/main.tex]

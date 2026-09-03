@@ -11,7 +11,8 @@ ablations chosen for one task family transfer to the others.
 
 | Paper label | Metric file | Producing script |
 |---|---|---|
-| `tab:main-localization-ledger` | same per-family shards as below (the main-text ledger reports the sva / ioi / induction rows) | [`experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py`](scripts/run_feature_attribution.py) |
+| `fig:app-contrastive-task-localization` | per-family shards `run0_pythia1b_s1000_h1000/shards/<family>__h1000__s1000.json` (ablate top-8 / keep-only / project-out margins); the figure is drawn in the paper tree from these tabulated values | [`experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py`](scripts/run_feature_attribution.py) |
+| `tab:main-localization-ledger` | same per-family shards as below (the main-text ledger reports SVA, numeric comparison, IOI, and relational facts) | [`experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py`](scripts/run_feature_attribution.py) |
 | `tab:app-contrastive-localisation-ledger` | `run0_pythia1b_s1000_h1000/shards/<family>__h<h>__s<s>.json` (e.g. `sva__h1000__s1000.json`) | [`experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py`](scripts/run_feature_attribution.py) |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.

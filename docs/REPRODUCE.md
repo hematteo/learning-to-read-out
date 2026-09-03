@@ -40,7 +40,7 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="fig:app-aligned-readout-swap"></a>`fig:app-aligned-readout-swap` | temporal_localization_patching | results/experiments/causal/temporal_localization_patching/aligned_swap_grid/summary.csv |
 | <a id="fig:app-concat-pca"></a>`fig:app-concat-pca` | crosscoder_main | paper/figures/dense_baselines/concatenated_trajectory_pca.pdf |
 | <a id="fig:app-contrastive-readout-lag"></a>`fig:app-contrastive-readout-lag` | contrastive_readout_swap | paper/figures/readout_coordination/readout_lag_narrative_69b.pdf |
-| <a id="fig:app-contrastive-task-localization"></a>`fig:app-contrastive-task-localization` | sparse_feature_causal_tests | paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf |
+| <a id="fig:app-contrastive-task-localization"></a>`fig:app-contrastive-task-localization` | contrastive_task_feature_rescue | paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf |
 | <a id="fig:app-dense-reorg-olmo"></a>`fig:app-dense-reorg-olmo` | dense_readout_diagnostics | paper/figures/dense_readout/dense_reorganization_timing_olmo.pdf |
 | <a id="fig:app-dense-reorg-pythia"></a>`fig:app-dense-reorg-pythia` | dense_readout_diagnostics | paper/figures/dense_readout/dense_reorganization_timing.pdf |
 | <a id="fig:app-endpoint-linear"></a>`fig:app-endpoint-linear` | crosscoder_main | paper/figures/dense_baselines/endpoint_line_baseline.pdf |
@@ -230,8 +230,8 @@ Before the first run, download the corpus once:
 
 | Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:app-contrastive-task-localization`, `fig:app-sparse-feature-causal-curves`, `fig:app-sparse-feature-causal-specificity-k32` | `sparse_feature_causal_tests` | `experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py` (persists `summary.csv` / `raw.pt`) then `run_specificity_from_pilots.py` (persists `specificity.csv`) | yes | crosscoders + aggregates |
-| `tab:main-localization-ledger`, `tab:app-contrastive-localisation-ledger` | `contrastive_task_feature_rescue` | `experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py` persists one JSON shard per task family under `run0/shards/` (attribution, top-k keep/ablate, matched controls) | yes | crosscoders + hidden states |
+| `fig:app-sparse-feature-causal-curves`, `fig:app-sparse-feature-causal-specificity-k32` | `sparse_feature_causal_tests` | `experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py` (persists `summary.csv` / `raw.pt`) then `run_specificity_from_pilots.py` (persists `specificity.csv`) | yes | crosscoders + aggregates |
+| `fig:app-contrastive-task-localization`, `tab:main-localization-ledger`, `tab:app-contrastive-localisation-ledger` | `contrastive_task_feature_rescue` | `experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py` persists one JSON shard per task family under `run0/shards/` (attribution, top-k keep / ablate / project-out, matched controls); the figure and both ledgers are typeset in the paper tree from those tabulated values | yes | crosscoders + hidden states |
 
 ### Read/write asymmetry (W_E vs W_U)
 
@@ -307,9 +307,9 @@ end-to-end in this repo. The compute entry points
 (`run_1b_pilot.py` then `run_specificity_from_pilots.py`) **do** persist the
 un-aggregated per-concept `summary.csv` / `specificity.csv` metrics, but the
 CSV-aggregation step that the paper-tree panels assume is not shipped. The
-main-text localisation figure `fig:app-contrastive-task-localization` is
-unaffected at the metrics level: its localization metrics come from the same
-`sparse_feature_causal_tests` pilot/specificity entry points.
+contrastive-task localization figure (`fig:app-contrastive-task-localization`)
+is a separate experiment, `contrastive_task_feature_rescue`, and is covered
+above.
 
 - **Former intervention-helper dependency (`02_intervention.py`), resolved.**
   The temporal-patch metrics library (`readout.dynamics.temporal_patch`)
