@@ -3,7 +3,7 @@
 [![ci](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml/badge.svg)](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml)
 
 Code release for the paper **Learning to Read Out: Unembedding Dynamics in
-Language Model Pretraining**.
+Language Model Pretraining** (NeurIPS 2026).
 
 A token logit is a dot product between a hidden state and one row of the
 unembedding matrix `W_U`, the model's learned readout, and both factors move
@@ -40,6 +40,17 @@ gitignored `derived/`/`results/` trees); the repo ships no figure-rendering code
 and paper figures are rendered in the separate paper LaTeX tree from metrics
 produced that way. Recomputing the metrics end-to-end needs external assets; see
 the documentation map below.
+
+## Released artifacts
+
+Trained dictionaries and supporting data are on Hugging Face (details and a
+pinned download command in [`docs/DATA.md`](docs/DATA.md)):
+
+| Repository | Contents |
+|---|---|
+| [`hematteo/parameter-trajectory-crosscoders`](https://huggingface.co/hematteo/parameter-trajectory-crosscoders) | Trained trajectory crosscoders, aggregates, activation-rate sidecars, attribution artifacts, held-out eval tokens |
+| [`hematteo/readout-recipe-control`](https://huggingface.co/hematteo/readout-recipe-control) | Recipe-control 31M models |
+| [`datasets/hematteo/wu-crosscoder-snapshots`](https://huggingface.co/datasets/hematteo/wu-crosscoder-snapshots) | Pre-extracted `W_U` snapshot caches |
 
 ## Reuse the library
 
@@ -152,16 +163,15 @@ appendix of the Learning to Read Out paper is a scoped preview of that work.
 ## Citation
 
 If you use this code, please cite the paper (machine-readable metadata in
-[`CITATION.cff`](CITATION.cff); the arXiv link will be added once the preprint
-is up):
+[`CITATION.cff`](CITATION.cff)):
 
 ```bibtex
-@misc{he2026learningtoreadout,
-  title  = {Learning to Read Out: Unembedding Dynamics in Language Model Pretraining},
-  author = {He, Matteo and Shen, William F. and Iacob, Alex and Jovanovic, Andrej
-            and Qiu, Xinchi and Lane, Nicholas D.},
-  year   = {2026},
-  note   = {Under review. Code: https://github.com/hematteo/learning-to-read-out},
+@inproceedings{he2026learningtoreadout,
+  title     = {Learning to Read Out: Unembedding Dynamics in Language Model Pretraining},
+  author    = {He, Matteo and Shen, William F. and Iacob, Alex and Jovanovic, Andrej
+               and Qiu, Xinchi and Lane, Nicholas D.},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026},
 }
 ```
 

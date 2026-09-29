@@ -5,7 +5,7 @@ title: "learning-to-read-out (W_U trajectory crosscoders)"
 authors:
   - given-names: Matteo
     family-names: He
-    email: mh2274@cam.ac.uk
+    email: matteohe.research@gmail.com
     affiliation: University of Cambridge
   - given-names: William F.
     family-names: Shen
@@ -18,7 +18,7 @@ authors:
     affiliation: University of Cambridge
   - given-names: Xinchi
     family-names: Qiu
-    affiliation: University of Cambridge
+    affiliation: "University of Cambridge & Isomorphic Labs"
   - given-names: Nicholas D.
     family-names: Lane
     affiliation: "University of Cambridge & Flower Labs"
@@ -27,12 +27,12 @@ version: "0.1.0"
 date-released: "2026-06-12"
 repository-code: "https://github.com/hematteo/learning-to-read-out"
 preferred-citation:
-  type: unpublished
+  type: conference-paper
   title: "Learning to Read Out: Unembedding Dynamics in Language Model Pretraining"
   authors:
     - given-names: Matteo
       family-names: He
-      email: mh2274@cam.ac.uk
+      email: matteohe.research@gmail.com
       affiliation: University of Cambridge
     - given-names: William F.
       family-names: Shen
@@ -45,9 +45,11 @@ preferred-citation:
       affiliation: University of Cambridge
     - given-names: Xinchi
       family-names: Qiu
-      affiliation: University of Cambridge
+      affiliation: "University of Cambridge & Isomorphic Labs"
     - given-names: Nicholas D.
       family-names: Lane
       affiliation: "University of Cambridge & Flower Labs"
-  notes: "Under review; preprint forthcoming — see the repository for the up-to-date reference."
+  collection-title: "Advances in Neural Information Processing Systems"
+  conference:
+    name: "NeurIPS 2026"
   year: 2026
