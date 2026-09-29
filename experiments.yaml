@@ -70,20 +70,6 @@ paper_only_labels:
   - tab:app-ae-tasks
   - tab:app-ae-binary
   - tab:app-ae-openvocab
-  # Recipe control: only the W_U-geometry view (fig:app-recipe-control-geometry) is computed in-repo.
-  # The lifecycle / swap / probe views need the per-condition trajectory crosscoders and probe
-  # runs, which are not part of this release; the trained 31M checkpoints are on Hugging Face
-  # (hematteo/readout-recipe-control).
-  - fig:main-recipe-dose-response
-  - fig:app-recipe-control-median
-  - fig:app-recipe-control-trajectories
-  - fig:app-recipe-control-peakstep
-  - fig:app-recipe-control-reorg
-  - fig:app-recipe-control-basin
-  - fig:app-recipe-control-explag
-  - fig:app-recipe-control-temperature
-  - fig:app-recipe-control-gauge-landscape
-  - tab:app-recipe-control-summary
 
 # Naming principle: experiment ids describe the experiment object, not its paper position.
 #   GOOD: feature_lifecycle_trajectories, temporal_localization_patching
@@ -301,10 +287,13 @@ experiments:
     paper_intent: |
       Main-text Finding 2 (the output readout learning rate sets the reorganization
       timing at matched validation loss) and the recipe-control appendix. In-repo
-      this experiment ships the trainer, the slice builders, and the W_U-geometry
-      analysis behind fig:app-recipe-control-geometry; the per-condition trajectory
-      crosscoder fits, lifecycle statistics, readout swaps, and probes behind the
-      other recipe-control figures are not part of this release. The trained
+      this experiment ships the trainer, the slice builders, the W_U-geometry
+      analysis (fig:app-recipe-control-geometry), the per-condition trajectory
+      crosscoder fits and lifecycle statistics (the dose-response figure, the
+      median / normalized-trajectory / peak-step / reorganization-window figures,
+      and the summary table), the readout swap grids (compatibility basin), the
+      availability versus expression probe (expression lag), and the gauge
+      analysis (temperature conservation, loss landscape). The trained
       checkpoints are on Hugging Face (hematteo/readout-recipe-control).
     scripts_dir: experiments/ablations/pretraining_recipe_control/scripts/
     figures_dir: figures/pretraining_recipe_control/
@@ -312,13 +301,42 @@ experiments:
     inputs:
       - ${UM_SSD_ROOT}/pile_slice/pile_neox20b.bin  # tokenized uint16 Pile slice (or Pythia-preshuffled prefix)
       - ${UM_SSD_ROOT}/runs/{baseline,warmup_short,warmup_long,wu_lr_0p25,wu_lr_4x}/ckpts/step*/model_fp16.pt  # trainer outputs; released at hf.co/hematteo/readout-recipe-control
+      - ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin  # held-out eval slice for the swap / probe / gauge analyses (fetch_heldout_slice.py)
+      - results/experiments/ablations/pretraining_recipe_control/crosscoders/cc_<cond>_d8192_seed0.pt  # per-condition trajectory crosscoders (train_control_crosscoder.py)
     paper_labels:
-      # Only the W_U-geometry view is reproducible in-repo (from the regenerated
-      # readout_geometry_pythia.csv). The other recipe-control figures and
-      # tab:app-recipe-control-summary are listed under paper_only_labels above.
       - fig:app-recipe-control-geometry
+      # Lifecycle statistics of the per-condition trajectory crosscoders (analyze_lifecycle.py):
+      - fig:main-recipe-dose-response
+      - fig:app-recipe-control-median
+      - fig:app-recipe-control-trajectories
+      - fig:app-recipe-control-peakstep
+      - fig:app-recipe-control-reorg
+      - tab:app-recipe-control-summary
+      # Readout-swap basin, expression-lag probe, gauge analysis:
+      - fig:app-recipe-control-basin
+      - fig:app-recipe-control-explag
+      - fig:app-recipe-control-temperature
+      - fig:app-recipe-control-gauge-landscape
     paper_figures:
       - "paper/figures/recipe_control/F1_geometry_trajectories.pdf -> fig:app-recipe-control-geometry"
+      - "paper/figures/recipe_control/timing_dose_response.pdf -> fig:main-recipe-dose-response"  # median peak step / reorganization step vs readout-LR multiplier from lifecycle_seed0/lifecycle_summary.csv
+      - "paper/figures/recipe_control/median_trajectories.pdf -> fig:app-recipe-control-median"  # lifecycle_seed0/median_trajectories.csv
+      - "paper/figures/recipe_control/normalized_trajectories.pdf -> fig:app-recipe-control-trajectories"  # lifecycle_seed0/feature_trajectories.pt (rho, peak steps, seeded display sample)
+      - "paper/figures/recipe_control/peak_step_population.pdf -> fig:app-recipe-control-peakstep"  # lifecycle_seed0/peak_step_population.csv
+      - "paper/figures/recipe_control/reorg_window.pdf -> fig:app-recipe-control-reorg"  # lifecycle_seed0/reorg_window.csv
+      - "results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_summary.csv -> tab:app-recipe-control-summary"  # EV / L0 / val loss / profile fractions / median peak / reorganization step per condition (lifecycle_stats.json holds the same, nested)
+      - "paper/figures/recipe_control/F2_trajectory_basin.pdf -> fig:app-recipe-control-basin"  # argmin-NLL readout per hidden-state checkpoint from trajectory/trajectory_swap_all.csv
+      - "paper/figures/recipe_control/F6_expression_lag.pdf -> fig:app-recipe-control-explag"  # expression_lag/expression_lag.csv
+      - "paper/figures/recipe_control/G1_temperature_conservation.pdf -> fig:app-recipe-control-temperature"  # gauge/temperature_conservation.csv
+      - "paper/figures/recipe_control/G2_gauge_landscape.pdf -> fig:app-recipe-control-gauge-landscape"  # gauge/gauge_landscape.csv
+    entry:
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_readout_geometry.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline warmup_short wu_lr_0p25 wu_lr_4x --out-csv results/experiments/ablations/pretraining_recipe_control/readout_geometry_pythia.csv"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control_crosscoder.py --seed 0"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py --seed 0"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_expression_lag.py"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_gauge_landscape.py"
     cited_in: [paper/main.tex]
 
   # ─── Companion / Replication ────────────────────────────────────────────────

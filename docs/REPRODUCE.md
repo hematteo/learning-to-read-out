@@ -74,15 +74,15 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="fig:app-readout-swap-family-logit-mass"></a>`fig:app-readout-swap-family-logit-mass` | temporal_localization_patching | paper/figures/readout_coordination/temporal_patch_grid_concept_mass_appendix.pdf |
 | <a id="fig:app-readout-swap-nll-kl-grid"></a>`fig:app-readout-swap-nll-kl-grid` | temporal_localization_patching | paper/figures/readout_coordination/readout_swap_nll_kl_grid.png |
 | <a id="fig:app-readout-swap-target-nll"></a>`fig:app-readout-swap-target-nll` | temporal_localization_patching | paper/figures/readout_coordination/temporal_patch_grid_target_nll_by_concept_appendix.pdf |
-| <a id="fig:app-recipe-control-basin"></a>`fig:app-recipe-control-basin` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-recipe-control-explag"></a>`fig:app-recipe-control-explag` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-recipe-control-gauge-landscape"></a>`fig:app-recipe-control-gauge-landscape` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="fig:app-recipe-control-basin"></a>`fig:app-recipe-control-basin` | pretraining_recipe_control | paper/figures/recipe_control/F2_trajectory_basin.pdf |
+| <a id="fig:app-recipe-control-explag"></a>`fig:app-recipe-control-explag` | pretraining_recipe_control | paper/figures/recipe_control/F6_expression_lag.pdf |
+| <a id="fig:app-recipe-control-gauge-landscape"></a>`fig:app-recipe-control-gauge-landscape` | pretraining_recipe_control | paper/figures/recipe_control/G2_gauge_landscape.pdf |
 | <a id="fig:app-recipe-control-geometry"></a>`fig:app-recipe-control-geometry` | pretraining_recipe_control | paper/figures/recipe_control/F1_geometry_trajectories.pdf |
-| <a id="fig:app-recipe-control-median"></a>`fig:app-recipe-control-median` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-recipe-control-peakstep"></a>`fig:app-recipe-control-peakstep` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-recipe-control-reorg"></a>`fig:app-recipe-control-reorg` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-recipe-control-temperature"></a>`fig:app-recipe-control-temperature` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-recipe-control-trajectories"></a>`fig:app-recipe-control-trajectories` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="fig:app-recipe-control-median"></a>`fig:app-recipe-control-median` | pretraining_recipe_control | paper/figures/recipe_control/median_trajectories.pdf |
+| <a id="fig:app-recipe-control-peakstep"></a>`fig:app-recipe-control-peakstep` | pretraining_recipe_control | paper/figures/recipe_control/peak_step_population.pdf |
+| <a id="fig:app-recipe-control-reorg"></a>`fig:app-recipe-control-reorg` | pretraining_recipe_control | paper/figures/recipe_control/reorg_window.pdf |
+| <a id="fig:app-recipe-control-temperature"></a>`fig:app-recipe-control-temperature` | pretraining_recipe_control | paper/figures/recipe_control/G1_temperature_conservation.pdf |
+| <a id="fig:app-recipe-control-trajectories"></a>`fig:app-recipe-control-trajectories` | pretraining_recipe_control | paper/figures/recipe_control/normalized_trajectories.pdf |
 | <a id="fig:app-reorganization-window-metrics"></a>`fig:app-reorganization-window-metrics` | crosscoder_olmo, feature_lifecycle_trajectories | paper/figures/feature_lifecycle/reorganization_window_metrics_selected.pdf |
 | <a id="fig:app-selected-decoder-norm-heatmaps"></a>`fig:app-selected-decoder-norm-heatmaps` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_decoder_norm_heatmaps.pdf |
 | <a id="fig:app-selected-population-lifecycle-diagnostics"></a>`fig:app-selected-population-lifecycle-diagnostics` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_population_lifecycle_diagnostics.pdf |
@@ -100,7 +100,7 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="fig:app-wordnet-supersense-probes-1b"></a>`fig:app-wordnet-supersense-probes-1b` | concept_evolution_validation | paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_1b.pdf |
 | <a id="fig:main-multimodel-validation"></a>`fig:main-multimodel-validation` | crosscoder_main, crosscoder_olmo | paper/figures/multimodel_validation/instrument_validation_summary.pdf |
 | <a id="fig:main-readout-coordination"></a>`fig:main-readout-coordination` | temporal_localization_patching | paper/figures/readout_coordination/temporal_patch_grid_coordination.png |
-| <a id="fig:main-recipe-dose-response"></a>`fig:main-recipe-dose-response` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="fig:main-recipe-dose-response"></a>`fig:main-recipe-dose-response` | pretraining_recipe_control | paper/figures/recipe_control/timing_dose_response.pdf |
 | <a id="fig:main-selected-normalized-trajectories"></a>`fig:main-selected-normalized-trajectories` | crosscoder_olmo, feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_decoder_norm_trajectories.pdf |
 | <a id="fig:main-sva-availability-expression"></a>`fig:main-sva-availability-expression` | contrastive_readout_swap | paper/figures/readout_coordination/sva_availability_expression_69b.pdf |
 | <a id="fig:main-wordnet-matched-controls"></a>`fig:main-wordnet-matched-controls` | concept_evolution_validation | paper/figures/vocabulary_family_probes/wordnet_matched_controls_160m.pdf |
@@ -112,7 +112,7 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json |
 | <a id="tab:app-curated-atlas-features"></a>`tab:app-curated-atlas-features` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-method-comparison"></a>`tab:app-method-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-recipe-control-summary"></a>`tab:app-recipe-control-summary` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="tab:app-recipe-control-summary"></a>`tab:app-recipe-control-summary` | pretraining_recipe_control | results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_summary.csv |
 | <a id="tab:app-terminology-glossary"></a>`tab:app-terminology-glossary` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-wordnet-supersense-1b"></a>`tab:app-wordnet-supersense-1b` | concept_evolution_validation | experiments/probes/concept_evolution_validation/derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv |
 | <a id="tab:checkpoint-suite-comparison"></a>`tab:checkpoint-suite-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
@@ -217,7 +217,9 @@ Before the first run, download the corpus once:
 | Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
 | `fig:app-recipe-control-geometry` | `pretraining_recipe_control` | `experiments/ablations/pretraining_recipe_control/scripts/train_control.py` trains an arm (or download the released checkpoints from `hf.co/hematteo/readout-recipe-control`); `analyze_readout_geometry.py` persists `readout_geometry_pythia.csv` | for retrain | trained 31M checkpoints |
-| `fig:main-recipe-dose-response`, `fig:app-recipe-control-{median,trajectories,peakstep,reorg,basin,explag,temperature,gauge-landscape}`, `tab:app-recipe-control-summary` | (paper LaTeX tree only) | need the per-condition trajectory crosscoder fits, lifecycle statistics, readout swaps, and probes over the 31M checkpoints; those analysis runs are not part of this release (see below) | | |
+| `fig:main-recipe-dose-response`, `fig:app-recipe-control-{median,trajectories,peakstep,reorg}`, `tab:app-recipe-control-summary` | `pretraining_recipe_control` | `train_control_crosscoder.py` fits one trajectory crosscoder per arm (`crosscoders/cc_<cond>_d8192_seed0.pt`); `analyze_lifecycle.py` persists `lifecycle_seed0/{lifecycle_stats.json,lifecycle_summary.csv,median_trajectories.csv,peak_step_population.csv,reorg_window.csv,feature_trajectories.pt}`; `aggregate_seed_replication.py` pools seeds | for the fits | trained 31M checkpoints |
+| `fig:app-recipe-control-basin`, `fig:app-recipe-control-explag` | `pretraining_recipe_control` | `fetch_heldout_slice.py` builds the held-out slice; `run_trajectory_swap.py` persists `trajectory/trajectory_swap_all.csv` (per-cell shards, resumable); `run_expression_lag.py` persists `expression_lag/expression_lag.csv`; `run_recipe_control_swap.py` adds the cross-condition supplement `swap/swap_grid_recipe_control.csv` | yes (CPU works at reduced `--eval-tokens`) | trained 31M checkpoints + held-out slice |
+| `fig:app-recipe-control-temperature`, `fig:app-recipe-control-gauge-landscape` | `pretraining_recipe_control` | `run_gauge_landscape.py` persists `gauge/temperature_conservation.csv` and `gauge/gauge_landscape.csv` | yes (CPU works at reduced `--eval-tokens` / `--grid`) | trained 31M checkpoints + held-out slice |
 
 ### Hidden state availability precedes native readout expression
 
@@ -270,18 +272,6 @@ and appear in the index as "paper LaTeX tree only":
   figures (`fig:main-sva-availability-expression`, `fig:app-contrastive-readout-lag`)
   are in the same situation and are listed against `contrastive_readout_swap`
   because that experiment produces their inputs.
-- **Recipe control** (`fig:main-recipe-dose-response`, the
-  `fig:app-recipe-control-*` lifecycle, swap, probe, temperature, and gauge
-  figures, `tab:app-recipe-control-summary`): the four 31M arms the paper reports
-  (`baseline`, `warmup_short`, `wu_lr_0p25`, `wu_lr_4x`) plus a fifth complete arm
-  (`warmup_long`) are released with full checkpoint trajectories at
-  `hf.co/hematteo/readout-recipe-control`, and the trainer that produced them is
-  in `experiments/ablations/pretraining_recipe_control/`. Only the W_U-geometry
-  view (`fig:app-recipe-control-geometry`) has its metrics computed in-repo
-  (`analyze_readout_geometry.py`). The per-condition trajectory crosscoders
-  (d_sae 8192, K=16) and the lifecycle, readout-swap, and probe analyses over
-  them were run outside this release, so the summary table's EV / L0 / profile /
-  peak-step / reorganization values are not regenerable here.
 - **`fig:app-fidelity-strata-audit`** (instrument validation appendix): the
   producing script (`readout_functional_fidelity_strata.py`) was not included in
   this release.

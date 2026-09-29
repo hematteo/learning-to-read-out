@@ -1,4 +1,4 @@
-"""Hidden-state readout-swap utilities for contrastive (y+/y-) tasks.
+"""Hidden-state readout swap utilities for contrastive (y+/y-) tasks.
 
 Given a list of contrastive ``Example``s, this module provides:
 
@@ -9,11 +9,15 @@ Given a list of contrastive ``Example``s, this module provides:
   - ``compute_margin(h, W_U, y_plus, y_minus)`` — the contrastive margin
     h · W_U[y+] - h · W_U[y-].
 
-  - ``align_readout(W_s, W_t, mode)`` — gauge-alignment ladder
+  - ``align_readout(W_s, W_t, mode)`` — gauge alignment ladder
     {none, mean, scale, row_norm, procrustes} matched to ``run_aligned_swap_grid``.
 
   - ``swap_grid_metrics(...)`` — accuracy / mean_margin / delta_* over a
     (h_step, s_step) grid.
+
+  - ``swap_cell_metrics(h, W, W_native, ids_seqs)`` — token-corpus kernel
+    (next-token NLL, KL to native, top-1 agreement, centered-logit R^2) behind
+    the recipe-control readout swap grids.
 
 Hidden-state extraction matches ``temporal_patch_metrics._cache_hidden_generic``:
 forward-pre-hook on the readout module (Pythia: embed_out, OLMo/LLaMA: lm_head).
@@ -177,3 +181,86 @@ def evaluate_swap_cell(
         "y_minus": y_minus.detach().cpu().long(),
     }
     return agg, per_ex
+
+
+# ---------------------------------------------------------------------------
+# Token-corpus swap kernel (next-token NLL / KL / top-1 / logit R^2)
+# ---------------------------------------------------------------------------
+@torch.no_grad()
+def swap_cell_metrics(
+    h: torch.Tensor,  # (N, T, d) hidden fed to the SWAPPED readout (post-final-LN)
+    W: torch.Tensor,  # (V, d) swapped readout
+    W_native: torch.Tensor,  # (V, d) native readout (reference distribution)
+    ids_seqs: torch.Tensor,  # (N, T) token ids; targets are ids_seqs[:, 1:]
+    *,
+    device: str = "cpu",
+    batch_seqs: int = 4,
+    h_native: torch.Tensor | None = None,
+) -> dict:
+    """Per-cell readout swap metrics on a token corpus.
+
+        logits        = h        @ W.T          (swapped readout)
+        logits_native = h_native @ W_native.T   (native; h_native defaults to h)
+
+    Returns ``{n_tokens, nll, nll_native, delta_nll, ppl, kl_to_native, top1,
+    top1_native, top1_agreement, centered_logit_r2}`` (nats/token). With
+    ``h_native is None`` this is the same kernel as
+    ``run_aligned_swap_grid.cell_metrics`` (temporal_localization_patching);
+    ``h_native`` lets a variant score a swap whose native reference uses a
+    different hidden state (e.g. grafting ``W_U`` together with another
+    checkpoint's final LayerNorm while the native path keeps the body's own).
+    """
+    import math
+
+    if h_native is None:
+        h_native = h
+    targets = ids_seqs[:, 1:]
+    Wd = W.to(device).float()
+    Wnd = W_native.to(device).float()
+
+    nll_sum = nll_native_sum = kl_sum = res_sse = cent_native_var = 0.0
+    top1 = top1_native = top1_agree = n_tok = 0
+    for s in range(0, h.shape[0], batch_seqs):
+        hb = h[s : s + batch_seqs].to(device).float()
+        hnb = h_native[s : s + batch_seqs].to(device).float()
+        tgt = targets[s : s + batch_seqs].to(device)
+        logits = (hb @ Wd.T)[:, :-1, :]  # (b, T-1, V)
+        logits_native = (hnb @ Wnd.T)[:, :-1, :]
+        logp = torch.log_softmax(logits, dim=-1)
+        logp_native = torch.log_softmax(logits_native, dim=-1)
+
+        nll_sum += float(-logp.gather(-1, tgt.unsqueeze(-1)).sum().item())
+        nll_native_sum += float(-logp_native.gather(-1, tgt.unsqueeze(-1)).sum().item())
+        p = logp.exp()
+        kl_sum += float((p * (logp - logp_native)).sum(-1).sum().item())
+
+        am = logp.argmax(dim=-1)
+        am_native = logp_native.argmax(dim=-1)
+        top1 += int((am == tgt).sum().item())
+        top1_native += int((am_native == tgt).sum().item())
+        top1_agree += int((am == am_native).sum().item())
+
+        diff = logits - logits_native
+        res_sse += float(diff.pow(2).sum().item())
+        cn = logits_native - logits_native.mean(dim=-1, keepdim=True)
+        cent_native_var += float(cn.pow(2).sum().item())
+
+        n_tok += int(tgt.numel())
+        del logits, logits_native, logp, logp_native, p, am, am_native
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
+    nll = nll_sum / n_tok
+    nll_native = nll_native_sum / n_tok
+    return {
+        "n_tokens": n_tok,
+        "nll": nll,
+        "nll_native": nll_native,
+        "delta_nll": nll - nll_native,
+        "ppl": math.exp(nll),
+        "kl_to_native": kl_sum / n_tok,
+        "top1": top1 / n_tok,
+        "top1_native": top1_native / n_tok,
+        "top1_agreement": top1_agree / n_tok,
+        "centered_logit_r2": (1.0 - res_sse / cent_native_var if cent_native_var > 0 else float("nan")),
+    }
