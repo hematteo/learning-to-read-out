@@ -3,6 +3,14 @@
 This is the paper-facing replacement for the older hand-selected WordNet subset:
 all WordNet lexicographer files are built first, then categories are either
 probed or reported as skipped based only on token support.
+
+``--split row`` (default, the published probe) splits token rows with
+StratifiedShuffleSplit. ``--split lemma`` (Appendix F, lemma-grouped splits)
+groups every vocabulary row by ``decode(id).strip().lower()`` so all variants of
+one lemma (" dog", "Dog", "DOG", ...) fall on one side of the outer split and
+of every inner C-selection fold; everything else is unchanged. Both splits
+write per-category test support and same-lemma leakage counts
+(``wordnet_supersense_split_stats_<suffix>.csv``).
 """
 
 from __future__ import annotations
@@ -20,11 +28,11 @@ import torch
 from transformers import AutoTokenizer
 
 from readout.core.data import write_csv
-from readout.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES
+from readout.core.model_specs import DEFAULT_STEPS_BY_MODEL, MODEL_HF_NAMES, SPECS
 from readout.core.paths import repo_root, snapshot_path
-from readout.core.repro import git_commit
+from readout.core.repro import git_commit, seed_everything
 from readout.crosscoder.snapshots import load_snapshot
-from readout.probes.wu_probes_gpu import probe_balanced_accuracy_batched
+from readout.probes.wu_probes_gpu import pack_concept_folds, probe_balanced_accuracy_batched
 
 REPO = repo_root()
 
@@ -218,6 +226,40 @@ def build_wordnet_concepts(
     return concepts, audit_rows
 
 
+def lemma_groups(tokenizer, V: int) -> np.ndarray:
+    """(V,) int64 group id per vocabulary row, keyed on ``decode(id).strip().lower()``.
+
+    Padded rows beyond the tokenizer (never positive) get singleton groups.
+    """
+    keys = [tokenizer.decode([i]).strip().lower() if i < len(tokenizer) else f"<pad{i}>" for i in range(V)]
+    _, inv = np.unique(np.array(keys, dtype=object).astype(str), return_inverse=True)
+    return inv.astype(np.int64)
+
+
+def split_stats(folds: tuple, concepts: dict[str, set[int]], groups: np.ndarray) -> list[dict[str, object]]:
+    """Per-category test support and same-lemma leakage between the outer train and test splits."""
+    _, _, _, train_mask, test_mask, _, y_mat, _ = folds
+    rows: list[dict[str, object]] = []
+    for ci, name in enumerate(concepts):
+        pos = y_mat[ci] > 0
+        tr, te = train_mask[ci] > 0, test_mask[ci] > 0
+        train_groups = set(groups[tr].tolist())
+        pos_te = np.flatnonzero(pos & te)
+        rows.append(
+            {
+                "concept": name,
+                "n_positive": int(pos.sum()),
+                "n_positive_lemmas": len(set(groups[pos].tolist())),
+                "n_test": int(te.sum()),
+                "n_test_positive": len(pos_te),
+                "n_train_positive": int((pos & tr).sum()),
+                "n_test_pos_with_train_sibling": int(sum(groups[i] in train_groups for i in pos_te)),
+                "n_pos_lemmas_split_across": len(set(groups[pos & te].tolist()) & set(groups[pos & tr].tolist())),
+            }
+        )
+    return rows
+
+
 def centered_rows(wu: torch.Tensor, mode: str) -> torch.Tensor:
     wu = wu.float()
     if mode == "none":
@@ -261,15 +303,20 @@ def max_adjacent_gain(trace: dict[int, float]) -> tuple[int | None, int | None, 
 
 def run(args: argparse.Namespace) -> None:
     root = repo_root()
+    seed_everything(args.seed)
     suffix = model_suffix(args.model)
+    # Distinct default dirs per split / non-default seed: the per-step _cache is keyed on step only.
+    tag = ("" if args.split == "row" else f"_{args.split}") + ("" if args.seed == 0 else f"_seed{args.seed}")
     out_rel = args.out_dir or (
-        f"experiments/probes/concept_evolution_validation/derived/wordnet_supersense_{suffix}"
+        f"experiments/probes/concept_evolution_validation/derived/wordnet_supersense_{suffix}{tag}"
     )
     out_dir = root / out_rel
     out_dir.mkdir(parents=True, exist_ok=True)
 
     model_name = MODEL_HF_NAMES[args.model]
     steps = list(DEFAULT_STEPS_BY_MODEL[args.model])
+    if args.steps:
+        steps = [int(x) for x in args.steps.split(",")]
     if args.limit_steps:
         steps = steps[: args.limit_steps]
 
@@ -288,6 +335,11 @@ def run(args: argparse.Namespace) -> None:
         if len(toks) >= args.min_probe_tokens
     }
     skipped = sorted(set(concepts_all) - set(concepts))
+
+    V = SPECS[args.model].vocab  # padded vocabulary; rows >= len(tokenizer) are never positive
+    groups = lemma_groups(tokenizer, V)
+    # Splits depend only on labels, groups and seed, so build them once for all steps.
+    folds = pack_concept_folds(V, concepts, seed=args.seed, groups=groups if args.split == "lemma" else None)
 
     cache_dir = out_dir / "_cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -324,12 +376,15 @@ def run(args: argparse.Namespace) -> None:
         if not missing.exists():
             raise FileNotFoundError(missing)
         wu = centered_rows(load_snapshot(model_name, step), args.preprocess)
+        if wu.shape[0] != V:
+            raise ValueError(f"snapshot at step {step} has {wu.shape[0]} rows, expected {V}")
         res = probe_balanced_accuracy_batched(
             wu,
             concepts,
             seed=args.seed,
             device=args.device,
             max_iter=args.max_iter,
+            folds=folds,
         )
         for concept, vals in res.items():
             trajectories[concept][step] = vals
@@ -445,6 +500,7 @@ def run(args: argparse.Namespace) -> None:
     )
     write_csv(out_dir / f"wordnet_supersense_probe_summary_{suffix}.csv", summary_rows)
     write_csv(out_dir / f"wordnet_supersense_probe_pos_summary_{suffix}.csv", pos_rows)
+    write_csv(out_dir / f"wordnet_supersense_split_stats_{suffix}.csv", split_stats(folds, concepts, groups))
 
     serializable_trajectories = {
         concept: {str(step): vals for step, vals in sorted(trace.items())}
@@ -468,6 +524,8 @@ def run(args: argparse.Namespace) -> None:
             "min_token_chars": args.min_token_chars,
             "dominance_threshold": args.dominance_threshold,
             "preprocess": args.preprocess,
+            "split": args.split,
+            "n_lemma_groups": int(groups.max() + 1),
             "seed": args.seed,
             "device": args.device,
             "max_iter": args.max_iter,
@@ -491,6 +549,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--split",
+        choices=["row", "lemma"],
+        default="row",
+        help="row: published StratifiedShuffleSplit over token rows; lemma: StratifiedGroupKFold "
+        "grouped by decode(id).strip().lower() (Appendix F lemma-grouped check).",
+    )
     parser.add_argument("--max-iter", type=int, default=80)
     parser.add_argument("--min-word-len", type=int, default=3)
     parser.add_argument("--min-token-chars", type=int, default=3)
@@ -503,6 +568,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--emergence-min-gain", type=float, default=0.05)
     parser.add_argument("--emergence-persist", type=int, default=3)
     parser.add_argument("--limit-steps", type=int, default=None)
+    parser.add_argument(
+        "--steps", default=None, help="Comma-separated checkpoint steps (default: the model's 32-step schedule)."
+    )
     parser.add_argument(
         "--local-files-only", action=argparse.BooleanOptionalAction, default=True
     )
