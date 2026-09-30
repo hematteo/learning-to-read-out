@@ -12,12 +12,13 @@ for diagnostic comparisons.
 """
 
 import argparse
+import json
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from .checkpoints import unwrap_ckpt
+from .checkpoints import load_checkpoint, unwrap_ckpt
 from .inference import reconstruct_preprocess_stats
 from .snapshots import load_snapshot_at
 
@@ -81,7 +82,27 @@ def compute_rates(ckpt_path, snap_dir, device="cpu", kind="wu"):
     return rates, list(steps)
 
 
-def compute_rates_canonical(ckpt_path, snap_dir, device="cpu", kind="wu"):
+def _load_rate_inputs(ckpt_path):
+    """(state_dict, steps, model_name, preprocess_stats, preprocess_mode) of a crosscoder.
+
+    Accepts legacy ``.pt`` checkpoints and HF release ``.safetensors`` files, whose
+    metadata (steps, model_name, preprocess_mode) lives in the sibling
+    ``<name>.config.json``; release files carry no preprocess stats, so those are
+    rebuilt from the snapshots unless passed in.
+    """
+    p = Path(ckpt_path)
+    if p.suffix == ".safetensors":
+        cp = load_checkpoint(p)
+        cfg_path = p.with_suffix(".config.json")
+        cfg = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
+        if cp.steps is None or cp.model_name is None:
+            raise ValueError(f"{cfg_path} missing: steps/model_name are required to locate the snapshots")
+        return cp.state_dict, cp.steps, cp.model_name, cp.preprocess_stats, cfg.get("preprocess_mode")
+    ck = unwrap_ckpt(torch.load(p, map_location="cpu", weights_only=True))
+    return ck["state_dict"], ck["steps"], ck["model_name"], ck.get("preprocess_stats"), ck.get("preprocess_mode")
+
+
+def compute_rates_canonical(ckpt_path, snap_dir, device="cpu", kind="wu", *, preprocess_stats=None):
     """Per-snapshot per-feature firing rate under the model's canonical encode.
 
     Matches llamascopium.Crosscoder.encode (sparsity_include_decoder_norm=True):
@@ -92,19 +113,19 @@ def compute_rates_canonical(ckpt_path, snap_dir, device="cpu", kind="wu"):
 
     joint_pre is shared across heads; per-head variation comes through
     decoder norm. Inputs are preprocessed identically to training.
+    ``ckpt_path`` may be a ``.pt`` checkpoint or a release ``.safetensors``;
+    ``preprocess_stats`` (``{"mean": (K, 1, d), "scale": (K, 1, 1)}``) overrides
+    the checkpoint's stats, e.g. to reuse one reconstruction across fits of a model.
     """
-    ck = unwrap_ckpt(torch.load(ckpt_path, map_location="cpu", weights_only=True))
-    sd = ck["state_dict"]
-    steps = ck["steps"]
-    model_name = ck["model_name"]
+    sd, steps, model_name, ckpt_stats, preprocess_mode = _load_rate_inputs(ckpt_path)
     slug = model_name.replace("/", "_")
     W_E = sd["W_E"]  # (K, d, D)
     b_E = sd["b_E"]  # (K, D)
     W_D = sd["W_D"]  # (K, D, d)
     thr = sd["activation_function.log_jumprelu_threshold"].exp()  # (D,)
     stats = _maybe_compute_preprocess_stats(
-        ck.get("preprocess_stats"),
-        ck.get("preprocess_mode"),
+        preprocess_stats if preprocess_stats is not None else ckpt_stats,
+        preprocess_mode,
         slug,
         snap_dir,
         steps,
@@ -114,19 +135,24 @@ def compute_rates_canonical(ckpt_path, snap_dir, device="cpu", kind="wu"):
 
     dec_norm = torch.linalg.norm(W_D, dim=-1).to(device)  # (K, D)
 
+    # In-place accumulation (same arithmetic as x @ W_E + b_E summed over heads)
+    # keeps one (V, D) temporary alive instead of three.
     joint_pre = None
     for i, step in enumerate(steps):
         x = _load_snap(snap_dir, slug, step, kind)
         if stats is not None:
             x = (x - stats["mean"][i].squeeze(0)) / stats["scale"][i].squeeze()
-        head_pre = x.to(device) @ W_E[i].to(device) + b_E[i].to(device)  # (V, D)
-        joint_pre = head_pre if joint_pre is None else joint_pre + head_pre
+        head_pre = x.to(device) @ W_E[i].to(device)  # (V, D)
+        head_pre += b_E[i].to(device)
+        joint_pre = head_pre if joint_pre is None else joint_pre.add_(head_pre)
+    del head_pre
 
     thr_dev = thr.to(device)  # (D,)
     rates = torch.zeros(K, D, device=device)
     for k in range(K):
         thr_eff = thr_dev / dec_norm[k].clamp_min(1e-12)  # (D,)
-        rates[k] = (joint_pre > thr_eff).float().mean(dim=0)
+        # Count fires on the bool mask (no (V, D) float copy); count / V equals the float mean.
+        rates[k] = (joint_pre > thr_eff).sum(dim=0) / joint_pre.shape[0]
     return rates.cpu(), list(steps)
 
 
