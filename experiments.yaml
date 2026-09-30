@@ -40,36 +40,16 @@
 # Top-level paper_only_labels are labels owned by the paper itself, not produced
 # by an experiment pipeline.
 paper_only_labels:
+  - fig:overview                          # Figure 1 (TikZ); its two margins are per-example outputs of contrastive_readout_swap
   - fig:method-cross-snapshot-schematic   # method schematic (TikZ, hand-drawn)
-  - fig:app-timing-triangulation          # TikZ summary of three reported timing estimates; see the three experiments listed in docs/REPRODUCE.md
   # Hand-authored paper tables (typeset in the LaTeX tree, no experiment pipeline produces them):
-  - tab:model-roles                  # reproducibility appendix: model/role inventory
-  - tab:checkpoint-suite-comparison  # reproducibility appendix: public checkpoint-suite survey
+  - tab:task-protocol                # Table 1: task protocol; localization counts from readout.probes.contrastive_tasks
+  - tab:method-comparison            # Table 2: qualitative method comparison
+  - tab:evaluation-controls          # method appendix: evaluation controls
   - tab:compute-resources            # reproducibility appendix: compute envelope
   - tab:lifecycle-profile-rules      # lifecycle appendix: rule-based profile definitions
-  - tab:main-evidence-map            # main text: evidence map
   - tab:app-terminology-glossary     # scope appendix: glossary
-  - tab:app-method-comparison        # extended related work: method comparison
-  # Paper figures with no metrics producer in this release (see docs/REPRODUCE.md "Paper-only figure groups"):
-  - fig:app-fidelity-strata-audit    # producing script not included in this release
-  - fig:app-feature-cards-representative  # feature atlas pipeline not shipped
-  - tab:app-curated-atlas-features        # feature atlas pipeline not shipped
-  - fig:app-logit-proto-decomposition          # readout prism: companion repo github.com/hematteo/sparse-readout-prism
-  - fig:app-logit-proto-dense-table            # readout prism: companion repo
-  - fig:app-logit-proto-dense-table-dickens    # readout prism: companion repo
-  # Availability/expression appendix: report figures assembled in the LaTeX tree from
-  # Pythia-6.9B probe summaries; the upstream probe/swap data comes from contrastive_readout_swap.
-  - fig:app-ae-grid
-  - fig:app-ae-spectrum
-  - fig:app-ae-numeric
-  - fig:app-ae-capacity
-  - fig:app-ae-floor
-  - fig:app-ae-confound
-  - fig:app-ae-rank
-  - fig:app-ae-scale
-  - tab:app-ae-tasks
-  - tab:app-ae-binary
-  - tab:app-ae-openvocab
+  - tab:app-task-construction        # availability appendix: prompt templates and word lists
 
 # Naming principle: experiment ids describe the experiment object, not its paper position.
 #   GOOD: feature_lifecycle_trajectories, temporal_localization_patching
@@ -87,8 +67,9 @@ experiments:
       temporal-localization, EV/L0-pareto, and per-snapshot baseline analyses each
       live in their own claim-anchored experiment; this entry holds the rest.
     paper_intent: |
-      Sections 5.1 (multimodel validation), 5.2 (sparse lifecycle), 5.3 (temporal localization
-      near step 1k), 5.4 (vocabulary family emergence), and Appendix A (instrument validation).
+      Dictionary quality across Pythia-160M, 1B, 6.9B (Figure D.1) and the instrument
+      validation in Appendix D: functional fidelity, PCA baselines, the dictionary
+      inventory, and the dictionary hyperparameters.
     scripts_dir: experiments/crosscoders/crosscoder_main/scripts/
     figures_dir: figures/crosscoder_main/
     results_dir: results/experiments/crosscoders/crosscoder_main/
@@ -99,40 +80,31 @@ experiments:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0.safetensors  # denser/default-lambda comparison only
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - ${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-*_d*_seed*.pt
+      - ${UM_SSD_ROOT}/derived/readout_edit_timing*/hLN_step*.pt  # h_LN caches for the functional-fidelity evaluation
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt
     paper_labels:
       # NB: labels for the split-out lifecycle / temporal / pareto / persnap experiments
       # now live on those experiments (feature_lifecycle_trajectories,
       # temporal_localization_patching, pareto_frontier_ev_l0, persnap_sae_baseline).
       - fig:main-multimodel-validation
-      - tab:main-panel-a
       - fig:app-fidelity-curves
       - fig:app-pca-static
       - fig:app-concat-pca
-      - fig:app-endpoint-linear
-      - fig:app-norm-pareto
-      - fig:app-norm-pareto-raw-vs-pct
-      - fig:app-large-selected-persnap
-      - fig:app-p69b-dense-vs-sparse
-      - fig:app-large-l0-token-distribution
-      - fig:app-large-feature-rate-distribution
       - tab:repro-dictionary-hparams
       - tab:full-inventory
     paper_figures:
       - "paper/figures/multimodel_validation/instrument_validation_summary.pdf -> fig:main-multimodel-validation"
-      - "experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv -> tab:main-panel-a"  # main-text instrument table is the paper-facing subset of the inventory
-      - "paper/figures/readout_functional_fidelity/fidelity_curves.pdf -> fig:app-fidelity-curves"
+      - "paper/figures/readout_functional_fidelity/fidelity_curves.pdf -> fig:app-fidelity-curves"  # readout_functional_fidelity.py (matrix EV, logit R2, KL, dNLL, top-1/5); strata prose from readout_functional_fidelity_strata.py
       - "paper/figures/dense_baselines/static_pca_baseline.pdf -> fig:app-pca-static"
       - "paper/figures/dense_baselines/concatenated_trajectory_pca.pdf -> fig:app-concat-pca"
-      - "paper/figures/dense_baselines/endpoint_line_baseline.pdf -> fig:app-endpoint-linear"
-      - "paper/figures/normalized_sparsity/normalized_sparsity_pareto.pdf -> fig:app-norm-pareto"
-      - "paper/figures/normalized_sparsity/raw_vs_normalized_sparsity_pareto.pdf -> fig:app-norm-pareto-raw-vs-pct"
-      - "paper/figures/large_model/selected_large_model_checkpoint_diagnostics.pdf -> fig:app-large-selected-persnap"
-      - "paper/figures/large_model/pythia69b_sparse_vs_dense.pdf -> fig:app-p69b-dense-vs-sparse"
-      - "paper/figures/large_model/token_active_feature_distribution.pdf -> fig:app-large-l0-token-distribution"
-      - "paper/figures/large_model/feature_activation_rate_distribution.pdf -> fig:app-large-feature-rate-distribution"
       - "experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv -> tab:full-inventory"
     cited_in:
       - paper/main.tex
+    entry:
+      - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py --model pythia-160m --d-sae 8192 --seed 0 --steps all --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing"
+      - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py --model pythia-1b --d-sae 24576 --seed 0 --steps all --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia1b"
+      - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py --model pythia-6.9b --d-sae 32768 --seed 0 --steps all --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia69b --ckpt ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors"
+      - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity_strata.py --model pythia-1b --d-sae 24576 --seed 0 --steps all --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia1b"
 
   - id: sparse_feature_causal_tests
     status: active
@@ -141,29 +113,26 @@ experiments:
       features are load-bearing for family-specific output behavior under fixed
       hidden states.
     paper_intent: |
-      Main-text and appendix causal audit: Ge-style top-k ablations of sparse
-      readout features on Pythia-1B, evaluated at mature step 143k across
-      non-Latin scripts, punctuation, digits, and function-word token families.
+      Appendix H: top-k ablations of sparse readout features on Pythia-1B at step 143k
+      across non-Latin scripts, punctuation, digits, and function-word token families.
     scripts_dir: experiments/causal/sparse_feature_causal_tests/scripts/
     figures_dir: figures/sparse_feature_causal_tests/
     results_dir: results/experiments/sparse_feature_causal_tests/
     inputs:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors
       - ${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-1b_d24576_seed0.pt
-      - results/experiments/sparse_feature_causal_tests/specificity_step143000_h143000/manifest.json
     paper_labels:
       - fig:app-sparse-feature-causal-curves
       - fig:app-sparse-feature-causal-specificity-k32
     paper_figures:
-      - "paper/figures/sparse_feature_causal_tests/control_corrected_ablation_curves.pdf -> fig:app-sparse-feature-causal-curves"
-      - "paper/figures/sparse_feature_causal_tests/specificity_heatmaps_k32.pdf -> fig:app-sparse-feature-causal-specificity-k32"
+      - "paper/figures/sparse_feature_causal_tests/control_corrected_ablation_curves.pdf -> fig:app-sparse-feature-causal-curves"  # family_expansion_summary.csv (top_drop - matched_drop_mean; range over the five matched sets)
+      - "paper/figures/sparse_feature_causal_tests/specificity_heatmaps_k32.pdf -> fig:app-sparse-feature-causal-specificity-k32"  # specificity_step<step>_h<step>/control_corrected_drop_k32.csv
     entry:
-      - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py
-      - uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000
-      # The paper-facing audit is the mature-step-143k specificity pass above (see
-      # paper_intent and the step-143k manifest under inputs:). The earlier step-1000
-      # non-Latin pilot pass is a historical setup run (README "Reproduce"):
-      #   uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000
+      - "for c in non_latin_scripts punctuation digits function_words; do uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py --concept $c --snapshot-step 1000 --rank-h-step 1000 --eval-h-steps 512 1000 --score-mode positive --out-dir results/experiments/sparse_feature_causal_tests/1b_${c}_step1000_positive; done"
+      - "for c in non_latin_scripts punctuation digits function_words; do uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py --concept $c --snapshot-step 143000 --rank-h-step 143000 --eval-h-steps 143000 --score-mode positive --out-dir results/experiments/sparse_feature_causal_tests/1b_${c}_step143000_positive; done"
+      - "uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000"
+      - "uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000"
+      - "uv run python experiments/causal/sparse_feature_causal_tests/scripts/aggregate_causal_tests.py"
     cited_in: [paper/main.tex]
 
   - id: concept_evolution_validation
@@ -172,9 +141,8 @@ experiments:
       Token-family / vocabulary-family probe emergence across snapshots. Validates that
       crosscoder features track vocabulary acquisition.
     paper_intent: |
-      Pythia-160M WordNet lexicographer-file probe timing audit for
-      vocabulary-family availability in W_U. The paper treats this as
-      corroborating timing evidence, not a fully controlled semantic-probe study.
+      Section 4.2 (Figure 3) and Appendix F: WordNet supersense probes on W_U rows of
+      Pythia-160M and 1B, with matched-random and shuffled-label controls.
     scripts_dir: experiments/probes/concept_evolution_validation/scripts/
     figures_dir: figures/concept_evolution_validation/
     results_dir: results/experiments/probes/concept_evolution_validation/
@@ -185,7 +153,6 @@ experiments:
       - fig:app-wordnet-supersense-probes-160m-inventory
       - fig:app-wordnet-supersense-probes-1b
       - tab:app-wordnet-supersense-1b
-      - fig:app-timing-triangulation  # WordNet separability onset row of the triangulation figure
     paper_figures:
       - "paper/figures/vocabulary_family_probes/wordnet_matched_controls_160m.pdf -> fig:main-wordnet-matched-controls"
       - "paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_160m.png -> fig:app-wordnet-supersense-probes-160m-inventory"
@@ -195,6 +162,12 @@ experiments:
       - paper/main.tex
 
   # ─── Validation / Appendix A ────────────────────────────────────────────────
+    entry:
+      - "uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py --model pythia-160m"
+      - "uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py --model pythia-1b"
+      - "uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_matched_controls.py"
+      - "uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py --model pythia-160m --split lemma"  # Appendix F lemma-grouped splits
+      - "uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py --model pythia-1b --split lemma"
 
   - id: dense_readout_diagnostics
     status: active
@@ -202,9 +175,9 @@ experiments:
       Dense spectral and preprocessing diagnostics for W_U snapshots across the
       current paper model set.
     paper_intent: |
-      Appendix dense-readout validation: shows centered W_U remains high-dimensional
-      across Pythia and OLMo, and motivates sparse trajectory dictionaries over
-      simple SVD/PCA summaries.
+      Appendix D: dense-readout diagnostics (mean-direction preprocessing, spectral gap,
+      dense reorganization timing in Pythia), which motivate sparse trajectory
+      dictionaries over SVD/PCA summaries.
     scripts_dir: experiments/baselines/dense_readout_diagnostics/scripts/
     figures_dir: figures/dense_readout_diagnostics/
     results_dir: results/experiments/dense_readout_diagnostics/
@@ -214,15 +187,11 @@ experiments:
       - ${UM_SSD_ROOT}/snapshots/pythia-6.9b/EleutherAI_pythia-6.9b_step*_wu.pt
       - ${UM_SSD_ROOT}/snapshots/OLMo-2-1124-7B/allenai_OLMo-2-1124-7B_step*_wu.pt
     paper_labels:
-      - fig:app-spectral-capacity
       - fig:app-dense-reorg-pythia
-      - fig:app-dense-reorg-olmo
       - fig:app-mean-direction-preprocessing
       - fig:app-mean-direction-spectral-gap
     paper_figures:
-      - "paper/figures/dense_readout/spectral_capacity_multimodel.pdf -> fig:app-spectral-capacity"
       - "paper/figures/dense_readout/dense_reorganization_timing.pdf -> fig:app-dense-reorg-pythia"
-      - "paper/figures/dense_readout/dense_reorganization_timing_olmo.pdf -> fig:app-dense-reorg-olmo"
       - "paper/figures/dense_readout/mean_direction_preprocessing.pdf -> fig:app-mean-direction-preprocessing"
       - "paper/figures/dense_readout/mean_direction_spectral_gap_by_model.pdf -> fig:app-mean-direction-spectral-gap"
     cited_in: []
@@ -233,7 +202,7 @@ experiments:
       Held-out checkpoint reconstruction quality (EV vs trained-on snapshots).
       Validates the crosscoder generalizes off the training-snapshot grid.
     paper_intent: |
-      Appendix A.4 (Held-out Checkpoint Reconstruction).
+      Appendix D (held-out checkpoint reconstruction).
     scripts_dir: experiments/ablations/heldout_checkpoints/scripts/
     figures_dir: figures/heldout_checkpoints/
     results_dir: results/experiments/ablations/heldout_checkpoints/
@@ -242,10 +211,8 @@ experiments:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors
       - ${UM_SSD_ROOT}/snapshots/pythia-{160m,1b}/  # held-out snapshots not in cross-32 grid
     paper_labels:
-      - fig:app-heldout-checkpoints
       - fig:app-heldout-checkpoints-1b
     paper_figures:
-      - "paper/figures/heldout_checkpoints/heldout_reconstruction_160m.pdf -> fig:app-heldout-checkpoints"
       - "paper/figures/heldout_checkpoints/heldout_reconstruction_1b.pdf -> fig:app-heldout-checkpoints-1b"
     cited_in:
       - paper/main.tex
@@ -255,21 +222,21 @@ experiments:
     description: |
       Pythia-1B W_U late-start checkpoint-window ablation matching the OLMo
       constraint that no sub-step-150 snapshots are available.
-    paper_intent: Appendix scope check for the OLMo PCA lifecycle geometry.
+    paper_intent: |
+      Appendix E: OLMo-2-7B checkpoint-window control for the lifecycle composition.
     scripts_dir: experiments/ablations/olmo_matched_checkpoint_window/scripts/
     figures_dir: figures/olmo_matched_checkpoint_window/
     results_dir: results/experiments/olmo_matched_checkpoint_window/
     inputs:
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt
+      - figures/feature_lifecycle_trajectories/section52_lifecycle/cache/pythia1b_d24576_decoder_norms.npy
       # OLMo decoder-norm geometry cache read by build_late_start_vs_olmo_figures.py;
       # produced by feature_lifecycle_trajectories' plot_normalized_trajectories.py — run that first.
       - figures/feature_lifecycle_trajectories/section52_lifecycle/cache/olmo2_7b_d32768_decoder_norms.npy
     paper_labels:
-      - fig:app-olmo-window-metric-grid
       - fig:app-olmo-window-population
     paper_figures:
-      - "paper/figures/feature_lifecycle/olmo_matched_checkpoint_window_metric_grid.pdf -> fig:app-olmo-window-metric-grid"
       - "paper/figures/feature_lifecycle/olmo_matched_checkpoint_window_population_lifecycle_diagnostics.pdf -> fig:app-olmo-window-population"
     cited_in: [paper/main.tex]
 
@@ -285,16 +252,12 @@ experiments:
       GPTNeoXForCausalLM trainer (the Pythia architecture on the modern torch
       stack); a Pythia-style proxy, not a reproduction of the public Pythia run.
     paper_intent: |
-      Main-text Finding 2 (the output readout learning rate sets the reorganization
-      timing at matched validation loss) and the recipe-control appendix. In-repo
-      this experiment ships the trainer, the slice builders, the W_U-geometry
-      analysis (fig:app-recipe-control-geometry), the per-condition trajectory
-      crosscoder fits and lifecycle statistics (the dose-response figure, the
-      median / normalized-trajectory / peak-step / reorganization-window figures,
-      and the summary table), the readout swap grids (compatibility basin), the
-      availability versus expression probe (expression lag), and the gauge
-      analysis (temperature conservation, loss landscape). The trained
-      checkpoints are on Hugging Face (hematteo/readout-recipe-control).
+      Section 4.5 (Figure 5: readout learning rate shifts readout development) and
+      Appendix I. Ships the trainer, the data-slice builders, the W_U geometry analysis,
+      the per-condition trajectory crosscoders and their lifecycle statistics over three
+      fits, the readout-swap grids, the availability-versus-expression probe, and the
+      gauge analysis. The trained checkpoints are on Hugging Face
+      (hematteo/readout-recipe-control).
     scripts_dir: experiments/ablations/pretraining_recipe_control/scripts/
     figures_dir: figures/pretraining_recipe_control/
     results_dir: results/experiments/ablations/pretraining_recipe_control/
@@ -307,36 +270,35 @@ experiments:
       - fig:app-recipe-control-geometry
       # Lifecycle statistics of the per-condition trajectory crosscoders (analyze_lifecycle.py):
       - fig:main-recipe-dose-response
-      - fig:app-recipe-control-median
       - fig:app-recipe-control-trajectories
-      - fig:app-recipe-control-peakstep
       - fig:app-recipe-control-reorg
       - tab:app-recipe-control-summary
       # Readout-swap basin, expression-lag probe, gauge analysis:
       - fig:app-recipe-control-basin
       - fig:app-recipe-control-explag
-      - fig:app-recipe-control-temperature
-      - fig:app-recipe-control-gauge-landscape
     paper_figures:
       - "paper/figures/recipe_control/F1_geometry_trajectories.pdf -> fig:app-recipe-control-geometry"
-      - "paper/figures/recipe_control/timing_dose_response.pdf -> fig:main-recipe-dose-response"  # median peak step / reorganization step vs readout-LR multiplier from lifecycle_seed0/lifecycle_summary.csv
-      - "paper/figures/recipe_control/median_trajectories.pdf -> fig:app-recipe-control-median"  # lifecycle_seed0/median_trajectories.csv
+      - "paper/figures/recipe_control/timing_dose_response.pdf -> fig:main-recipe-dose-response"  # left: median peak step per fit from lifecycle_multiseed_table.csv (seeds 0-2); right: validation loss from ${UM_SSD_ROOT}/runs/<cond>/metrics.csv (train_control.py)
       - "paper/figures/recipe_control/normalized_trajectories.pdf -> fig:app-recipe-control-trajectories"  # lifecycle_seed0/feature_trajectories.pt (rho, peak steps, seeded display sample)
-      - "paper/figures/recipe_control/peak_step_population.pdf -> fig:app-recipe-control-peakstep"  # lifecycle_seed0/peak_step_population.csv
       - "paper/figures/recipe_control/reorg_window.pdf -> fig:app-recipe-control-reorg"  # lifecycle_seed0/reorg_window.csv
       - "results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_summary.csv -> tab:app-recipe-control-summary"  # EV / L0 / val loss / profile fractions / median peak / reorganization step per condition (lifecycle_stats.json holds the same, nested)
       - "paper/figures/recipe_control/F2_trajectory_basin.pdf -> fig:app-recipe-control-basin"  # argmin-NLL readout per hidden-state checkpoint from trajectory/trajectory_swap_all.csv
       - "paper/figures/recipe_control/F6_expression_lag.pdf -> fig:app-recipe-control-explag"  # expression_lag/expression_lag.csv
-      - "paper/figures/recipe_control/G1_temperature_conservation.pdf -> fig:app-recipe-control-temperature"  # gauge/temperature_conservation.csv
-      - "paper/figures/recipe_control/G2_gauge_landscape.pdf -> fig:app-recipe-control-gauge-landscape"  # gauge/gauge_landscape.csv
     entry:
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_pythia_preshuffled.py --out ${UM_SSD_ROOT}/pile_slice/pythia_preshuffled.bin --target-tokens 10e9"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control.py --data ${UM_SSD_ROOT}/pile_slice/pythia_preshuffled.bin --sequential-data --out-dir ${UM_SSD_ROOT}/runs/baseline --model-size 31M --global-batch 1024 --max-tokens 10e9 --readout-lr-mult 1.0 --warmup-steps 1430"  # repeat per condition; see README
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_readout_geometry.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline warmup_short wu_lr_0p25 wu_lr_4x --out-csv results/experiments/ablations/pretraining_recipe_control/readout_geometry_pythia.csv"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control_crosscoder.py --seed 0"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py --seed 0"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_expression_lag.py"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_gauge_landscape.py"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control_crosscoder.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 0 --out-dir results/experiments/ablations/pretraining_recipe_control/crosscoders"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control_crosscoder.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 1 --out-dir results/experiments/ablations/pretraining_recipe_control/crosscoders"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control_crosscoder.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 2 --out-dir results/experiments/ablations/pretraining_recipe_control/crosscoders"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py --ckpt-root ${UM_SSD_ROOT}/runs --cc-dir results/experiments/ablations/pretraining_recipe_control/crosscoders --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 0 --d-sae 8192 --out-dir results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py --ckpt-root ${UM_SSD_ROOT}/runs --cc-dir results/experiments/ablations/pretraining_recipe_control/crosscoders --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 1 --d-sae 8192 --out-dir results/experiments/ablations/pretraining_recipe_control/lifecycle_seed1"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py --ckpt-root ${UM_SSD_ROOT}/runs --cc-dir results/experiments/ablations/pretraining_recipe_control/crosscoders --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 2 --d-sae 8192 --out-dir results/experiments/ablations/pretraining_recipe_control/lifecycle_seed2"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/aggregate_seed_replication.py --seed-stat results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_stats.json --seed-stat results/experiments/ablations/pretraining_recipe_control/lifecycle_seed1/lifecycle_stats.json --seed-stat results/experiments/ablations/pretraining_recipe_control/lifecycle_seed2/lifecycle_stats.json --seeds 0 1 2 --out-json results/experiments/ablations/pretraining_recipe_control/lifecycle_multiseed_summary.json --out-csv results/experiments/ablations/pretraining_recipe_control/lifecycle_multiseed_table.csv"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py --out ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --start-token 10e9 --eval-tokens 2e6"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 400000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_expression_lag.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 400000 --max-positions 20000 --out-dir results/experiments/ablations/pretraining_recipe_control/expression_lag"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_gauge_landscape.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --landscape-cond baseline --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 200000 --grid 21 --log2-range 2.0 --out-dir results/experiments/ablations/pretraining_recipe_control/gauge"
     cited_in: [paper/main.tex]
 
   # ─── Companion / Replication ────────────────────────────────────────────────
@@ -347,24 +309,17 @@ experiments:
       W_E (input embedding) variant of the crosscoder; companion to the W_U (output) crosscoder.
       Multi-seed pilot establishing W_E vs W_U asymmetry.
     paper_intent: |
-      Lead-lag analysis (W_E vs W_U); referenced in Discussion / read-write asymmetry.
+      Appendix D: the W_E dictionaries compared with W_U dictionaries in the
+      Pythia-160M baseline comparison.
     scripts_dir: experiments/crosscoders/crosscoder_we/scripts/
     figures_dir: figures/crosscoder_we/
     results_dir: results/experiments/crosscoder_we/
     inputs:
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-*/W_E/cross-snapshot-32/d*/seed*.safetensors
       - ${UM_SSD_ROOT}/derived/rates/we-d24576/we_rates_dsae24576_seed0.pt
-    paper_labels:
-      - fig:app-we-read-write-asymmetry
-      - fig:app-we-quality-pareto
-      - fig:app-we-lead-lag-family
-      - sec:app-we-crosscoders
-    paper_figures:
-      - "paper/figures/read_write/we_read_write_asymmetry.png -> fig:app-we-read-write-asymmetry"
-      - "paper/figures/read_write/we_quality_pareto.png -> fig:app-we-quality-pareto"
-      - "paper/figures/read_write/we_lead_lag_family_heatmap.png -> fig:app-we-lead-lag-family"
+    paper_labels: []
+    paper_figures: []
     cited_in:
-      - "Appendix \\cref{sec:app-we-crosscoders}"
 
   - id: crosscoder_olmo
     status: active
@@ -372,9 +327,8 @@ experiments:
       Cross-family OLMo validation metrics and lifecycle/timing context for the
       selected paper-facing OLMo W_U crosscoder sidecars.
     paper_intent: |
-      Cross-family validation point in the main instrument table, lifecycle
-      panels, and timing appendix. OLMo is treated as cross-family context rather
-      than a matched Pythia scaling comparison.
+      Cross-family (OLMo-2-7B) dictionary in Figure D.1, the lifecycle panels of
+      Figure 2, and the reorganization-window metrics of Appendix E.
     scripts_dir: experiments/crosscoders/crosscoder_olmo/scripts/
     figures_dir: figures/crosscoder_olmo/
     results_dir: results/experiments/crosscoders/crosscoder_olmo/
@@ -398,63 +352,91 @@ experiments:
   - id: feature_lifecycle_trajectories
     status: active
     description: Per-feature normalized trajectories splitting features into emergence / maturation / quiescence.
-    paper_intent: Section "The Output Readout Develops Through a Sparse Lifecycle" (currently §5.2 + appendix B)
+    paper_intent: |
+      Section 4.1 (Figure 2: the readout reorganizes early) and Appendix E (lifecycle
+      profiles, reorganization window statistics, stability across dictionary fits).
     scripts_dir: experiments/lifecycle/feature_lifecycle_trajectories/scripts/
     figures_dir: figures/feature_lifecycle_trajectories/
     results_dir: results/experiments/lifecycle/feature_lifecycle_trajectories/
     paper_labels:
       - fig:main-selected-normalized-trajectories
-      - fig:app-selected-decoder-norm-heatmaps
-      - fig:app-prepost-reorganization-peakstep
       - fig:app-selected-population-lifecycle-diagnostics
       - fig:app-reorganization-window-metrics
       - fig:app-lifecycle-profile-composition
-      - fig:app-metric-lifecycle-combined
-      - fig:app-wishbone-manual-corner-split
-      - fig:app-wishbone-pca
-      - fig:app-timing-triangulation  # crosscoder reorganization-window row of the triangulation figure
+      - tab:app-reorganization-window-stats
+      - tab:app-lifecycle-stability
     paper_figures:
       - "paper/figures/feature_lifecycle/selected_decoder_norm_trajectories.pdf -> fig:main-selected-normalized-trajectories"
-      - "paper/figures/feature_lifecycle/selected_decoder_norm_heatmaps.pdf -> fig:app-selected-decoder-norm-heatmaps"
-      - "paper/figures/feature_lifecycle/prepost_reorganization_peakstep_1x4.pdf -> fig:app-prepost-reorganization-peakstep"
       - "paper/figures/feature_lifecycle/selected_population_lifecycle_diagnostics.pdf -> fig:app-selected-population-lifecycle-diagnostics"
       - "paper/figures/feature_lifecycle/reorganization_window_metrics_selected.pdf -> fig:app-reorganization-window-metrics"
-      - "paper/figures/feature_lifecycle/selected_lifecycle_profile_composition.pdf -> fig:app-lifecycle-profile-composition"
-      - "paper/figures/feature_lifecycle/selected_lifecycle_metric_diagnostics.pdf -> fig:app-metric-lifecycle-combined"
-      - "paper/figures/feature_lifecycle/wishbone/selected_wishbone_manual_corner_split.png -> fig:app-wishbone-manual-corner-split"
-      - "paper/figures/feature_lifecycle/wishbone/selected_wishbone_plain_hexbin_grid_viridis.png -> fig:app-wishbone-pca"
-    inputs: []
+      - "paper/figures/feature_lifecycle/selected_lifecycle_profile_composition.pdf -> fig:app-lifecycle-profile-composition"  # selected_lifecycle_profile_composition_refined_*.csv (refined ruleset)
+    inputs:
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d*/seed*.safetensors
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/lambda-sweep/d8192/lam*_seed*.safetensors
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d*/seed0.safetensors
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0{,-sparse}.safetensors
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.safetensors
+      - ${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-*_d*_seed0.pt
+      - ${UM_SSD_ROOT}/snapshots/pythia-160m/EleutherAI_pythia-160m_step*_wu.pt
+      - experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/{p69b_sparse,olmo27b}_d32768_seed0.pt
+    entry:
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py"
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py"
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/build_population_diagnostics.py"
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py"
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/lifecycle_stability.py --stage all --out-dir results/experiments/lifecycle/feature_lifecycle_trajectories/lifecycle_stability"
     cited_in: [paper/main.tex]
 
   - id: temporal_localization_patching
     status: active
     description: Temporal patching showing readout reorganization concentrates near step 1k.
-    paper_intent: Section "Readout Reorganization Is Temporally Localized" (currently §5.3 + appendix C)
+    paper_intent: |
+      Appendix H: readout swaps on held-out text (NLL/KL swap grid, aligned swap grid).
     scripts_dir: experiments/causal/temporal_localization_patching/scripts/
     figures_dir: figures/temporal_localization_patching/
     results_dir: results/experiments/causal/temporal_localization_patching/
     paper_labels:
-      - fig:main-readout-coordination
       - fig:app-readout-swap-nll-kl-grid
-      - fig:app-readout-swap-family-logit-mass
-      - fig:app-readout-swap-target-nll
       - fig:app-aligned-readout-swap
-      - fig:app-readout-swap-160m-target-nll
-      - fig:app-timing-triangulation  # readout-swap optimum row of the triangulation figure
     paper_figures:
-      - "paper/figures/readout_coordination/temporal_patch_grid_coordination.png -> fig:main-readout-coordination"
       - "paper/figures/readout_coordination/readout_swap_nll_kl_grid.png -> fig:app-readout-swap-nll-kl-grid"
-      - "paper/figures/readout_coordination/temporal_patch_grid_concept_mass_appendix.pdf -> fig:app-readout-swap-family-logit-mass"
-      - "paper/figures/readout_coordination/temporal_patch_grid_target_nll_by_concept_appendix.pdf -> fig:app-readout-swap-target-nll"
       - "results/experiments/causal/temporal_localization_patching/aligned_swap_grid/summary.csv -> fig:app-aligned-readout-swap"  # data-reproducible-only; run_aligned_swap_grid.py emits summary.csv (+manifest.json), no figure
-      - "paper/figures/readout_coordination_160m/temporal_patch_grid_target_nll_by_concept_appendix.pdf -> fig:app-readout-swap-160m-target-nll"
     inputs: []
     cited_in: [paper/main.tex]
+
+  - id: language_stratified_readout_swap
+    status: active
+    description: |
+      Per-language Pythia-1B raw readout-swap grid with paired block-bootstrap
+      intervals and bootstrap argmin probabilities.
+    paper_intent: |
+      Appendix H: the aggregate swap-grid NLL is mostly non-English; per-language
+      gains, optima, and argmin probabilities (Table H.1, Figures H.2-H.3).
+    scripts_dir: experiments/causal/language_stratified_readout_swap/scripts/
+    figures_dir: figures/language_stratified_readout_swap/
+    results_dir: results/experiments/causal/language_stratified_readout_swap/
+    inputs:
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt  # per-token language labels
+      - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
+      - ${UM_SSD_ROOT}/readout_edit_timing_pythia1b/hLN_step*.pt  # h_LN caches (written on cache miss)
+    paper_labels:
+      - tab:app-readout-swap-languages
+      - fig:app-readout-swap-english-aggregate
+      - fig:app-readout-swap-languages
+    paper_figures:
+      - "paper/figures/readout_coordination/language_swap_table.tex -> tab:app-readout-swap-languages"  # summary.csv, argmin_summary.csv
+      - "paper/figures/readout_coordination/english_aggregate_swap.pdf -> fig:app-readout-swap-english-aggregate"  # summary.csv (language = all, en)
+      - "paper/figures/readout_coordination/language_stratified_swap.pdf -> fig:app-readout-swap-languages"  # summary.csv per language
+    entry:
+      - "uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 --out-dir results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0"  # optional: parity reference only
+      - "uv run python experiments/causal/language_stratified_readout_swap/scripts/run_language_stratified_swap.py --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 --block-tokens 256 --bootstrap-reps 2000 --bootstrap-seed 0 --out-dir results/experiments/causal/language_stratified_readout_swap/pythia-1b_seed0 --reference-summary results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0/summary_global.csv"
+    cited_in: [paper/appendix/readout_swap_behavioral.tex]
 
   - id: pareto_frontier_ev_l0
     status: active
     description: Aggregate Pareto frontier of EV vs L0; lambda-sweep overlay; dictionary-size sweep.
-    paper_intent: Appendix A — instrument quality.
+    paper_intent: |
+      Appendix D: dictionary quality (EV-L0 Pareto frontier, sparsity-penalty sweep).
     scripts_dir: experiments/capacity/pareto_frontier_ev_l0/scripts/
     figures_dir: figures/pareto_frontier_ev_l0/
     results_dir: results/experiments/capacity/pareto_frontier_ev_l0/
@@ -470,22 +452,18 @@ experiments:
   - id: persnap_sae_baseline
     status: active
     description: Per-snapshot SAE baseline; cross-snapshot crosscoder vs per-snap SAE comparison.
-    paper_intent: Appendix A — baseline suite + parameter budget + snapshot fidelity.
+    paper_intent: |
+      Appendix D: per-snapshot SAE baselines (Pythia-160M baseline comparison,
+      snapshot fidelity).
     scripts_dir: experiments/baselines/persnap_sae_baseline/scripts/
     figures_dir: figures/persnap_sae_baseline/
     results_dir: results/experiments/baselines/persnap_sae_baseline/
     paper_labels:
-      - fig:app-persnap-sae-trajectory
       - fig:app-snapshot-fidelity
-      - fig:app-1b-baseline-suite
       - fig:app-160m-baselines
-      - fig:app-parameter-budget
     paper_figures:
-      - "paper/figures/persnap_sae/persnapshot_sae_trajectory.pdf -> fig:app-persnap-sae-trajectory"
       - "paper/figures/persnap_sae/snapshot_reconstruction_fidelity.pdf -> fig:app-snapshot-fidelity"
-      - "paper/figures/persnap_sae/pythia1b_validation_suite.pdf -> fig:app-1b-baseline-suite"
       - "paper/figures/persnap_sae/pythia160m_baseline_comparison.pdf -> fig:app-160m-baselines"
-      - "paper/figures/persnap_sae/parameter_budget_vs_ev.pdf -> fig:app-parameter-budget"
     inputs: []
     cited_in: [paper/main.tex]
 
@@ -499,27 +477,44 @@ experiments:
       Tests whether early hidden states already contain task-relevant signal that
       a same-checkpoint readout has not yet expressed.
     paper_intent: |
-      Main-text Finding 3 (hidden state availability precedes native readout
-      expression) and the availability/expression appendix. The swap grids and
-      controlled hidden-state probes computed here are the upstream data; the
-      Pythia-6.9B narrative figures are assembled in the paper LaTeX tree from
-      the probe summaries.
+      Section 4.3 (Figure 4: hidden state availability precedes native readout
+      expression), the margins in Figure 1, and Appendix G. Computes the contrastive
+      task datasets, the readout-swap grids, the controlled hidden-state probes, and
+      the 20-family availability panel for Pythia-1B and 6.9B.
     scripts_dir: experiments/probes/contrastive_readout_swap/scripts/
     figures_dir: figures/contrastive_readout_swap/
     results_dir: results/experiments/probes/contrastive_readout_swap/
     inputs:
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - ${UM_SSD_ROOT}/snapshots/pythia-160m/EleutherAI_pythia-160m_step*_wu.pt
+      - ${UM_SSD_ROOT}/snapshots/pythia-6.9b/EleutherAI_pythia-6.9b_step*_wu.pt
+      - ${UM_SSD_ROOT}/snapshots/pythia-{1b,6.9b}/EleutherAI_pythia-*_step*_lnf.pt  # written by extract_hidden_dense.py
+      - ${FV_DATA_DIR}/{antonym,english-french,present-past,country-capital}.json  # function-vector families (github.com/ericwtodd/function_vectors, MIT)
+      - nyu-mll/blimp  # Hugging Face Hub
     paper_labels:
       - fig:app-contrastive-readout-lag
       - fig:main-sva-availability-expression
+      - fig:app-ae-capacity
+      - fig:app-ae-grid
+      - tab:app-ae-binary
+      - tab:app-ae-openvocab
+      - tab:app-ae-early
     paper_figures:
       - "paper/figures/readout_coordination/readout_lag_narrative_69b.pdf -> fig:app-contrastive-readout-lag"
-      - "paper/figures/readout_coordination/sva_availability_expression_69b.pdf -> fig:main-sva-availability-expression"
+      - "paper/figures/readout_coordination/sva_availability_expression_69b.pdf -> fig:main-sva-availability-expression"  # left: run_pythia-6.9b_probe_trajectory/{summary.csv,controlled/}; right: availability/run_pythia-6.9b/probes/probe_summary.csv
+      - "paper/figures/availability_expression/rpt_capacity.pdf -> fig:app-ae-capacity"
+      - "paper/figures/availability_expression/rpt_triple_grid.pdf -> fig:app-ae-grid"  # tab:app-ae-* read the same probe_summary.csv files (6.9B and the two 1B runs)
     cited_in: [paper/main.tex]
     entry:
       - uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py --model EleutherAI/pythia-1b --out-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b
       - uv run python experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py --model pythia-1b --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --out-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b --alignments none scale row_norm procrustes
+      - "uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py --task-set availability --model EleutherAI/pythia-6.9b --families sva sva_across_pp sva_subject_rc sva_object_rc ioi_role_balanced copy_control fixed_token_control blimp_det_noun_agreement blimp_anaphor_agreement blimp_npi fv_antonym fv_country_capital fv_en_fr fv_present_past induction numeric_gt_v2 numeric_lt_v2 numeric_tf_v2 relational_facts relational_facts_balanced --n-max-per-family 2000 --rng-seed 0 --no-norm-match --out-dir results/experiments/probes/contrastive_readout_swap/availability/datasets/pythia-6.9b"
+      - "uv run python experiments/probes/contrastive_readout_swap/scripts/extract_hidden_dense.py --hf-model EleutherAI/pythia-6.9b --datasets-dir results/experiments/probes/contrastive_readout_swap/availability/datasets/pythia-6.9b --families sva sva_across_pp sva_subject_rc sva_object_rc ioi_role_balanced copy_control fixed_token_control blimp_det_noun_agreement blimp_anaphor_agreement blimp_npi fv_antonym fv_country_capital fv_en_fr fv_present_past induction numeric_gt_v2 numeric_lt_v2 numeric_tf_v2 relational_facts relational_facts_balanced --h-steps 0 1 2 4 8 16 32 64 128 256 512 1000 2000 3000 4000 5000 6000 8000 10000 16000 32000 64000 128000 143000 --out-dir results/experiments/probes/contrastive_readout_swap/availability/run_pythia-6.9b/hidden --device cuda --dtype fp32 --batch-size 8"
+      - "uv run python experiments/probes/contrastive_readout_swap/scripts/run_availability_probes.py --model EleutherAI/pythia-6.9b --hidden-dir results/experiments/probes/contrastive_readout_swap/availability/run_pythia-6.9b/hidden --datasets-dir results/experiments/probes/contrastive_readout_swap/availability/datasets/pythia-6.9b --families sva sva_across_pp sva_subject_rc sva_object_rc ioi_role_balanced copy_control fixed_token_control blimp_det_noun_agreement blimp_anaphor_agreement blimp_npi fv_antonym fv_country_capital fv_en_fr fv_present_past induction numeric_gt_v2 numeric_lt_v2 numeric_tf_v2 relational_facts relational_facts_balanced --swept-steps 0 1 2 4 8 16 32 64 128 256 512 1000 2000 3000 4000 5000 6000 8000 10000 16000 32000 64000 128000 143000 --group-split --device cuda --out-dir results/experiments/probes/contrastive_readout_swap/availability/run_pythia-6.9b/probes"
+      - "uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py --model EleutherAI/pythia-6.9b --families sva ioi_role_balanced --n-max-per-family 2000 --rng-seed 0 --no-norm-match --out-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-6.9b_trajectory"
+      - "uv run python experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py --model pythia-6.9b --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-6.9b_trajectory --families sva ioi_role_balanced --h-steps 0 1 2 4 8 16 32 64 128 256 512 1000 2000 3000 4000 5000 6000 7000 8000 9000 14000 21000 27000 34000 47000 61000 75000 89000 102000 116000 130000 143000 --alignments none --device cuda --dtype bf16 --wu-round bf16 --out-dir results/experiments/probes/contrastive_readout_swap/run_pythia-6.9b_probe_trajectory"
+      - "uv run python experiments/probes/contrastive_readout_swap/scripts/run_controlled_hidden_probes.py --hidden-dir results/experiments/probes/contrastive_readout_swap/run_pythia-6.9b_probe_trajectory/hidden --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-6.9b_trajectory --families sva ioi_role_balanced --stem probe_trajectory_69b --out-dir results/experiments/probes/contrastive_readout_swap/run_pythia-6.9b_probe_trajectory/controlled"
+      # Pythia-1B availability runs (agreement and breadth, as published): see the README
 
   - id: contrastive_task_feature_rescue
     status: active
@@ -529,8 +524,8 @@ experiments:
       for the task families that show readout-rescue in contrastive_readout_swap.
       Specificity matrix tests whether ablations chosen for one family transfer.
     paper_intent: |
-      Causal companion to contrastive_readout_swap: localizes the rescue effect
-      to a small set of W_U crosscoder features in the trajectory crosscoder gauge.
+      Section 4.4 and Appendix H: localizes task margins to a few W_U crosscoder
+      features (ablate, preserve, and hidden-projection interventions).
     scripts_dir: experiments/causal/contrastive_task_feature_rescue/scripts/
     figures_dir: figures/contrastive_task_feature_rescue/
     results_dir: results/experiments/causal/contrastive_task_feature_rescue/
@@ -540,13 +535,10 @@ experiments:
       - results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden/  # produced by Exp 1
       - results/experiments/probes/contrastive_readout_swap/datasets/     # produced by Exp 1
     paper_labels:
-      - fig:app-contrastive-task-localization
-      - tab:main-localization-ledger
       - tab:app-contrastive-localisation-ledger
     paper_figures:
-      - "paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf -> fig:app-contrastive-task-localization"  # drawn in the paper tree from the tabulated shard values (ablate / keep / project-out at h1000, s1000)
-      - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:main-localization-ledger"  # per-family shards under run0/shards/ feed both ledgers
-      - "results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json -> tab:app-contrastive-localisation-ledger"  # one shard per family under run0/shards/; sva shown as the representative ledger row
+      - "results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos/shards/sva__h1000__s143000.json -> tab:app-contrastive-localisation-ledger"  # one shard per family (ablate / preserve / sign columns); hidden-projection columns from converse_pythia1b_s143000_h1000_pos/
     cited_in: [paper/main.tex]
     entry:
-      - uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py --model pythia-1b --d-sae 24576 --seed 0 --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden --snapshot-step 1000 --h-step 1000
+      - "uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py --model pythia-1b --d-sae 24576 --seed 0 --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden --snapshot-step 143000 --h-step 1000 --rank-by pos --K 8 16 32 64 128 256 --split-frac 0.5 --split-seed 0 --out-dir results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos"
+      - "uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_converse_intervention.py --model pythia-1b --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden --attribution-dir results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos --snapshot-step 143000 --h-step 1000 --K 8 16 32 64 128 256 --out-dir results/experiments/causal/contrastive_task_feature_rescue/converse_pythia1b_s143000_h1000_pos"
