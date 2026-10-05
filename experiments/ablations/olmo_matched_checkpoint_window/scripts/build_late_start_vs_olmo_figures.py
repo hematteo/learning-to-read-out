@@ -21,12 +21,14 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from readout.core.model_specs import DEFAULT_STEPS_32
 from readout.core.paths import repo_root
 from readout.core.repro import git_commit
 from readout.dynamics.lifecycle import (
     PROFILE_LABELS,
     PROFILE_ORDER,
     classify_profiles_refined,
+    profile_fractions,
 )
 
 REPO = repo_root()
@@ -82,6 +84,8 @@ DECAY_DEFINITION = {
 }
 
 FEATURE_LIFECYCLE_CACHE = REPO / "figures/feature_lifecycle_trajectories/section52_lifecycle/cache"
+# Selected full-schedule Pythia-1B dictionary, for the late-start profile comparison.
+SELECTED_1B_NORMS = FEATURE_LIFECYCLE_CACHE / "pythia1b_d24576_decoder_norms.npy"
 
 
 @dataclass(frozen=True)
@@ -583,6 +587,36 @@ def compute_lifecycle_profile_composition(
         print(f"  -> {base.with_suffix('.pt')}")
 
 
+def compute_late_start_profile_fractions(
+    late_norms: np.ndarray,
+    late_steps: np.ndarray,
+    out_dirs: tuple[Path, ...],
+    selected_norms_path: Path = SELECTED_1B_NORMS,
+) -> list[dict]:
+    """Refined-profile fractions (sec:app-olmo-checkpoint-window-control) for the selected
+    Pythia-1B dictionary, the same dictionary restricted to steps >= the late-start
+    schedule's first step without refitting, and the late-start dictionary."""
+    selected = np.load(selected_norms_path).astype(np.float32)  # (32, D)
+    full_steps = np.asarray(DEFAULT_STEPS_32, dtype=np.int64)
+    keep = full_steps >= late_steps[0]
+    rows = [
+        {"dictionary": "selected d24576", **profile_fractions(selected, full_steps)},
+        {
+            "dictionary": f"selected d24576, steps >= {int(late_steps[0])} (not refitted)",
+            **profile_fractions(selected[keep], full_steps[keep]),
+        },
+        {
+            "dictionary": f"late-start d24576 (fitted from step {int(late_steps[0])})",
+            **profile_fractions(late_norms, late_steps),
+        },
+    ]
+    for out_dir in out_dirs:
+        path = out_dir / "late_start_profile_fractions.csv"
+        _write_csv(path, list(rows[0]), [list(row.values()) for row in rows])
+        print(f"  -> {path}")
+    return rows
+
+
 # ─── main ──────────────────────────────────────────────────────────────────
 
 
@@ -670,6 +704,8 @@ def main() -> int:
     compute_decoder_norm_heatmaps(metric_payload, (fig_dir,))
     compute_wishbone_density_grid(metric_payload, (fig_dir,))
     compute_lifecycle_profile_composition(metric_payload, (fig_dir,))
+    _, late_norms, late_steps = _load_rates(PYTHIA_1B_LS)
+    compute_late_start_profile_fractions(late_norms, late_steps, (fig_dir,))
 
     # PCA wishbone for the new 1B late-start run only (canonical lifecycle plot)
     pca_scores, pca_explained = _pca_scores(runs_loaded[0][1])

@@ -19,8 +19,7 @@ that persist its underlying metrics, and states what a reader can run.
 Alphabetical by label; deep-link as `docs/REPRODUCE.md#<label>`. The third column is
 the figure's path in the paper LaTeX tree (not shipped here); the script that produces
 its metrics is in that experiment's README "Figures produced" ledger. Labels marked
-"paper LaTeX tree only" have no metrics producer in this release; the section
-[Paper-only figure groups](#paper-only-figure-groups-no-in-repo-metrics) says why.
+"paper LaTeX tree only" are schematics or hand-typeset tables (see [Notes](#notes)).
 This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 `scripts/audit/gen_reproduce_index.py` (drift fails CI); edit the manifest, not the table.
 
@@ -28,102 +27,61 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | Label | Experiment | Rendered figure (paper LaTeX tree) |
 |---|---|---|
 | <a id="fig:app-160m-baselines"></a>`fig:app-160m-baselines` | persnap_sae_baseline | paper/figures/persnap_sae/pythia160m_baseline_comparison.pdf |
-| <a id="fig:app-1b-baseline-suite"></a>`fig:app-1b-baseline-suite` | persnap_sae_baseline | paper/figures/persnap_sae/pythia1b_validation_suite.pdf |
-| <a id="fig:app-ae-capacity"></a>`fig:app-ae-capacity` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-confound"></a>`fig:app-ae-confound` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-floor"></a>`fig:app-ae-floor` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-grid"></a>`fig:app-ae-grid` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-numeric"></a>`fig:app-ae-numeric` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-rank"></a>`fig:app-ae-rank` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-scale"></a>`fig:app-ae-scale` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-ae-spectrum"></a>`fig:app-ae-spectrum` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="fig:app-ae-capacity"></a>`fig:app-ae-capacity` | contrastive_readout_swap | paper/figures/availability_expression/rpt_capacity.pdf |
+| <a id="fig:app-ae-grid"></a>`fig:app-ae-grid` | contrastive_readout_swap | paper/figures/availability_expression/rpt_triple_grid.pdf |
 | <a id="fig:app-aligned-readout-swap"></a>`fig:app-aligned-readout-swap` | temporal_localization_patching | results/experiments/causal/temporal_localization_patching/aligned_swap_grid/summary.csv |
 | <a id="fig:app-concat-pca"></a>`fig:app-concat-pca` | crosscoder_main | paper/figures/dense_baselines/concatenated_trajectory_pca.pdf |
 | <a id="fig:app-contrastive-readout-lag"></a>`fig:app-contrastive-readout-lag` | contrastive_readout_swap | paper/figures/readout_coordination/readout_lag_narrative_69b.pdf |
-| <a id="fig:app-contrastive-task-localization"></a>`fig:app-contrastive-task-localization` | contrastive_task_feature_rescue | paper/figures/contrastive_task_localization/contrastive_task_localization_1x3.pdf |
-| <a id="fig:app-dense-reorg-olmo"></a>`fig:app-dense-reorg-olmo` | dense_readout_diagnostics | paper/figures/dense_readout/dense_reorganization_timing_olmo.pdf |
 | <a id="fig:app-dense-reorg-pythia"></a>`fig:app-dense-reorg-pythia` | dense_readout_diagnostics | paper/figures/dense_readout/dense_reorganization_timing.pdf |
-| <a id="fig:app-endpoint-linear"></a>`fig:app-endpoint-linear` | crosscoder_main | paper/figures/dense_baselines/endpoint_line_baseline.pdf |
-| <a id="fig:app-feature-cards-representative"></a>`fig:app-feature-cards-representative` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="fig:app-fidelity-curves"></a>`fig:app-fidelity-curves` | crosscoder_main | paper/figures/readout_functional_fidelity/fidelity_curves.pdf |
-| <a id="fig:app-fidelity-strata-audit"></a>`fig:app-fidelity-strata-audit` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-heldout-checkpoints"></a>`fig:app-heldout-checkpoints` | heldout_checkpoints | paper/figures/heldout_checkpoints/heldout_reconstruction_160m.pdf |
 | <a id="fig:app-heldout-checkpoints-1b"></a>`fig:app-heldout-checkpoints-1b` | heldout_checkpoints | paper/figures/heldout_checkpoints/heldout_reconstruction_1b.pdf |
 | <a id="fig:app-instrument-pareto"></a>`fig:app-instrument-pareto` | pareto_frontier_ev_l0 | paper/figures/instrument_pareto/instrument_pareto.pdf |
 | <a id="fig:app-lambda-sweep"></a>`fig:app-lambda-sweep` | pareto_frontier_ev_l0 | paper/figures/instrument_pareto/sparsity_penalty_sensitivity.pdf |
-| <a id="fig:app-large-feature-rate-distribution"></a>`fig:app-large-feature-rate-distribution` | crosscoder_main | paper/figures/large_model/feature_activation_rate_distribution.pdf |
-| <a id="fig:app-large-l0-token-distribution"></a>`fig:app-large-l0-token-distribution` | crosscoder_main | paper/figures/large_model/token_active_feature_distribution.pdf |
-| <a id="fig:app-large-selected-persnap"></a>`fig:app-large-selected-persnap` | crosscoder_main | paper/figures/large_model/selected_large_model_checkpoint_diagnostics.pdf |
 | <a id="fig:app-lifecycle-profile-composition"></a>`fig:app-lifecycle-profile-composition` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_lifecycle_profile_composition.pdf |
-| <a id="fig:app-logit-proto-decomposition"></a>`fig:app-logit-proto-decomposition` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-logit-proto-dense-table"></a>`fig:app-logit-proto-dense-table` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="fig:app-logit-proto-dense-table-dickens"></a>`fig:app-logit-proto-dense-table-dickens` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="fig:app-mean-direction-preprocessing"></a>`fig:app-mean-direction-preprocessing` | dense_readout_diagnostics | paper/figures/dense_readout/mean_direction_preprocessing.pdf |
 | <a id="fig:app-mean-direction-spectral-gap"></a>`fig:app-mean-direction-spectral-gap` | dense_readout_diagnostics | paper/figures/dense_readout/mean_direction_spectral_gap_by_model.pdf |
-| <a id="fig:app-metric-lifecycle-combined"></a>`fig:app-metric-lifecycle-combined` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_lifecycle_metric_diagnostics.pdf |
-| <a id="fig:app-norm-pareto"></a>`fig:app-norm-pareto` | crosscoder_main | paper/figures/normalized_sparsity/normalized_sparsity_pareto.pdf |
-| <a id="fig:app-norm-pareto-raw-vs-pct"></a>`fig:app-norm-pareto-raw-vs-pct` | crosscoder_main | paper/figures/normalized_sparsity/raw_vs_normalized_sparsity_pareto.pdf |
-| <a id="fig:app-olmo-window-metric-grid"></a>`fig:app-olmo-window-metric-grid` | olmo_matched_checkpoint_window | paper/figures/feature_lifecycle/olmo_matched_checkpoint_window_metric_grid.pdf |
 | <a id="fig:app-olmo-window-population"></a>`fig:app-olmo-window-population` | olmo_matched_checkpoint_window | paper/figures/feature_lifecycle/olmo_matched_checkpoint_window_population_lifecycle_diagnostics.pdf |
-| <a id="fig:app-p69b-dense-vs-sparse"></a>`fig:app-p69b-dense-vs-sparse` | crosscoder_main | paper/figures/large_model/pythia69b_sparse_vs_dense.pdf |
-| <a id="fig:app-parameter-budget"></a>`fig:app-parameter-budget` | persnap_sae_baseline | paper/figures/persnap_sae/parameter_budget_vs_ev.pdf |
 | <a id="fig:app-pca-static"></a>`fig:app-pca-static` | crosscoder_main | paper/figures/dense_baselines/static_pca_baseline.pdf |
-| <a id="fig:app-persnap-sae-trajectory"></a>`fig:app-persnap-sae-trajectory` | persnap_sae_baseline | paper/figures/persnap_sae/persnapshot_sae_trajectory.pdf |
-| <a id="fig:app-prepost-reorganization-peakstep"></a>`fig:app-prepost-reorganization-peakstep` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/prepost_reorganization_peakstep_1x4.pdf |
-| <a id="fig:app-readout-swap-160m-target-nll"></a>`fig:app-readout-swap-160m-target-nll` | temporal_localization_patching | paper/figures/readout_coordination_160m/temporal_patch_grid_target_nll_by_concept_appendix.pdf |
-| <a id="fig:app-readout-swap-family-logit-mass"></a>`fig:app-readout-swap-family-logit-mass` | temporal_localization_patching | paper/figures/readout_coordination/temporal_patch_grid_concept_mass_appendix.pdf |
+| <a id="fig:app-readout-swap-english-aggregate"></a>`fig:app-readout-swap-english-aggregate` | language_stratified_readout_swap | paper/figures/readout_coordination/english_aggregate_swap.pdf |
+| <a id="fig:app-readout-swap-languages"></a>`fig:app-readout-swap-languages` | language_stratified_readout_swap | paper/figures/readout_coordination/language_stratified_swap.pdf |
 | <a id="fig:app-readout-swap-nll-kl-grid"></a>`fig:app-readout-swap-nll-kl-grid` | temporal_localization_patching | paper/figures/readout_coordination/readout_swap_nll_kl_grid.png |
-| <a id="fig:app-readout-swap-target-nll"></a>`fig:app-readout-swap-target-nll` | temporal_localization_patching | paper/figures/readout_coordination/temporal_patch_grid_target_nll_by_concept_appendix.pdf |
 | <a id="fig:app-recipe-control-basin"></a>`fig:app-recipe-control-basin` | pretraining_recipe_control | paper/figures/recipe_control/F2_trajectory_basin.pdf |
 | <a id="fig:app-recipe-control-explag"></a>`fig:app-recipe-control-explag` | pretraining_recipe_control | paper/figures/recipe_control/F6_expression_lag.pdf |
-| <a id="fig:app-recipe-control-gauge-landscape"></a>`fig:app-recipe-control-gauge-landscape` | pretraining_recipe_control | paper/figures/recipe_control/G2_gauge_landscape.pdf |
 | <a id="fig:app-recipe-control-geometry"></a>`fig:app-recipe-control-geometry` | pretraining_recipe_control | paper/figures/recipe_control/F1_geometry_trajectories.pdf |
-| <a id="fig:app-recipe-control-median"></a>`fig:app-recipe-control-median` | pretraining_recipe_control | paper/figures/recipe_control/median_trajectories.pdf |
-| <a id="fig:app-recipe-control-peakstep"></a>`fig:app-recipe-control-peakstep` | pretraining_recipe_control | paper/figures/recipe_control/peak_step_population.pdf |
 | <a id="fig:app-recipe-control-reorg"></a>`fig:app-recipe-control-reorg` | pretraining_recipe_control | paper/figures/recipe_control/reorg_window.pdf |
-| <a id="fig:app-recipe-control-temperature"></a>`fig:app-recipe-control-temperature` | pretraining_recipe_control | paper/figures/recipe_control/G1_temperature_conservation.pdf |
 | <a id="fig:app-recipe-control-trajectories"></a>`fig:app-recipe-control-trajectories` | pretraining_recipe_control | paper/figures/recipe_control/normalized_trajectories.pdf |
 | <a id="fig:app-reorganization-window-metrics"></a>`fig:app-reorganization-window-metrics` | crosscoder_olmo, feature_lifecycle_trajectories | paper/figures/feature_lifecycle/reorganization_window_metrics_selected.pdf |
-| <a id="fig:app-selected-decoder-norm-heatmaps"></a>`fig:app-selected-decoder-norm-heatmaps` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_decoder_norm_heatmaps.pdf |
 | <a id="fig:app-selected-population-lifecycle-diagnostics"></a>`fig:app-selected-population-lifecycle-diagnostics` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_population_lifecycle_diagnostics.pdf |
 | <a id="fig:app-snapshot-fidelity"></a>`fig:app-snapshot-fidelity` | persnap_sae_baseline | paper/figures/persnap_sae/snapshot_reconstruction_fidelity.pdf |
 | <a id="fig:app-sparse-feature-causal-curves"></a>`fig:app-sparse-feature-causal-curves` | sparse_feature_causal_tests | paper/figures/sparse_feature_causal_tests/control_corrected_ablation_curves.pdf |
 | <a id="fig:app-sparse-feature-causal-specificity-k32"></a>`fig:app-sparse-feature-causal-specificity-k32` | sparse_feature_causal_tests | paper/figures/sparse_feature_causal_tests/specificity_heatmaps_k32.pdf |
-| <a id="fig:app-spectral-capacity"></a>`fig:app-spectral-capacity` | dense_readout_diagnostics | paper/figures/dense_readout/spectral_capacity_multimodel.pdf |
-| <a id="fig:app-timing-triangulation"></a>`fig:app-timing-triangulation` | concept_evolution_validation, feature_lifecycle_trajectories, temporal_localization_patching | (produced; see experiments.yaml / tables below) |
-| <a id="fig:app-we-lead-lag-family"></a>`fig:app-we-lead-lag-family` | crosscoder_we | paper/figures/read_write/we_lead_lag_family_heatmap.png |
-| <a id="fig:app-we-quality-pareto"></a>`fig:app-we-quality-pareto` | crosscoder_we | paper/figures/read_write/we_quality_pareto.png |
-| <a id="fig:app-we-read-write-asymmetry"></a>`fig:app-we-read-write-asymmetry` | crosscoder_we | paper/figures/read_write/we_read_write_asymmetry.png |
-| <a id="fig:app-wishbone-manual-corner-split"></a>`fig:app-wishbone-manual-corner-split` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/wishbone/selected_wishbone_manual_corner_split.png |
-| <a id="fig:app-wishbone-pca"></a>`fig:app-wishbone-pca` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/wishbone/selected_wishbone_plain_hexbin_grid_viridis.png |
 | <a id="fig:app-wordnet-supersense-probes-160m-inventory"></a>`fig:app-wordnet-supersense-probes-160m-inventory` | concept_evolution_validation | paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_160m.png |
 | <a id="fig:app-wordnet-supersense-probes-1b"></a>`fig:app-wordnet-supersense-probes-1b` | concept_evolution_validation | paper/figures/vocabulary_family_probes/wordnet_supersense_probe_heatmap_1b.pdf |
 | <a id="fig:main-multimodel-validation"></a>`fig:main-multimodel-validation` | crosscoder_main, crosscoder_olmo | paper/figures/multimodel_validation/instrument_validation_summary.pdf |
-| <a id="fig:main-readout-coordination"></a>`fig:main-readout-coordination` | temporal_localization_patching | paper/figures/readout_coordination/temporal_patch_grid_coordination.png |
 | <a id="fig:main-recipe-dose-response"></a>`fig:main-recipe-dose-response` | pretraining_recipe_control | paper/figures/recipe_control/timing_dose_response.pdf |
 | <a id="fig:main-selected-normalized-trajectories"></a>`fig:main-selected-normalized-trajectories` | crosscoder_olmo, feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_decoder_norm_trajectories.pdf |
 | <a id="fig:main-sva-availability-expression"></a>`fig:main-sva-availability-expression` | contrastive_readout_swap | paper/figures/readout_coordination/sva_availability_expression_69b.pdf |
 | <a id="fig:main-wordnet-matched-controls"></a>`fig:main-wordnet-matched-controls` | concept_evolution_validation | paper/figures/vocabulary_family_probes/wordnet_matched_controls_160m.pdf |
 | <a id="fig:method-cross-snapshot-schematic"></a>`fig:method-cross-snapshot-schematic` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="sec:app-we-crosscoders"></a>`sec:app-we-crosscoders` | crosscoder_we | (produced; see experiments.yaml / tables below) |
-| <a id="tab:app-ae-binary"></a>`tab:app-ae-binary` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-ae-openvocab"></a>`tab:app-ae-openvocab` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-ae-tasks"></a>`tab:app-ae-tasks` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json |
-| <a id="tab:app-curated-atlas-features"></a>`tab:app-curated-atlas-features` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-method-comparison"></a>`tab:app-method-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="fig:overview"></a>`fig:overview` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="tab:app-ae-binary"></a>`tab:app-ae-binary` | contrastive_readout_swap | (produced; see experiments.yaml / tables below) |
+| <a id="tab:app-ae-early"></a>`tab:app-ae-early` | contrastive_readout_swap | (produced; see experiments.yaml / tables below) |
+| <a id="tab:app-ae-openvocab"></a>`tab:app-ae-openvocab` | contrastive_readout_swap | (produced; see experiments.yaml / tables below) |
+| <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos/shards/sva__h1000__s143000.json |
+| <a id="tab:app-lifecycle-stability"></a>`tab:app-lifecycle-stability` | feature_lifecycle_trajectories | (produced; see experiments.yaml / tables below) |
+| <a id="tab:app-readout-swap-languages"></a>`tab:app-readout-swap-languages` | language_stratified_readout_swap | paper/figures/readout_coordination/language_swap_table.tex |
 | <a id="tab:app-recipe-control-summary"></a>`tab:app-recipe-control-summary` | pretraining_recipe_control | results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_summary.csv |
+| <a id="tab:app-reorganization-window-stats"></a>`tab:app-reorganization-window-stats` | feature_lifecycle_trajectories | (produced; see experiments.yaml / tables below) |
+| <a id="tab:app-task-construction"></a>`tab:app-task-construction` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-terminology-glossary"></a>`tab:app-terminology-glossary` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-wordnet-supersense-1b"></a>`tab:app-wordnet-supersense-1b` | concept_evolution_validation | experiments/probes/concept_evolution_validation/derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv |
-| <a id="tab:checkpoint-suite-comparison"></a>`tab:checkpoint-suite-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:compute-resources"></a>`tab:compute-resources` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="tab:evaluation-controls"></a>`tab:evaluation-controls` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:full-inventory"></a>`tab:full-inventory` | crosscoder_main | experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv |
 | <a id="tab:lifecycle-profile-rules"></a>`tab:lifecycle-profile-rules` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:main-evidence-map"></a>`tab:main-evidence-map` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:main-localization-ledger"></a>`tab:main-localization-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0/shards/sva__h1000__s1000.json |
-| <a id="tab:main-panel-a"></a>`tab:main-panel-a` | crosscoder_main | experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv |
-| <a id="tab:model-roles"></a>`tab:model-roles` | (paper LaTeX tree only) | (paper LaTeX tree only) |
+| <a id="tab:method-comparison"></a>`tab:method-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:repro-dictionary-hparams"></a>`tab:repro-dictionary-hparams` | crosscoder_main | (produced; see experiments.yaml / tables below) |
+| <a id="tab:task-protocol"></a>`tab:task-protocol` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 <!-- END GENERATED FIGURE INDEX -->
 
 ## How to read this
@@ -166,153 +124,109 @@ downloading the released artifacts.
 
 ## Figure to experiment to metrics
 
-Grouped by the part of the paper's argument each supports. Experiment ids and
-script paths are taken verbatim from `experiments.yaml`; figure labels are the
-`\label{...}` keys used in the paper. The "Metrics / scripts" cell points at the
-**data-producing** scripts that compute and persist each figure's underlying
-metrics; the figures themselves are rendered in the paper tree (see "How to
-read this").
+Ordered as in the paper. Experiment ids and script paths are taken from
+`experiments.yaml`, and each experiment's README lists the full commands in order.
+The scripts compute and persist each item's underlying metrics; the figures
+themselves are rendered in the paper tree (see "How to read this").
 
-### Dictionaries can track the unembedding (instrument validation)
+### Main text
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:main-multimodel-validation`, `tab:main-panel-a`, `tab:full-inventory`, `tab:repro-dictionary-hparams` | `crosscoder_main` | metrics: `experiments/crosscoders/crosscoder_main/derived/appendix_validation/` + `derived/main_1b/` sidecars (inventory via `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py`; canonical table via `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py`); the hyperparameter table is also recorded in `configs/runs/` | for retrain | trained crosscoders |
-| `fig:app-instrument-pareto`, `fig:app-lambda-sweep` | `pareto_frontier_ev_l0` | `experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py` (+ `extract_rates_phase2.sh`) persist EV/L0 CSVs | for retrain | EV/L0 sweeps |
-| `fig:app-pca-static`, `fig:app-concat-pca`, `fig:app-endpoint-linear` | `crosscoder_main` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_pca_static.py`, `eval_concat_pca.py`, `eval_endpoint_linear.py` persist baseline EV metrics | no | `W_U` snapshots |
-| `fig:app-fidelity-curves` | `crosscoder_main` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_persnap_fidelity.py` persists `persnap_fidelity.csv` | no | crosscoders + snapshots |
-| `fig:app-spectral-capacity`, `fig:app-dense-reorg-pythia`, `fig:app-dense-reorg-olmo`, `fig:app-mean-direction-preprocessing`, `fig:app-mean-direction-spectral-gap` | `dense_readout_diagnostics` | `experiments/baselines/dense_readout_diagnostics/scripts/build_spectral_capacity.py`, `build_dense_reorganization_timing.py`, `build_mean_direction_audit.py` persist the spectral / timing / mean-direction CSVs | no | `W_U` snapshots |
-| `fig:app-1b-baseline-suite`, `fig:app-160m-baselines`, `fig:app-snapshot-fidelity`, `fig:app-persnap-sae-trajectory`, `fig:app-parameter-budget` | `persnap_sae_baseline` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` persists the comparison JSON | for retrain | per-snapshot SAEs |
-| `fig:app-heldout-checkpoints`, `fig:app-heldout-checkpoints-1b` | `heldout_checkpoints` | `experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py` persists `heldout_ev.csv` / `heldout_ev.pt` | for retrain | snapshots + crosscoders |
-| `fig:app-norm-pareto`, `fig:app-norm-pareto-raw-vs-pct` | `crosscoder_main` | metrics: `experiments/crosscoders/crosscoder_main/derived/appendix_validation/lambda_sweep.csv` (computed by `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py`) | for retrain | lambda-sweep EV/L0 |
-| `fig:app-large-selected-persnap`, `fig:app-large-l0-token-distribution`, `fig:app-large-feature-rate-distribution`, `fig:app-p69b-dense-vs-sparse` | `crosscoder_main` | metrics: `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/` (computed by `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py` / `eval_per_snap.py`) | for retrain | 1B/6.9B diagnostics |
+| Figure 1 (`fig:overview`) | paper only; margins from `contrastive_readout_swap` | TikZ schematic; its two margins are per-example outputs of `run_swap_grid.py` on Pythia-1B (hidden state from step 1000, readouts 1000 and 143k, no alignment) | yes | snapshots + hidden states |
+| Table 1 (`tab:task-protocol`) | paper only | hand-typeset; the tasks are built by `build_task_datasets.py` and `readout.probes.contrastive_tasks` | no | none |
+| Figure 2 (`fig:main-selected-normalized-trajectories`) | `feature_lifecycle_trajectories`, `crosscoder_olmo` | `plot_normalized_trajectories.py` persists the decoder-norm trajectories | no | crosscoders |
+| Table 2 (`tab:method-comparison`) | paper only | qualitative comparison | | |
+| Figure 3 (`fig:main-wordnet-matched-controls`) | `concept_evolution_validation` | `run_wordnet_matched_controls.py` | no | `W_U` snapshots |
+| Figure 4 (`fig:main-sva-availability-expression`) | `contrastive_readout_swap` | left panel: `run_swap_grid.py` (Pythia-6.9B, 32 checkpoints, `--wu-round bf16`) and `run_controlled_hidden_probes.py`; right panel: `build_task_datasets.py --task-set availability`, `extract_hidden_dense.py`, `run_availability_probes.py --group-split` (persist `probe_summary.csv`) | yes | snapshots + hidden states |
+| Section 4.4 (sparse feature ablation) | `contrastive_task_feature_rescue` | `run_feature_attribution.py` (Pythia-1B hidden states from step 1000, reconstructed step-143k readout) | yes | crosscoders + hidden states |
+| Figure 5 (`fig:main-recipe-dose-response`) | `pretraining_recipe_control` | `train_control.py` (validation loss in each run's `metrics.csv`); `train_control_crosscoder.py` and `analyze_lifecycle.py` for seeds 0-2, pooled by `aggregate_seed_replication.py` into `lifecycle_multiseed_table.csv` | for training and fits | trained 31M checkpoints (released) |
 
-### The readout reorganizes early and develops through a sparse lifecycle
+### Appendices B-C (method details, reproducibility)
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:main-selected-normalized-trajectories`, `fig:app-selected-decoder-norm-heatmaps`, `fig:app-prepost-reorganization-peakstep`, `fig:app-reorganization-window-metrics`, `fig:app-lifecycle-profile-composition`, `fig:app-selected-population-lifecycle-diagnostics`, `fig:app-metric-lifecycle-combined`, `fig:app-wishbone-pca`, `fig:app-wishbone-manual-corner-split` | `feature_lifecycle_trajectories` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/{find_reorganization_steps,plot_normalized_trajectories,plot_lifecycle_profile_composition,plot_selected_wishbone}.py` persist the normalized-trajectory, reorganization-step, profile-composition, and wishbone CSV/`.pt` metrics (written to the gitignored `results/experiments/lifecycle/feature_lifecycle_trajectories/` output tree) | no | crosscoders + aggregates |
-| `fig:app-reorganization-window-metrics` (OLMo context), `fig:main-selected-normalized-trajectories` (OLMo panel) | `crosscoder_olmo` | `experiments/crosscoders/crosscoder_olmo/scripts/eval_decision_rules.py` persists OLMo eval sidecars | for retrain | OLMo eval sidecars |
-| `fig:app-olmo-window-metric-grid`, `fig:app-olmo-window-population` | `olmo_matched_checkpoint_window` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/train_late_start.py` (retrain) then `build_late_start_vs_olmo_figures.py` persist the late-start metric grid | for retrain | snapshots + crosscoders |
-| `fig:app-timing-triangulation` | `feature_lifecycle_trajectories`, `concept_evolution_validation`, `temporal_localization_patching` | TikZ figure drawn in the paper tree from the three reported estimates: the crosscoder reorganization window (`find_reorganization_steps.py`), the WordNet separability onsets (`run_wordnet_supersense_probe.py`), and the step-1000 readout-swap optimum (`temporal_patch_grid.py`) | no | as per the three rows |
+| Table C.1 (`tab:repro-dictionary-hparams`) | `crosscoder_main` | settings of record in `configs/runs/` | | |
+| Figure B.1, Tables A.1, B.1, C.2 | paper only | schematic and hand-typeset tables | | |
 
-### Readout reorganization is temporally localized (readout swaps)
+### Appendix D (instrument validation)
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:main-readout-coordination`, `fig:app-readout-swap-nll-kl-grid`, `fig:app-readout-swap-family-logit-mass`, `fig:app-readout-swap-target-nll`, `fig:app-readout-swap-160m-target-nll`, `fig:app-aligned-readout-swap` | `temporal_localization_patching` | `experiments/causal/temporal_localization_patching/scripts/{temporal_patch_grid,run_aligned_swap_grid}.py` persist `summary_*.csv` / `manifest.json` / `raw.pt` swap metrics | yes | snapshots + hidden states |
+| Figure D.1, Table D.1 (`fig:main-multimodel-validation`, `tab:full-inventory`) | `crosscoder_main`, `crosscoder_olmo` | `appendix_validation/recompute_quality.py`, `aggregates/build_analysis_table.py`; OLMo via `eval_decision_rules.py` | for retrain | trained crosscoders |
+| Figures D.2, D.3, D.10 (`fig:app-mean-direction-preprocessing`, `-spectral-gap`, `fig:app-dense-reorg-pythia`) | `dense_readout_diagnostics` | `build_mean_direction_audit.py`, `build_dense_reorganization_timing.py` | no | `W_U` snapshots |
+| Figure D.4 (`fig:app-fidelity-curves`) and the strata audit | `crosscoder_main` | `appendix_validation/readout_functional_fidelity.py` (held-out matrix EV, logit $R^2$, KL, $\Delta$NLL, top-1/5 per checkpoint) and `readout_functional_fidelity_strata.py` (the token-stratum check in the Appendix D text); the 1B and 6.9B runs need about 25 GB RAM | no | crosscoders + snapshots |
+| Figures D.5, D.12 (`fig:app-instrument-pareto`, `fig:app-lambda-sweep`) | `pareto_frontier_ev_l0` | `compute_ev_l0_phase2.py` (+ `extract_rates_phase2.sh`) | for retrain | EV/L0 sweeps |
+| Figures D.6, D.7 (`fig:app-160m-baselines`, `fig:app-snapshot-fidelity`) | `persnap_sae_baseline` (with `crosscoder_we` for the `W_E` dictionaries) | `train_persnap_saes.py`, `build_persnap_comparison.py` | for retrain | per-snapshot SAEs |
+| Figures D.8, D.9 (`fig:app-pca-static`, `fig:app-concat-pca`) | `crosscoder_main` | `appendix_validation/baselines/eval_pca_static.py`, `eval_concat_pca.py` | no | `W_U` snapshots |
+| Figure D.11 (`fig:app-heldout-checkpoints-1b`) | `heldout_checkpoints` | `eval_heldout.py` | for retrain | snapshots + crosscoders |
 
-### Vocabulary families emerge in the readout
+### Appendix E (lifecycle and reorganization window)
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:main-wordnet-matched-controls`, `fig:app-wordnet-supersense-probes-160m-inventory`, `fig:app-wordnet-supersense-probes-1b`, `tab:app-wordnet-supersense-1b` | `concept_evolution_validation` | `experiments/probes/concept_evolution_validation/scripts/{run_wordnet_matched_controls,run_wordnet_supersense_probe}.py` persist probe-trajectory/summary CSVs under `experiments/probes/concept_evolution_validation/derived/` | no | crosscoders |
+| Figure E.1 (`fig:app-lifecycle-profile-composition`) | `feature_lifecycle_trajectories` | `plot_lifecycle_profile_composition.py` (refined ruleset, `*_refined_*` files) | no | crosscoders |
+| Table E.1 (`tab:lifecycle-profile-rules`) | paper only | rules implemented in `readout.dynamics.lifecycle.classify_profiles_refined` | | |
+| Figure E.2 (`fig:app-selected-population-lifecycle-diagnostics`) and the adjacent window-peak and $\rho_f$ numbers | `feature_lifecycle_trajectories` | `build_population_diagnostics.py` | no | decoder-norm caches |
+| Table E.2, Figure E.4 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | `feature_lifecycle_trajectories`, `crosscoder_olmo` | `find_reorganization_steps.py` (windows, circular-shift $p$ values, bootstrap resample counts) | no | crosscoders + aggregates |
+| Figure E.3 (`fig:app-olmo-window-population`) and the late-start profile shares | `olmo_matched_checkpoint_window` | `train_late_start.py` (optional; the dictionary is released), `build_late_start_vs_olmo_figures.py` | for retrain | snapshots + crosscoders |
+| Table E.3 (`tab:app-lifecycle-stability`) | `feature_lifecycle_trajectories` | `lifecycle_stability.py --stage all` (21 dictionary fits; about 25 min and 15 GB RAM on CPU) | no | released crosscoders + aggregates |
+
+### Appendix F (vocabulary family probes)
+
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
+|---|---|---|---|---|
+| Figures F.1, F.2, Table F.1 (`fig:app-wordnet-supersense-probes-160m-inventory`, `-1b`, `tab:app-wordnet-supersense-1b`) | `concept_evolution_validation` | `run_wordnet_supersense_probe.py` | no | `W_U` snapshots |
+| Lemma-grouped splits (Appendix F text) | `concept_evolution_validation` | `run_wordnet_supersense_probe.py --split lemma` (splits grouped by lemma; also writes the split-leakage statistics) | no | `W_U` snapshots |
 
 These probe scripts read WordNet 3.0 through NLTK (`src/readout/probes/concept_gazetteer.py`).
 Before the first run, download the corpus once:
 `python -c "import nltk; nltk.download('wordnet')"` (one-time, into `~/nltk_data/`).
 
-### The output readout learning rate sets the timing (recipe control)
+### Appendix G (availability and expression)
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:app-recipe-control-geometry` | `pretraining_recipe_control` | `experiments/ablations/pretraining_recipe_control/scripts/train_control.py` trains an arm (or download the released checkpoints from `hf.co/hematteo/readout-recipe-control`); `analyze_readout_geometry.py` persists `readout_geometry_pythia.csv` | for retrain | trained 31M checkpoints |
-| `fig:main-recipe-dose-response`, `fig:app-recipe-control-{median,trajectories,peakstep,reorg}`, `tab:app-recipe-control-summary` | `pretraining_recipe_control` | `train_control_crosscoder.py` fits one trajectory crosscoder per arm (`crosscoders/cc_<cond>_d8192_seed0.pt`); `analyze_lifecycle.py` persists `lifecycle_seed0/{lifecycle_stats.json,lifecycle_summary.csv,median_trajectories.csv,peak_step_population.csv,reorg_window.csv,feature_trajectories.pt}`; `aggregate_seed_replication.py` pools seeds | for the fits | trained 31M checkpoints |
-| `fig:app-recipe-control-basin`, `fig:app-recipe-control-explag` | `pretraining_recipe_control` | `fetch_heldout_slice.py` builds the held-out slice; `run_trajectory_swap.py` persists `trajectory/trajectory_swap_all.csv` (per-cell shards, resumable); `run_expression_lag.py` persists `expression_lag/expression_lag.csv`; `run_recipe_control_swap.py` adds the cross-condition supplement `swap/swap_grid_recipe_control.csv` | yes (CPU works at reduced `--eval-tokens`) | trained 31M checkpoints + held-out slice |
-| `fig:app-recipe-control-temperature`, `fig:app-recipe-control-gauge-landscape` | `pretraining_recipe_control` | `run_gauge_landscape.py` persists `gauge/temperature_conservation.csv` and `gauge/gauge_landscape.csv` | yes (CPU works at reduced `--eval-tokens` / `--grid`) | trained 31M checkpoints + held-out slice |
+| Figure G.1 (`fig:app-contrastive-readout-lag`) | `contrastive_readout_swap` | the Figure 4 left-panel run (`run_swap_grid.py`, `run_controlled_hidden_probes.py`) | yes | snapshots + hidden states |
+| Figures G.2, G.3, Tables G.2-G.4 (`fig:app-ae-capacity`, `fig:app-ae-grid`, `tab:app-ae-binary`, `tab:app-ae-openvocab`, `tab:app-ae-early`) | `contrastive_readout_swap` | `build_task_datasets.py --task-set availability`, `extract_hidden_dense.py`, `run_availability_probes.py` for Pythia-6.9B and the two Pythia-1B runs (commands in the experiment README) | yes (one 48 GB GPU at fp32 for 6.9B) | snapshots + hidden states; BLiMP from the Hub; function-vector word lists in `$FV_DATA_DIR` |
+| Table G.1 (`tab:app-task-construction`) | paper only | hand-typeset templates and word lists; implemented in `readout.probes.availability_tasks` and its sibling modules | | |
 
-### Hidden state availability precedes native readout expression
+`run_availability_probes.py` builds its grouped cross-validation folds with the
+tie order of the x86-64 NumPy sort used for the paper, so the paper's folds, and
+its fold-dependent intervals, come out the same on any platform. (Sklearn's
+`GroupKFold` alone would give different folds on arm64, e.g. Apple Silicon.)
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+### Appendix H (readout swaps and localization)
+
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:main-sva-availability-expression`, `fig:app-contrastive-readout-lag` | `contrastive_readout_swap` | `experiments/probes/contrastive_readout_swap/scripts/{build_task_datasets,run_swap_grid,run_controlled_hidden_probes}.py` persist the swap-grid `summary.csv` and the controlled hidden-state probe CSVs; the Pythia-6.9B narrative figures are assembled in the paper tree from those summaries | yes | snapshots + hidden states |
-| `fig:app-ae-*`, `tab:app-ae-*` (availability/expression appendix) | (paper LaTeX tree only) | report figures built in the paper tree from the 6.9B probe summaries above; the report builder is not shipped (see below) | | |
+| Figures H.1, H.4 (`fig:app-readout-swap-nll-kl-grid`, `fig:app-aligned-readout-swap`) | `temporal_localization_patching` | `temporal_patch_grid.py`, `run_aligned_swap_grid.py`; the Pythia eval corpus is rebuilt by `build_eval_corpus_pythia.py` (also released) | yes | snapshots + hidden states |
+| Table H.1, Figures H.2, H.3 (`tab:app-readout-swap-languages`, `fig:app-readout-swap-english-aggregate`, `fig:app-readout-swap-languages`) | `language_stratified_readout_swap` | `run_language_stratified_swap.py` (per-language NLL, paired block bootstrap, argmin probabilities) | yes (about 5.5 h on one A40) | snapshots + hidden states + released eval corpus |
+| Table H.2 (`tab:app-contrastive-localisation-ledger`) | `contrastive_task_feature_rescue` | `run_feature_attribution.py` (ablate, preserve, and sign columns), then `run_converse_intervention.py` on the same held-out half (hidden-projection columns) | yes | crosscoders + hidden states |
+| Figures H.5, H.6 (`fig:app-sparse-feature-causal-curves`, `-specificity-k32`) | `sparse_feature_causal_tests` | eight `run_1b_pilot.py` runs, two `run_specificity_from_pilots.py` passes, then `aggregate_causal_tests.py` | yes | crosscoders + aggregates |
 
-### Task margins localize to a few readout directions (causal audit)
+### Appendix I (readout learning rate control)
 
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
+| Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| `fig:app-sparse-feature-causal-curves`, `fig:app-sparse-feature-causal-specificity-k32` | `sparse_feature_causal_tests` | `experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py` (persists `summary.csv` / `raw.pt`) then `run_specificity_from_pilots.py` (persists `specificity.csv`) | yes | crosscoders + aggregates |
-| `fig:app-contrastive-task-localization`, `tab:main-localization-ledger`, `tab:app-contrastive-localisation-ledger` | `contrastive_task_feature_rescue` | `experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py` persists one JSON shard per task family under `run0/shards/` (attribution, top-k keep / ablate / project-out, matched controls); the figure and both ledgers are typeset in the paper tree from those tabulated values | yes | crosscoders + hidden states |
-
-### Read/write asymmetry (W_E vs W_U)
-
-| Paper figure (label) | Experiment id | Metrics / scripts | Needs GPU | Needs SSD data |
-|---|---|---|---|---|
-| `sec:app-we-crosscoders` (`fig:app-we-read-write-asymmetry`, `fig:app-we-quality-pareto`, `fig:app-we-lead-lag-family`) | `crosscoder_we` | `experiments/crosscoders/crosscoder_we/scripts/{build_we_appendix_plots,build_we_appendix_extended_plots}.py` persist the read/write-asymmetry, quality-Pareto, and lead-lag CSV/`.pt` metrics | for retrain | `W_E` crosscoders |
+| Figure I.1, Table I.1, Figure I.2 (`fig:app-recipe-control-trajectories`, `tab:app-recipe-control-summary`, `fig:app-recipe-control-reorg`) | `pretraining_recipe_control` | `train_control_crosscoder.py`, `analyze_lifecycle.py` (seed 0 for tables and per-feature figures, seeds 0-2 for timing), `aggregate_seed_replication.py` | for the fits | trained 31M checkpoints (released) |
+| Figure I.3 (`fig:app-recipe-control-geometry`) | `pretraining_recipe_control` | `analyze_readout_geometry.py` | no | trained 31M checkpoints |
+| Figures I.4, I.5 (`fig:app-recipe-control-basin`, `fig:app-recipe-control-explag`) | `pretraining_recipe_control` | `fetch_heldout_slice.py`, `run_trajectory_swap.py`, `run_expression_lag.py` (`run_recipe_control_swap.py` adds a cross-condition supplement; `run_gauge_landscape.py` the gauge analysis) | yes (CPU works at reduced `--eval-tokens`) | trained 31M checkpoints + held-out slice |
 
 ## Notes
 
-- All paper figures are rendered in the paper LaTeX tree from the metrics
-  these scripts produce; this repo computes those metrics on run but ships none of
-  them, and ships no figure-rendering code (zero `matplotlib` imports). The tables
-  above therefore map each figure to the experiment + compute scripts that persist
-  its underlying numbers, not to any in-repo renderer.
-- The large `crosscoder_main/` experiment underlies several of the paper's figure
-  groups (instrument validation, multimodel comparison, baselines); its full
-  `paper_labels:` mapping is listed in its `experiments.yaml` entry.
-- `make audit` (`scripts/audit/check_layout.py`) validates that every paper
-  label has at least one producing experiment in `experiments.yaml` (coverage,
-  not uniqueness). This release ships no `paper/main.tex`, so the
-  label-coverage check is informational only.
-
-### Paper-only figure groups (no in-repo metrics)
-
-Distinct from the figures above, whose metrics are persisted here and rendered
-in the paper tree, several figure groups have **no producing metrics in this
-repo at all**. They are listed under `paper_only_labels` in `experiments.yaml`
-and appear in the index as "paper LaTeX tree only":
-
-- **Availability/expression appendix** (`fig:app-ae-grid`, `-spectrum`,
-  `-numeric`, `-capacity`, `-floor`, `-confound`, `-rank`, `-scale`;
-  `tab:app-ae-tasks`, `-binary`, `-openvocab`): built in the paper tree by a
-  report script from Pythia-6.9B probe-summary CSVs. The upstream probe and swap
-  data is generated here by `experiments/probes/contrastive_readout_swap/`, but
-  the summary CSVs and the report builder are not shipped. The two narrative
-  figures (`fig:main-sva-availability-expression`, `fig:app-contrastive-readout-lag`)
-  are in the same situation and are listed against `contrastive_readout_swap`
-  because that experiment produces their inputs.
-- **`fig:app-fidelity-strata-audit`** (instrument validation appendix): the
-  producing script (`readout_functional_fidelity_strata.py`) was not included in
-  this release.
-- **Feature interpretation** (`fig:app-feature-cards-representative`,
-  `tab:app-curated-atlas-features`): derived from an interactive multi-model
-  feature-atlas browser whose build pipeline is not included here.
-- **Readout prism** (`fig:app-logit-proto-decomposition`,
-  `fig:app-logit-proto-dense-table`, `fig:app-logit-proto-dense-table-dickens`):
-  a scoped preview of the companion paper *Sparse Readout Prism*
-  (arXiv:2609.01936); the code is the companion repository
-  [`hematteo/sparse-readout-prism`](https://github.com/hematteo/sparse-readout-prism).
-- **Hand-authored tables and schematics** (`fig:method-cross-snapshot-schematic`,
-  `tab:main-evidence-map`, `tab:model-roles`, `tab:checkpoint-suite-comparison`,
-  `tab:compute-resources`, `tab:lifecycle-profile-rules`,
-  `tab:app-terminology-glossary`, `tab:app-method-comparison`): typeset in the
-  paper tree; no experiment pipeline produces them.
-
-A partially covered case worth flagging: the
-**`sparse_feature_causal_tests` appendix panels**
-(`fig:app-sparse-feature-causal-curves`,
-`fig:app-sparse-feature-causal-specificity-k32`) are not regenerable
-end-to-end in this repo. The compute entry points
-(`run_1b_pilot.py` then `run_specificity_from_pilots.py`) **do** persist the
-un-aggregated per-concept `summary.csv` / `specificity.csv` metrics, but the
-CSV-aggregation step that the paper-tree panels assume is not shipped. The
-contrastive-task localization figure (`fig:app-contrastive-task-localization`)
-is a separate experiment, `contrastive_task_feature_rescue`, and is covered
-above.
-
-- **Former intervention-helper dependency (`02_intervention.py`), resolved.**
-  The temporal-patch metrics library (`readout.dynamics.temporal_patch`)
-  historically sourced shared helpers (`encode`, `get_pieces`, `script_of`) and
-  the eval-token corpus from a non-shipped `_archive/` module. Those helpers
-  now live in shipped code (`encode_snapshot_local` on
-  `readout.crosscoder.inference`, `readout.probes.token_scripts.script_of`)
-  and the corpus default resolves to the released copy under
-  `$UM_SSD_ROOT/hf_release/.../evaluation/eval-corpus/eval_tokens.pt`
-  (byte-identical to the archived original), so the full temporal-patch
-  recompute runs from public assets. The replacement was verified against the
-  archived originals on the real release data: helper outputs bitwise
-  identical, and the end-to-end smoke pipeline byte-identical. (The
-  exploratory "global temporal patch" scripts and the `build_1b_aggregates.py`
-  builder were removed earlier; the aggregates are distributed as released
-  artifacts, see [DATA.md](DATA.md).)
+- All paper figures are rendered in the paper LaTeX tree from the metrics these
+  scripts produce; this repository computes those metrics on run but ships none
+  of them, and ships no figure-rendering code.
+- `make audit` (`scripts/audit/check_layout.py`) checks that every experiment
+  directory has a manifest entry and that every path the manifest names exists.
+  This release ships no `paper/`, so the label-coverage check against the paper
+  source is skipped.
+- Items marked "paper only" are listed under `paper_only_labels` in
+  `experiments.yaml`: the schematics (Figure 1, Figure B.1) and the hand-typeset
+  tables (Tables 1, 2, A.1, B.1, C.2, E.1, G.1). No experiment produces them, but
+  the numbers they quote come from the experiments above.
+- The temporal-patch library (`readout.dynamics.temporal_patch`) runs entirely
+  from public assets: its helpers live in shipped code and the eval corpus
+  resolves to the released copy under
+  `$UM_SSD_ROOT/hf_release/.../evaluation/eval-corpus/eval_tokens.pt`.
