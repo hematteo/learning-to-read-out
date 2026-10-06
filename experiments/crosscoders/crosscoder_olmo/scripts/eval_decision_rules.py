@@ -44,7 +44,7 @@ PRODUCTION_THRESHOLDS = {
 
 def compute_firing_rates(crosscoder, snapshots, batch_size=2048, device="cuda"):
     """Per-feature, per-snapshot firing rates. Returns (K, d_sae) tensor."""
-    from wu_adapter import batch_iter  # type: ignore
+    from readout.crosscoder.wu_adapter import batch_iter
 
     crosscoder.eval()
     hook_points = crosscoder.cfg.hook_points
@@ -162,7 +162,7 @@ def main() -> int:
     seed_everything(args.seed)
     log_run_provenance(seed=args.seed)
 
-    from wu_adapter import build_crosscoder, load_snapshots, preprocess_snapshots  # type: ignore
+    from readout.crosscoder.wu_adapter import build_crosscoder, load_snapshots, preprocess_snapshots
 
     print(f"Loading crosscoder from {args.crosscoder}", flush=True)
     blob = torch.load(args.crosscoder, map_location="cpu", weights_only=False)
@@ -249,7 +249,7 @@ def main() -> int:
     ev = quality_at_train.get("explained_variance")
     if ev is None:
         # Recompute defensively
-        from wu_adapter import quick_quality  # type: ignore
+        from readout.crosscoder.wu_adapter import quick_quality
 
         m = quick_quality(
             crosscoder, snapshots, batch_size=args.batch_size, device=args.device
