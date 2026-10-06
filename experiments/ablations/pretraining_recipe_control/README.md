@@ -243,7 +243,7 @@ script takes `--ckpt-root`, `--conditions` (default: the four paper arms; add
    `uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py --out ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --start-token 10e9 --eval-tokens 2e6`
 
 8. **Within-trajectory readout swap grid** (one GPU, minutes; resumable per cell):
-   `uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 400000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory`
+   `uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 120000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory`
    Cross-condition supplement (final checkpoint, with the physical-swap oracle check):
    `uv run python experiments/ablations/pretraining_recipe_control/scripts/run_recipe_control_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 2000000 --verify --out-csv results/experiments/ablations/pretraining_recipe_control/swap/swap_grid_recipe_control.csv`
 

@@ -205,8 +205,7 @@ describes the layout rules that `make audit` enforces in CI.
 A companion repository,
 [`sparse-readout-prism`](https://github.com/hematteo/sparse-readout-prism)
 ([arXiv:2609.01936](https://arxiv.org/abs/2609.01936)), factorizes a model's final
-`W_U` into a sparse feature basis for logit-lens analysis; the readout prism
-appendix of this paper previews that work.
+`W_U` into a sparse feature basis for logit-lens analysis.
 
 ## Citation
 

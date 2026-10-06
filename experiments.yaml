@@ -104,7 +104,7 @@ experiments:
       - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py --model pythia-160m --d-sae 8192 --seed 0 --steps all --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing"
       - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py --model pythia-1b --d-sae 24576 --seed 0 --steps all --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia1b"
       - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py --model pythia-6.9b --d-sae 32768 --seed 0 --steps all --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia69b --ckpt ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors"
-      - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity_strata.py --model pythia-1b --d-sae 24576 --seed 0 --steps all --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia1b"
+      - "uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity_strata.py --model pythia-1b --d-sae 24576 --seed 0 --steps all --max-seqs 64 --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia1b"
 
   - id: sparse_feature_causal_tests
     status: active
@@ -113,7 +113,7 @@ experiments:
       features are load-bearing for family-specific output behavior under fixed
       hidden states.
     paper_intent: |
-      Appendix H: top-k ablations of sparse readout features on Pythia-1B at step 143k
+      Appendix H: top-k ablations of sparse readout features on Pythia-1B at steps 1000 and 143k
       across non-Latin scripts, punctuation, digits, and function-word token families.
     scripts_dir: experiments/causal/sparse_feature_causal_tests/scripts/
     figures_dir: figures/sparse_feature_causal_tests/
@@ -296,7 +296,7 @@ experiments:
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py --ckpt-root ${UM_SSD_ROOT}/runs --cc-dir results/experiments/ablations/pretraining_recipe_control/crosscoders --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed 2 --d-sae 8192 --out-dir results/experiments/ablations/pretraining_recipe_control/lifecycle_seed2"
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/aggregate_seed_replication.py --seed-stat results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_stats.json --seed-stat results/experiments/ablations/pretraining_recipe_control/lifecycle_seed1/lifecycle_stats.json --seed-stat results/experiments/ablations/pretraining_recipe_control/lifecycle_seed2/lifecycle_stats.json --seeds 0 1 2 --out-json results/experiments/ablations/pretraining_recipe_control/lifecycle_multiseed_summary.json --out-csv results/experiments/ablations/pretraining_recipe_control/lifecycle_multiseed_table.csv"
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py --out ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --start-token 10e9 --eval-tokens 2e6"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 400000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory"
+      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 120000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory"
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_expression_lag.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 400000 --max-positions 20000 --out-dir results/experiments/ablations/pretraining_recipe_control/expression_lag"
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_gauge_landscape.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --landscape-cond baseline --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 200000 --grid 21 --log2-range 2.0 --out-dir results/experiments/ablations/pretraining_recipe_control/gauge"
     cited_in: [paper/main.tex]
