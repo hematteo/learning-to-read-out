@@ -14,7 +14,6 @@ reproduction index is [`../docs/REPRODUCE.md`](../docs/REPRODUCE.md).
 | `causal/` | `temporal_localization_patching`, `language_stratified_readout_swap`, `sparse_feature_causal_tests`, `contrastive_task_feature_rescue` | Readout swaps on held-out text, and ablations of sparse features in the reconstructed readout. |
 | `baselines/` | `dense_readout_diagnostics`, `persnap_sae_baseline` | Dense `W_U` diagnostics and per-snapshot SAE baselines. |
 | `ablations/` | `heldout_checkpoints`, `olmo_matched_checkpoint_window`, `pretraining_recipe_control` | Held-out checkpoint reconstruction, the late-start control for OLMo-2-7B, and the controlled 31M pretraining runs. |
-| `capacity/` | `pareto_frontier_ev_l0` | Per-snapshot EV and L0 of the Pythia-160M dictionaries. |
 
 Each experiment README has the same sections: the question it answers and
 the paper section it supports, a **Paper results** table (paper label, what

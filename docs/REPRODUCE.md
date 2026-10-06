@@ -34,8 +34,8 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="fig:app-dense-reorg-pythia"></a>`fig:app-dense-reorg-pythia` | dense_readout_diagnostics | paper/figures/dense_readout/dense_reorganization_timing.pdf |
 | <a id="fig:app-fidelity-curves"></a>`fig:app-fidelity-curves` | crosscoder_main | paper/figures/readout_functional_fidelity/fidelity_curves.pdf |
 | <a id="fig:app-heldout-checkpoints-1b"></a>`fig:app-heldout-checkpoints-1b` | heldout_checkpoints | paper/figures/heldout_checkpoints/heldout_reconstruction_1b.pdf |
-| <a id="fig:app-instrument-pareto"></a>`fig:app-instrument-pareto` | pareto_frontier_ev_l0 | paper/figures/instrument_pareto/instrument_pareto.pdf |
-| <a id="fig:app-lambda-sweep"></a>`fig:app-lambda-sweep` | pareto_frontier_ev_l0 | paper/figures/instrument_pareto/sparsity_penalty_sensitivity.pdf |
+| <a id="fig:app-instrument-pareto"></a>`fig:app-instrument-pareto` | crosscoder_main | paper/figures/instrument_pareto/instrument_pareto.pdf |
+| <a id="fig:app-lambda-sweep"></a>`fig:app-lambda-sweep` | crosscoder_main | paper/figures/instrument_pareto/sparsity_penalty_sensitivity.pdf |
 | <a id="fig:app-lifecycle-profile-composition"></a>`fig:app-lifecycle-profile-composition` | feature_lifecycle_trajectories | paper/figures/feature_lifecycle/selected_lifecycle_profile_composition.pdf |
 | <a id="fig:app-mean-direction-preprocessing"></a>`fig:app-mean-direction-preprocessing` | dense_readout_diagnostics | paper/figures/dense_readout/mean_direction_preprocessing.pdf |
 | <a id="fig:app-mean-direction-spectral-gap"></a>`fig:app-mean-direction-spectral-gap` | dense_readout_diagnostics | paper/figures/dense_readout/mean_direction_spectral_gap_by_model.pdf |
@@ -158,7 +158,7 @@ themselves are rendered in the paper tree (see "How to read this").
 | Figure D.1, Table D.1 (`fig:main-multimodel-validation`, `tab:full-inventory`) | `crosscoder_main`, `crosscoder_olmo` | `appendix_validation/recompute_quality.py`, `aggregates/build_analysis_table.py`; OLMo via `eval_decision_rules.py` | for retrain | trained crosscoders |
 | Figures D.2, D.3, D.10 (`fig:app-mean-direction-preprocessing`, `-spectral-gap`, `fig:app-dense-reorg-pythia`) | `dense_readout_diagnostics` | `build_mean_direction_audit.py`, `build_dense_reorganization_timing.py` | no | `W_U` snapshots |
 | Figure D.4 (`fig:app-fidelity-curves`) and the strata audit | `crosscoder_main` | `appendix_validation/readout_functional_fidelity.py` (held-out matrix EV, logit $R^2$, KL, $\Delta$NLL, top-1/5 per checkpoint) and `readout_functional_fidelity_strata.py` (the token-stratum check in the Appendix D text); the 1B and 6.9B runs need about 25 GB RAM | no | crosscoders + snapshots |
-| Figures D.5, D.12 (`fig:app-instrument-pareto`, `fig:app-lambda-sweep`) | `pareto_frontier_ev_l0` | `compute_ev_l0_phase2.py` (+ `extract_rates_phase2.sh`) | for retrain | EV/L0 sweeps |
+| Figures D.5, D.12 (`fig:app-instrument-pareto`, `fig:app-lambda-sweep`) | `crosscoder_main` | `appendix_validation/recompute_quality.py` (`full_inventory.csv`; `--filter lambda-sweep` for `lambda_sweep.csv`); the architecture variants are trained by `scripts/train/train_arch_sweep.py` | for retrain | trained crosscoders |
 | Figures D.6, D.7 (`fig:app-160m-baselines`, `fig:app-snapshot-fidelity`) | `persnap_sae_baseline` | `train_persnap_saes.py`, `build_persnap_comparison.py` | for retrain | per-snapshot SAEs |
 | Figures D.8, D.9 (`fig:app-pca-static`, `fig:app-concat-pca`) | `crosscoder_main` | `appendix_validation/baselines/eval_pca_static.py`, `eval_concat_pca.py` | no | `W_U` snapshots |
 | Figure D.11 (`fig:app-heldout-checkpoints-1b`) | `heldout_checkpoints` | `eval_heldout.py` | for retrain | snapshots + crosscoders |
@@ -181,7 +181,7 @@ themselves are rendered in the paper tree (see "How to read this").
 | Figures F.1, F.2, Table F.1 (`fig:app-wordnet-supersense-probes-160m-inventory`, `-1b`, `tab:app-wordnet-supersense-1b`) | `concept_evolution_validation` | `run_wordnet_supersense_probe.py` | no | `W_U` snapshots |
 | Lemma-grouped splits (Appendix F text) | `concept_evolution_validation` | `run_wordnet_supersense_probe.py --split lemma` (splits grouped by lemma; also writes the split-leakage statistics) | no | `W_U` snapshots |
 
-These probe scripts read WordNet 3.0 through NLTK (`src/readout/probes/concept_gazetteer.py`).
+These probe scripts read WordNet 3.0 through NLTK.
 Before the first run, download the corpus once:
 `python -c "import nltk; nltk.download('wordnet')"` (one-time, into `~/nltk_data/`).
 
@@ -213,7 +213,7 @@ its fold-dependent intervals, come out the same on any platform. (Sklearn's
 |---|---|---|---|---|
 | Figure I.1, Table I.1, Figure I.2 (`fig:app-recipe-control-trajectories`, `tab:app-recipe-control-summary`, `fig:app-recipe-control-reorg`) | `pretraining_recipe_control` | `train_control_crosscoder.py`, `analyze_lifecycle.py` (seed 0 for tables and per-feature figures, seeds 0-2 for timing), `aggregate_seed_replication.py` | for the fits | trained 31M checkpoints (released) |
 | Figure I.3 (`fig:app-recipe-control-geometry`) | `pretraining_recipe_control` | `analyze_readout_geometry.py` | no | trained 31M checkpoints |
-| Figures I.4, I.5 (`fig:app-recipe-control-basin`, `fig:app-recipe-control-explag`) | `pretraining_recipe_control` | `fetch_heldout_slice.py`, `run_trajectory_swap.py`, `run_expression_lag.py` (`run_recipe_control_swap.py` adds a cross-condition supplement; `run_gauge_landscape.py` the gauge analysis) | yes (CPU works at reduced `--eval-tokens`) | trained 31M checkpoints + held-out slice |
+| Figures I.4, I.5 (`fig:app-recipe-control-basin`, `fig:app-recipe-control-explag`) | `pretraining_recipe_control` | `fetch_heldout_slice.py`, `run_trajectory_swap.py`, `run_expression_lag.py` | yes (CPU works at reduced `--eval-tokens`) | trained 31M checkpoints + held-out slice |
 
 ## Notes
 

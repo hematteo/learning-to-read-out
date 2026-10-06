@@ -77,4 +77,3 @@ Outputs are under `experiments/probes/concept_evolution_validation/derived/`.
 
 - The lemma-split numbers compare `final_acc`, `emergence_step`, and `max_gain_pair` in `wordnet_supersense_probe_summary_<suffix>.csv` between the `_lemma` and row-split directories. The leakage count is the sum of `n_test_pos_with_train_sibling` over the sum of `n_test_positive` in the row split's `wordnet_supersense_split_stats_<suffix>.csv`. The matched-control nulls were not rerun under the lemma split.
 - `--device cpu` runs the probes on CPU.
-- `scripts/build_gazetteer.py` builds a 37-concept token gazetteer for Pythia-1B (`configs/preregistration/concepts_v1*.json`); no paper result uses it.

@@ -86,21 +86,22 @@ experiments:
       - ${UM_SSD_ROOT}/derived/readout_edit_timing*/hLN_step*.pt  # h_LN caches for the functional-fidelity evaluation
       - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt
     paper_labels:
-      # NB: labels for the split-out lifecycle / temporal / pareto / persnap experiments
-      # now live on those experiments (feature_lifecycle_trajectories,
-      # temporal_localization_patching, pareto_frontier_ev_l0, persnap_sae_baseline).
       - fig:main-multimodel-validation
       - fig:app-fidelity-curves
       - fig:app-pca-static
       - fig:app-concat-pca
       - tab:repro-dictionary-hparams
       - tab:full-inventory
+      - fig:app-instrument-pareto
+      - fig:app-lambda-sweep
     paper_figures:
       - "paper/figures/multimodel_validation/instrument_validation_summary.pdf -> fig:main-multimodel-validation"
       - "paper/figures/readout_functional_fidelity/fidelity_curves.pdf -> fig:app-fidelity-curves"  # readout_functional_fidelity.py (matrix EV, logit R2, KL, dNLL, top-1/5); strata prose from readout_functional_fidelity_strata.py
       - "paper/figures/dense_baselines/static_pca_baseline.pdf -> fig:app-pca-static"
       - "paper/figures/dense_baselines/concatenated_trajectory_pca.pdf -> fig:app-concat-pca"
       - "experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv -> tab:full-inventory"
+      - "paper/figures/instrument_pareto/instrument_pareto.pdf -> fig:app-instrument-pareto"  # full_inventory.csv
+      - "paper/figures/instrument_pareto/sparsity_penalty_sensitivity.pdf -> fig:app-lambda-sweep"  # lambda_sweep.csv
     cited_in:
       - paper/main.tex
     entry:
@@ -150,7 +151,8 @@ experiments:
     figures_dir: figures/concept_evolution_validation/
     results_dir: results/experiments/probes/concept_evolution_validation/
     inputs:
-      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors
+      - ${UM_SSD_ROOT}/snapshots/pythia-{160m,1b}/EleutherAI_pythia-*_step*_wu.pt
+      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt
     paper_labels:
       - fig:main-wordnet-matched-controls
       - fig:app-wordnet-supersense-probes-160m-inventory
@@ -301,7 +303,6 @@ experiments:
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py --out ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --start-token 10e9 --eval-tokens 2e6"
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 120000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory"
       - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_expression_lag.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 400000 --max-positions 20000 --out-dir results/experiments/ablations/pretraining_recipe_control/expression_lag"
-      - "uv run python experiments/ablations/pretraining_recipe_control/scripts/run_gauge_landscape.py --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short --landscape-cond baseline --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --eval-tokens 200000 --grid 21 --log2-range 2.0 --out-dir results/experiments/ablations/pretraining_recipe_control/gauge"
     cited_in: [paper/main.tex]
 
   # ─── Companion / Replication ────────────────────────────────────────────────
@@ -416,23 +417,6 @@ experiments:
       - "uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 --out-dir results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0"  # optional: parity reference only
       - "uv run python experiments/causal/language_stratified_readout_swap/scripts/run_language_stratified_swap.py --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 --block-tokens 256 --bootstrap-reps 2000 --bootstrap-seed 0 --out-dir results/experiments/causal/language_stratified_readout_swap/pythia-1b_seed0 --reference-summary results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0/summary_global.csv"
     cited_in: [paper/appendix/readout_swap_behavioral.tex]
-
-  - id: pareto_frontier_ev_l0
-    status: active
-    description: Aggregate Pareto frontier of EV vs L0; lambda-sweep overlay; dictionary-size sweep.
-    paper_intent: |
-      Appendix D: dictionary quality (EV-L0 Pareto frontier, sparsity-penalty sweep).
-    scripts_dir: experiments/capacity/pareto_frontier_ev_l0/scripts/
-    figures_dir: figures/pareto_frontier_ev_l0/
-    results_dir: results/experiments/capacity/pareto_frontier_ev_l0/
-    paper_labels:
-      - fig:app-instrument-pareto
-      - fig:app-lambda-sweep
-    paper_figures:
-      - "paper/figures/instrument_pareto/instrument_pareto.pdf -> fig:app-instrument-pareto"
-      - "paper/figures/instrument_pareto/sparsity_penalty_sensitivity.pdf -> fig:app-lambda-sweep"
-    inputs: []
-    cited_in: [paper/main.tex]
 
   - id: persnap_sae_baseline
     status: active

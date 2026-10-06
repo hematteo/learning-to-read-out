@@ -34,8 +34,3 @@ with the `source:` field naming the artifact each value came from.
 Where two records of one run disagree, the file keeps both: the checkpoint's
 embedded training dict is the primary record and the other value is listed
 under a named sub-key with its origin (see the OLMo-2-7B config).
-
-## `preregistration/` — preregistered concept sets
-
-`preregistration/concepts_v1.json` holds the preregistered concept / token-family
-definitions used by the probe and causal experiments.

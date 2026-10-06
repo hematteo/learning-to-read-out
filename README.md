@@ -190,7 +190,7 @@ seeded, CPU-only example of the full fit.
 | `src/readout/` | The `readout` package: `core/` (paths, model specs, data), `crosscoder/` (trajectory training), `dynamics/` (lifecycle metrics), `probes/`, `baselines/` |
 | `experiments/` | One directory per experiment, grouped by theme, each with a README and its scripts; [`experiments.yaml`](experiments.yaml) maps them to paper figures |
 | `scripts/` | Shared command-line entry points: `extract/`, `train/`, `eval/`, `audit/` |
-| `configs/` | Settings of record for each published dictionary, and the preregistration |
+| `configs/` | Settings of record for each published dictionary |
 | `notebooks/`, `examples/` | Guided tours and minimal examples |
 | `tests/` | CPU-only pytest suite |
 | `docs/` | [`REPRODUCE.md`](docs/REPRODUCE.md), [`DATA.md`](docs/DATA.md), [`THIRD_PARTY.md`](docs/THIRD_PARTY.md) |

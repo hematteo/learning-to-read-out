@@ -86,7 +86,7 @@ each retrains from public checkpoints with the settings of record in
 | Pile pretraining corpus (`pretraining_recipe_control` only) | `monology/pile-uncopyrighted` (slice tokenized locally), or `EleutherAI/pile-standard-pythia-preshuffled` for the exact Pythia order (byte-range prefix, no full 602 GB download) | MIT (Pile compilation) |
 
 The WordNet 3.0 supersense probes read the corpus through NLTK
-(`src/readout/probes/concept_gazetteer.py`). After installing dependencies, download the
+(`experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py`). After installing dependencies, download the
 corpus once with `python -c "import nltk; nltk.download('wordnet')"` (it lands in
 `~/nltk_data/`); the probe experiment raises `LookupError`/`ModuleNotFoundError`
 until this is done.
@@ -94,9 +94,8 @@ until this is done.
 The last two rows are needed **only** to retrain the `pretraining_recipe_control`
 ablation from scratch (`experiments/ablations/pretraining_recipe_control/`); none
 of the paper figures depend on them. The tokenized slice is a local artifact
-(flat `uint16` `.bin`); build it with that experiment's `scripts/tokenize_slice.py`
-or its `scripts/fetch_pythia_preshuffled.py`
-(both under `experiments/ablations/pretraining_recipe_control/scripts/`).
+(flat `uint16` `.bin`); build it with
+`experiments/ablations/pretraining_recipe_control/scripts/fetch_pythia_preshuffled.py`.
 
 Checkpoint schedules are fixed in `src/readout/core/model_specs.py`
 (`DEFAULT_STEPS_32`, the 32-checkpoint Ge et al. schedule). The paper's

@@ -13,8 +13,7 @@ Why this works without the .idx:
   blocks. So we range-download only the first 2*N bytes of shard 0; no .idx, no
   reindexing, no 602 GB download.
 
-Output is byte-identical in format to tokenize_slice.py: a flat uint16 .bin plus
-a `<out>.done` marker. Point train_control.py --data at it.
+Output is a flat uint16 .bin plus a `<out>.done` marker. Point train_control.py --data at it.
 
 Resumable: a Range download appends from the current file size; a finished .done
 slice is reused. Unauthenticated HF access is fine (set HF_TOKEN for faster pulls).

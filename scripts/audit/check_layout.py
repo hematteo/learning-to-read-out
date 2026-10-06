@@ -113,7 +113,7 @@ ALLOWED_TOP_LEVEL = {
     "paper",
     "configs",
     "tests",
-    "lib",
+    "paper_figures",  # scripts and data that redraw the paper figures
     # underscore-prefix dirs (e.g. _archive/) are always allowed by check 5
 }
 # Files allowed at top level (REPRODUCE.md / DATA.md / THIRD_PARTY.md now live under docs/)
