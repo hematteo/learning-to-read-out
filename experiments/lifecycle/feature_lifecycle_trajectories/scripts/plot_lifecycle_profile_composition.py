@@ -203,7 +203,7 @@ def main() -> None:
     log_run_provenance()
     OUT.mkdir(parents=True, exist_ok=True)
     source = torch.load(SOURCE, map_location="cpu", weights_only=False)
-    build_outputs(source, classify_profiles_current, CURRENT_STEM, "current")
+    build_outputs(source, classify_profiles_refined, CURRENT_STEM, "refined")
     build_outputs(source, classify_profiles_refined, REFINED_STEM, "refined")
 
 
