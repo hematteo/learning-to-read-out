@@ -26,7 +26,6 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 <!-- BEGIN GENERATED FIGURE INDEX (scripts/audit/gen_reproduce_index.py) -->
 | Label | Experiment | Rendered figure (paper LaTeX tree) |
 |---|---|---|
-| <a id="fig:app-160m-baselines"></a>`fig:app-160m-baselines` | persnap_sae_baseline | paper/figures/persnap_sae/pythia160m_baseline_comparison.pdf |
 | <a id="fig:app-ae-capacity"></a>`fig:app-ae-capacity` | contrastive_readout_swap | paper/figures/availability_expression/rpt_capacity.pdf |
 | <a id="fig:app-ae-grid"></a>`fig:app-ae-grid` | contrastive_readout_swap | paper/figures/availability_expression/rpt_triple_grid.pdf |
 | <a id="fig:app-aligned-readout-swap"></a>`fig:app-aligned-readout-swap` | temporal_localization_patching | results/experiments/causal/temporal_localization_patching/aligned_swap_grid/summary.csv |
@@ -67,7 +66,9 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="tab:app-ae-binary"></a>`tab:app-ae-binary` | contrastive_readout_swap | (produced; see experiments.yaml / tables below) |
 | <a id="tab:app-ae-early"></a>`tab:app-ae-early` | contrastive_readout_swap | (produced; see experiments.yaml / tables below) |
 | <a id="tab:app-ae-openvocab"></a>`tab:app-ae-openvocab` | contrastive_readout_swap | (produced; see experiments.yaml / tables below) |
+| <a id="tab:app-claim-tests"></a>`tab:app-claim-tests` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos/shards/sva__h1000__s143000.json |
+| <a id="tab:app-design-rationale"></a>`tab:app-design-rationale` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-lifecycle-stability"></a>`tab:app-lifecycle-stability` | feature_lifecycle_trajectories | (produced; see experiments.yaml / tables below) |
 | <a id="tab:app-readout-swap-languages"></a>`tab:app-readout-swap-languages` | language_stratified_readout_swap | paper/figures/readout_coordination/language_swap_table.tex |
 | <a id="tab:app-recipe-control-summary"></a>`tab:app-recipe-control-summary` | pretraining_recipe_control | results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_summary.csv |
@@ -75,6 +76,7 @@ This table is **generated from [`experiments.yaml`](../experiments.yaml)** by
 | <a id="tab:app-task-construction"></a>`tab:app-task-construction` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-terminology-glossary"></a>`tab:app-terminology-glossary` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-wordnet-supersense-1b"></a>`tab:app-wordnet-supersense-1b` | concept_evolution_validation | experiments/probes/concept_evolution_validation/derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv |
+| <a id="tab:checkpoint-suite-comparison"></a>`tab:checkpoint-suite-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:compute-resources"></a>`tab:compute-resources` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:evaluation-controls"></a>`tab:evaluation-controls` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:full-inventory"></a>`tab:full-inventory` | crosscoder_main | experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv |

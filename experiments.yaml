@@ -50,6 +50,9 @@ paper_only_labels:
   - tab:lifecycle-profile-rules      # lifecycle appendix: rule-based profile definitions
   - tab:app-terminology-glossary     # scope appendix: glossary
   - tab:app-task-construction        # availability appendix: prompt templates and word lists
+  - tab:app-claim-tests              # terminology appendix: how each experiment tests its claim
+  - tab:app-design-rationale         # terminology appendix: design choices and their rationale
+  - tab:checkpoint-suite-comparison  # reproducibility appendix: public checkpoint suites
 
 # Naming principle: experiment ids describe the experiment object, not its paper position.
 #   GOOD: feature_lifecycle_trajectories, temporal_localization_patching
@@ -442,10 +445,8 @@ experiments:
     results_dir: results/experiments/baselines/persnap_sae_baseline/
     paper_labels:
       - fig:app-snapshot-fidelity
-      - fig:app-160m-baselines
     paper_figures:
       - "paper/figures/persnap_sae/snapshot_reconstruction_fidelity.pdf -> fig:app-snapshot-fidelity"
-      - "paper/figures/persnap_sae/pythia160m_baseline_comparison.pdf -> fig:app-160m-baselines"
     inputs: []
     cited_in: [paper/main.tex]
 
