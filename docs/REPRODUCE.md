@@ -157,7 +157,7 @@ themselves are rendered in the paper tree (see "How to read this").
 | Figures D.2, D.3, D.10 (`fig:app-mean-direction-preprocessing`, `-spectral-gap`, `fig:app-dense-reorg-pythia`) | `dense_readout_diagnostics` | `build_mean_direction_audit.py`, `build_dense_reorganization_timing.py` | no | `W_U` snapshots |
 | Figure D.4 (`fig:app-fidelity-curves`) and the strata audit | `crosscoder_main` | `appendix_validation/readout_functional_fidelity.py` (held-out matrix EV, logit $R^2$, KL, $\Delta$NLL, top-1/5 per checkpoint) and `readout_functional_fidelity_strata.py` (the token-stratum check in the Appendix D text); the 1B and 6.9B runs need about 25 GB RAM | no | crosscoders + snapshots |
 | Figures D.5, D.12 (`fig:app-instrument-pareto`, `fig:app-lambda-sweep`) | `pareto_frontier_ev_l0` | `compute_ev_l0_phase2.py` (+ `extract_rates_phase2.sh`) | for retrain | EV/L0 sweeps |
-| Figures D.6, D.7 (`fig:app-160m-baselines`, `fig:app-snapshot-fidelity`) | `persnap_sae_baseline` (with `crosscoder_we` for the `W_E` dictionaries) | `train_persnap_saes.py`, `build_persnap_comparison.py` | for retrain | per-snapshot SAEs |
+| Figures D.6, D.7 (`fig:app-160m-baselines`, `fig:app-snapshot-fidelity`) | `persnap_sae_baseline` | `train_persnap_saes.py`, `build_persnap_comparison.py` | for retrain | per-snapshot SAEs |
 | Figures D.8, D.9 (`fig:app-pca-static`, `fig:app-concat-pca`) | `crosscoder_main` | `appendix_validation/baselines/eval_pca_static.py`, `eval_concat_pca.py` | no | `W_U` snapshots |
 | Figure D.11 (`fig:app-heldout-checkpoints-1b`) | `heldout_checkpoints` | `eval_heldout.py` | for retrain | snapshots + crosscoders |
 

@@ -303,24 +303,6 @@ experiments:
 
   # ─── Companion / Replication ────────────────────────────────────────────────
 
-  - id: crosscoder_we
-    status: active
-    description: |
-      W_E (input embedding) variant of the crosscoder; companion to the W_U (output) crosscoder.
-      Multi-seed pilot establishing W_E vs W_U asymmetry.
-    paper_intent: |
-      Appendix D: the W_E dictionaries compared with W_U dictionaries in the
-      Pythia-160M baseline comparison.
-    scripts_dir: experiments/crosscoders/crosscoder_we/scripts/
-    figures_dir: figures/crosscoder_we/
-    results_dir: results/experiments/crosscoder_we/
-    inputs:
-      - ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-*/W_E/cross-snapshot-32/d*/seed*.safetensors
-      - ${UM_SSD_ROOT}/derived/rates/we-d24576/we_rates_dsae24576_seed0.pt
-    paper_labels: []
-    paper_figures: []
-    cited_in:
-
   - id: crosscoder_olmo
     status: active
     description: |

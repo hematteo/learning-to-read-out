@@ -1,6 +1,6 @@
 """Shared helpers for the developmental-dynamics analysis pipeline.
 
-Analysis scripts under experiments/ (crosscoder_main, crosscoder_we,
+Analysis scripts under experiments/ (crosscoder_main,
 feature_lifecycle_trajectories, olmo_matched_checkpoint_window) and the
 test suite import from this package:
     - discovery: locate available crosscoder runs on disk

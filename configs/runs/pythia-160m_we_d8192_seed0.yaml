@@ -51,6 +51,5 @@ source: >
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv
   (pythia-160m W_E cross-snap-32 d8192 seeds 0-4: lambda=0.3, tanh_stretch=4.0,
   init_threshold=0.1, epochs=300);
-  experiments.yaml: crosscoder_we (pythia-* W_E cross-snapshot-32 multi-seed);
   scripts/train/train_crosscoder.py docstring (shared Pythia recipe:
   input_preprocess=center_scale, amp_dtype=fp32).

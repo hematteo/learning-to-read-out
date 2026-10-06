@@ -118,7 +118,7 @@ reproducibility appendix records the exact step lists.
    `experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py`.
 
    (Note: `scripts/extract/extract_we_pythia.py` extracts the **W_E** input
-   embeddings for the `crosscoder_we` companion into a *separate* cache — it is
+   embeddings for the Appendix D `W_E` dictionaries into a *separate* cache — it is
    not the W_U path.)
 
 2. **Trained crosscoders** (`$UM_SSD_ROOT/hf_release/...`): produced by

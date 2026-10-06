@@ -3,7 +3,7 @@
 Not an entry point. Holds the `Run` dataclass, the rates/decoder-norm loaders,
 and the decoder-geometry cache machinery that `find_reorganization_steps.py`
 and `plot_selected_wishbone.py` both use, so the entry scripts never import
-each other (same pattern as crosscoder_we/scripts/we_common.py).
+each other.
 
 Cache layout (all under `CACHE`, gitignored, regenerated on demand):
   - `<key>_decoder_norms.npy`               (K, D) — written by
