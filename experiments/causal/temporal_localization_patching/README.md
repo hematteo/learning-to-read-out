@@ -1,48 +1,65 @@
 # temporal_localization_patching
 
-Temporal patching showing that readout reorganization concentrates near step 1,000:
-patching experiments replace the readout at step T with the readout at step T' and
-record the behavioral effect, isolating where in training the reorganization occurs.
+How does a fixed hidden state score under readouts from other checkpoints?
+Pythia-1B hidden states from eight checkpoints are held fixed and decoded
+through each of the 32 released readouts `W_U^(s)`, recording next-token NLL
+and the KL to the same-checkpoint readout on a nine-language held-out
+corpus. A second script repeats the swap after aligning the swapped readout's
+column mean, scale, row norms, or orthogonal frame to the native one. It
+supports the readout swap appendix (`sec:app-readout-swap`).
 
-## Figures produced
+## Paper results
 
-| Paper label | Metric file | Producing script |
-|---|---|---|
-| `fig:main-readout-coordination` | `summary_global.csv`, `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:app-readout-swap-nll-kl-grid` | `summary_global.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:app-readout-swap-family-logit-mass` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:app-readout-swap-target-nll` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
-| `fig:app-aligned-readout-swap` | `aligned_swap_grid/summary.csv` | `experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py` |
-| `fig:app-readout-swap-160m-target-nll` | `summary_concept.csv` | `experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py` |
+Outputs are under `results/experiments/causal/temporal_localization_patching/`.
 
-See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+| Paper label | What it shows | Script | Output |
+|---|---|---|---|
+| `fig:app-readout-swap-nll-kl-grid` | In the token-weighted aggregate, the step-1000 readout is the NLL optimum for hidden states from steps 256, 512, and 1000, while later hidden states prefer nearby or same-checkpoint readouts. | `scripts/temporal_patch_grid.py` | `temporal_patch_grid/pythia-1b_seed0/summary_global.csv` |
+| `sec:app-late-checkpoint-anomaly` (text) | Step-116k readout anomaly: fixed step-47k states score 2.50, 5.55, and 2.95 nats under the step-102k, 116k, and 130k readouts; step-143k states score 1.93, 4.06, and 1.78. | `scripts/temporal_patch_grid.py` | `temporal_patch_grid/pythia-1b_seed0/summary_global.csv` |
+| `sec:app-readout-swap` (text) | The Pythia-160M replication at hidden-state checkpoints 256, 512, 1000, 2000, and 143000 shows the same pattern without the step-116k spike. | `scripts/temporal_patch_grid.py --model pythia-160m` | `temporal_patch_grid/pythia-160m_seed0/summary_global.csv` |
+| `fig:app-aligned-readout-swap` | Each hidden-state checkpoint keeps its minimum-NLL readout under all four alignments, except a one-checkpoint shift under scale alignment for step-1000 states. | `scripts/run_aligned_swap_grid.py` | `aligned_swap_grid/summary.csv` |
 
-## Claim
-Readout reorganization is temporally localized near step 1,000: temporal patching
-experiments (replace the readout at step T with the readout at step T') show that
-swapping in the early-window readout produces most of the behavioral effect.
+## Run
 
-## Reproduce (representative; scripts bootstrap the repo onto `sys.path`)
-- Temporal patch grid:    `uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py`
-- Aligned swap grid:      `uv run python experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py`
-- Step-1k feature rescue: `uv run python experiments/causal/temporal_localization_patching/scripts/run_step1000_feature_rescue.py`
-- Pythia eval corpus (optional; reproduces the released `evaluation/eval-corpus/eval_tokens.pt` token-for-token from the 2023-11-01 Wikipedia dumps): `uv run python experiments/causal/temporal_localization_patching/scripts/build_eval_corpus_pythia.py --output results/experiments/causal/temporal_localization_patching/eval_tokens_pythia.pt`
+1. Optional: rebuild the released evaluation corpus token for token from the 2023-11-01 Wikipedia dumps (network):
+   ```bash
+   uv run python experiments/causal/temporal_localization_patching/scripts/build_eval_corpus_pythia.py \
+       --output results/experiments/causal/temporal_localization_patching/eval_tokens_pythia.pt
+   ```
+2. Score the Pythia-1B swap grid:
+   ```bash
+   uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py \
+       --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 \
+       --out-dir results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0
+   ```
+3. Score the Pythia-160M replication (the default `--h-eval-steps` are 256 512 1000 2000 143000):
+   ```bash
+   uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py \
+       --model pythia-160m --seed 0 \
+       --out-dir results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-160m_seed0
+   ```
+4. Score the aligned swaps (alignments `none`, `mean`, `scale`, `row_norm`, `procrustes`; default hidden-state checkpoints 256 512 1000 2000 143000):
+   ```bash
+   uv run python experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py \
+       --model pythia-1b --out-dir results/experiments/causal/temporal_localization_patching/aligned_swap_grid
+   ```
 
-## Inputs (SSD canonical paths)
-- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors`
-- `${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt`
+## Inputs
 
-## Outputs (metrics-only)
-This experiment computes metrics only: it computes and persists the metrics behind the figures but
-ships no figure-rendering code. Paper figures are rendered in the separate thesis LaTeX
-tree from these metrics. Per `--out-dir`, the scripts persist:
-- `temporal_patch_grid.py` -> `manifest.json`, `summary_global.csv` (one row per `(h_t, W_U_s)`), `summary_concept.csv` (one row per `(h_t, W_U_s, concept)`), `raw.pt`
-- `temporal_patch_metrics.py` (CLI driver over `readout.dynamics.temporal_patch`) -> `manifest.json`, `subsets.json`, `summary.csv`, `selectivity.csv`, `paired_vs_random.csv`, `raw.pt`
-- `run_aligned_swap_grid.py` -> `manifest.json`, per-cell JSON shards, aggregated `summary.csv`
-- `run_step1000_feature_rescue.py` -> `manifest.json`, per-cell JSON shards, aggregated `rescue_summary.csv`
-- `build_eval_corpus_pythia.py` -> `--output` token file (`ids`, `scripts`, `languages`, counts) and `--text-output` raw `dict[lang, str]`
+- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt`: the evaluation corpus (173,229 next-token targets for the Pythia tokenizer).
+- `${UM_SSD_ROOT}/snapshots/pythia-{1b,160m}/EleutherAI_pythia-*_step*_wu.pt`: readouts.
+- Hidden states after the final LayerNorm, cached per step as `${UM_SSD_ROOT}/readout_edit_timing_pythia1b/hLN_step<t>.pt` (Pythia-1B) and `${UM_SSD_ROOT}/readout_edit_timing/hLN_step<t>.pt` (Pythia-160M). On a cache miss the script forwards the Hugging Face checkpoint and writes the cache; a cache built from a different corpus is rejected.
 
-## Layout
-| path | role |
-|---|---|
-| `scripts/` | temporal-patching drivers. The shared analysis library lives in `src/readout/dynamics/temporal_patch.py` (it is also used by the `sparse_feature_causal_tests` experiment, so per the repo's tier rule it sits in `src/`, not here); `temporal_patch_metrics.py` is its CLI driver, and `temporal_patch_grid` plus the `run_*` swap drivers (`run_aligned_swap_grid`, `run_step1000_feature_rescue`) import it directly. The library is self-contained shipped code (the former `_archive/` intervention-helper dependency was replaced by equivalence-tested equivalents; see `docs/REPRODUCE.md`). |
+## Outputs
+
+Under each `--out-dir`:
+
+- `temporal_patch_grid.py`: `manifest.json`, `summary_global.csv` (one row per `(h_t, W_U_s)`: NLL, top-1, top-5, entropy, KL to native), `summary_concept.csv`, `raw.pt`.
+- `run_aligned_swap_grid.py`: `manifest.json`, per-cell JSON shards, `summary.csv` (one row per alignment, `h_t`, `W_U_s`).
+- `build_eval_corpus_pythia.py`: the token file (`ids`, `scripts`, `languages`, counts) and, with `--text-output`, the raw text per language.
+
+## Notes
+
+- The paper's alignment check scored the first 16,352 targets (32 sequences, English, Russian, and Chinese), so its NLL values and its step-256 optimum differ from the nine-language aggregate. `run_aligned_swap_grid.py` scores every sequence held in the `hLN_step<t>.pt` cache it finds; the 32-sequence caches come from `scripts/extract/build_hln_cache.py` (default `--max-seqs 32`), and on a cache miss the script caches the full corpus.
+- The swap library is `src/readout/dynamics/temporal_patch.py`, shared with `language_stratified_readout_swap` and `sparse_feature_causal_tests`.
+- `summary_concept.csv` and `scripts/temporal_patch_metrics.py` (a CLI over the same library) back no paper result.

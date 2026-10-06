@@ -1,27 +1,40 @@
 # olmo_matched_checkpoint_window
 
-This ablation tests whether the apparent absence of a decaying activation-rate
-branch in the OLMo-2-7B PCA diagnostic can be explained by checkpoint
-availability. OLMo-2-7B starts at step 150, while the standard Pythia schedule
-contains many sub-step-150 checkpoints. This experiment trains a Pythia-1B
-`W_U` crosscoder on a 32-snapshot schedule that starts at step 256, then
-compares its activation-rate geometry against the canonical OLMo-2-7B run.
+Is the near-absence of early-decaying features in OLMo-2-7B explained by its
+release having no checkpoints before step 150? This control trains a
+Pythia-1B `W_U` crosscoder on a 32-checkpoint schedule that starts at step
+256 and compares its lifecycle profiles, peak steps, and activation rates with
+the selected Pythia-1B and OLMo-2-7B dictionaries. It supports
+`sec:app-olmo-checkpoint-window-control` ("Late-Start Control for OLMo").
 
-## Figures produced
+## Paper results
 
-| Paper label | Metric file | Producing script |
-|---|---|---|
-| `fig:app-olmo-window-population` (Fig. E.3) | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv` (+ `.pt`) | `experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py` |
-| `sec:app-olmo-checkpoint-window-control` (Appendix E.3 text: early-decaying shares 0.02% late-start, 24.1% selected, 25.4% selected restricted to steps ≥ 256; late-start and OLMo-2-7B activation-rate decayer and early-dominant shares) | `figures/olmo_matched_checkpoint_window/late_start_profile_fractions.csv`, `figures/olmo_matched_checkpoint_window/comparison_summary.csv` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py` |
+Outputs are under `figures/olmo_matched_checkpoint_window/`.
 
-The script also writes an activation-rate metric grid
-(`olmo_matched_checkpoint_window_metric_grid.{csv,pt}`), decoder-norm heatmap,
-wishbone PCA, and profile-composition sidecars that are not in the camera-ready
-paper. See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+| Paper label | What it shows | Script | Output |
+|---|---|---|---|
+| `fig:app-olmo-window-population` | The late-start Pythia-1B dictionary is dominated by first-checkpoint norm peaks, whereas OLMo-2-7B accumulates decoder-norm mass and peaks later. | `scripts/compute_late_start_vs_olmo.py` | `olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv`, `olmo_matched_checkpoint_window_population_lifecycle_diagnostics.pt` |
+| `sec:app-olmo-checkpoint-window-control` (text) | Early-decaying share: 0.02% in the late-start dictionary, 24.1% in the selected Pythia-1B dictionary, 25.4% in the selected dictionary restricted to steps from 256 without refitting. | `scripts/compute_late_start_vs_olmo.py` | `late_start_profile_fractions.csv` |
+| `sec:app-olmo-checkpoint-window-control` (text) | Activation-rate decayer shares of 0.012% (late start) and 0.015% (OLMo-2-7B); early-dominant shares of 0.057% and 0.595%. | `scripts/compute_late_start_vs_olmo.py` | `comparison_summary.csv` |
 
-## Claim
+## Run
 
-The late-start schedule is:
+1. Train the late-start dictionary, or skip this step and use the released
+   `pythia-1b/W_U/cross-snapshot-32-matched-window/d24576/seed0.safetensors`
+   (see [`docs/DATA.md`](../../../docs/DATA.md)). The script defaults match
+   [`configs/runs/pythia-1b_wu_d24576_seed0_olmo-matched-window.yaml`](../../../configs/runs/pythia-1b_wu_d24576_seed0_olmo-matched-window.yaml):
+   ```bash
+   uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/train_late_start.py \
+       --d-sae 24576 --n-epochs 300 --device cuda
+   ```
+2. Compute the per-checkpoint firing rates of the late-start dictionary and save them as `results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0_rates.pt` (see Inputs for the expected keys).
+3. Run `experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py`, which writes the decoder-norm caches read here.
+4. Compute the comparison:
+   ```bash
+   uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py
+   ```
+
+The late-start schedule is
 
 ```text
 256, 512, 1000, 2000, 3000, 4000, 5000, 6000,
@@ -30,66 +43,20 @@ The late-start schedule is:
 83000, 89000, 93000, 102000, 113000, 123000, 130000, 143000
 ```
 
-Primary comparison:
-
-- If the decaying PCA branch largely disappears, the OLMo result is plausibly a
-  checkpoint-window artifact.
-- If the decaying branch persists, OLMo's activation-rate geometry is more
-  likely a genuine cross-family difference under this measurement.
-
-## Reproduce
-
-Run from the repo root. The trained late-start crosscoder ships with the
-released artifacts at
-`hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32-matched-window/d24576/seed0.safetensors`
-(see `docs/DATA.md`), so the training step below is optional. To retrain it:
-
-```bash
-uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/train_late_start.py \
-  --d-sae 24576 \
-  --n-epochs 300 \
-  --device cuda
-```
-
-Settings of record for the paper-facing Pythia-1B run are in
-[`configs/runs/pythia-1b_wu_d24576_seed0_olmo-matched-window.yaml`](../../../configs/runs/pythia-1b_wu_d24576_seed0_olmo-matched-window.yaml)
-(the script defaults match it). On a local Apple Silicon machine without CUDA,
-use `--device mps` and a smaller pilot width first (e.g.
-`--model EleutherAI/pythia-160m`).
-
-Then build the population-lifecycle diagnostics, the profile shares of Appendix
-E.3 (selected, selected restricted to steps ≥ 256 without refitting, and
-late-start Pythia-1B dictionaries, under the refined rules of
-`tab:lifecycle-profile-rules`), and the activation-rate comparison. Run the
-lifecycle experiment's `compute_normalized_trajectories.py` first; it writes the
-decoder-norm caches read here:
-
-```bash
-uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py
-```
-
 ## Inputs
 
-- `${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt` — per-step `W_U` snapshots.
-- `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt`
-  — OLMo-2-7B firing-rate blob for the comparison side (regenerated by the
-  crosscoder_main appendix-validation pipeline).
-- `results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0_rates.pt`
-  — precomputed firing-rate blob (keys `rates`, optional `norms`, `steps`) for
-  the trained late-start crosscoder, read by `compute_late_start_vs_olmo.py`;
-  derive it from the trained checkpoint with `scripts/extract/extract_rates.py`.
-- `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/{olmo2_7b_d32768,pythia1b_d24576}_decoder_norms.npy`
-  — cross-experiment data dependency: the OLMo-2-7B and selected Pythia-1B
-  decoder-norm caches built by the lifecycle experiment
-  (`experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py`);
-  run that script first if the cache is missing.
+- `${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt`: `W_U` snapshots at the late-start steps (training only).
+- `results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0_rates.pt`: firing rates of the late-start dictionary, a dict with `rates` `(K, D)`, optional `norms`, and `steps`.
+- `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt`: OLMo-2-7B firing rates (curated; no script in this release regenerates it).
+- `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/{olmo2_7b_d32768,pythia1b_d24576}_decoder_norms.npy`: decoder-norm caches from step 3.
 
 ## Outputs
 
-- Metric sidecars (CSV / JSON / `.pt`) under
-  `figures/olmo_matched_checkpoint_window/`, including
-  `late_start_profile_fractions.csv` (refined-profile fractions, active count, and
-  median peak step for the three Pythia-1B dictionaries) and `comparison_summary.csv`
-  (late-start and OLMo-2-7B activation-rate decayer and early-dominant shares).
-- Trained late-start crosscoder and intermediate artifacts under
-  `results/experiments/olmo_matched_checkpoint_window/`.
+- `figures/olmo_matched_checkpoint_window/`: the files in the table above, plus other sidecars that the paper does not use.
+- `results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0.pt`: the trained late-start dictionary (default `--output` of step 1).
+
+## Notes
+
+- `scripts/extract/extract_rates.py` computes the rates for step 2 but saves them under `rates_per_seed[<checkpoint stem>]`; `compute_late_start_vs_olmo.py` reads a top-level `rates` key, so the tensor has to be stored under `rates` together with `steps`.
+- On a machine without CUDA, use `--device mps` and try a smaller pilot first, for example `--model EleutherAI/pythia-160m`.
+- The control removes the earliest Pythia checkpoints but not the Pythia and OLMo differences in architecture, tokenizer, data, optimizer, and training length.

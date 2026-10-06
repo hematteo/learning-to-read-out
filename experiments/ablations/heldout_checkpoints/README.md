@@ -1,57 +1,52 @@
 # heldout_checkpoints
 
-Held-out checkpoint reconstruction: train a crosscoder on a sparse snapshot grid,
-then evaluate explained variance on snapshots NOT in that grid. This validates that
-the crosscoder generalizes off the training-snapshot subset (i.e. captures continuous
-trajectory structure, not just a fixed snapshot set).
+Do the trajectory crosscoders memorize their 32 anchor checkpoints? This
+experiment reconstructs `W_U` at eight Pythia checkpoints outside the anchor
+schedule (steps 10k, 23k, 33k, 43k, 73k, 93k, 113k, and 123k) with encoder
+and decoder heads interpolated from the neighboring anchors, and compares
+them with nearest-head, raw-interpolation, endpoint, and rank-50 PCA
+references and the in-sample ceiling. It supports
+`sec:app-heldout-checkpoints` ("Held-out Checkpoint Reconstruction").
 
-## Figures produced
+## Paper results
 
-| Paper label | Metric file | Producing script |
-|---|---|---|
-| `fig:app-heldout-checkpoints` | `heldout_ev.csv` / `heldout_ev.pt` (pythia-160m) | `experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py` |
-| `fig:app-heldout-checkpoints-1b` | `heldout_ev.csv` / `heldout_ev.pt` (pythia-1b) | `experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py` |
+| Paper label | What it shows | Script | Output |
+|---|---|---|---|
+| `fig:app-heldout-checkpoints-1b` | Interpolated heads of the Pythia-1B d=24,576 seed-0 crosscoder track the in-sample ceiling within 0.01 EV at six held-out steps and deviate only at 113k and 123k. | `scripts/eval_heldout.py` | `heldout_ev.csv`, `heldout_ev.pt` |
+| `sec:app-heldout-checkpoints` (text) | For the Pythia-160M d=8,192 seed-0 crosscoder, synthetic heads track the in-sample ceiling within 0.011 EV on all eight held-out checkpoints. | `scripts/eval_heldout.py` | `heldout_ev.csv` |
 
-See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+## Run
 
-## Claim
-Held-out checkpoint reconstruction: train a crosscoder on a sparse snapshot grid,
-then evaluate explained variance on snapshots NOT in that grid. Validates that the
-crosscoder generalizes off the training-snapshot subset (i.e. captures continuous
-trajectory structure, not just a fixed snapshot set).
+1. Evaluate the Pythia-1B dictionary:
+   ```bash
+   uv run python experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py \
+       --crosscoder ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors \
+       --snapshot-dir ${UM_SSD_ROOT}/snapshots/pythia-1b \
+       --out-dir results/experiments/ablations/heldout_checkpoints/pythia-1b \
+       --model-slug EleutherAI_pythia-1b
+   ```
+2. Evaluate the Pythia-160M dictionary:
+   ```bash
+   uv run python experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py \
+       --crosscoder ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed0.safetensors \
+       --snapshot-dir ${UM_SSD_ROOT}/snapshots/pythia-160m \
+       --out-dir results/experiments/ablations/heldout_checkpoints/pythia-160m \
+       --model-slug EleutherAI_pythia-160m
+   ```
 
-## Reproduce
-**Evaluate held-out EV** — uses the released 32-snapshot crosscoder and
-evaluates reconstruction on snapshots outside the cross-32 grid. Run once per
-model (160m / 1b), pointing at that model's released crosscoder and full
-snapshot set:
-```
-uv run python experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py \
-  --crosscoder <crosscoder.safetensors> \
-  --snapshot-dir <snapshots/pythia-{160m,1b}/> \
-  --out-dir <results-dir> \
-  --model-slug EleutherAI_pythia-{160m,1b}
-```
-This writes `heldout_ev.csv` and `heldout_ev.pt` (see "Outputs").
+## Inputs
 
-## Inputs (SSD canonical paths)
-- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed0.safetensors`
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors`
-- `${UM_SSD_ROOT}/snapshots/pythia-{160m,1b}/` — full snapshot set (incl. snapshots not in cross-32 grid)
+- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed0.safetensors`
+- `${UM_SSD_ROOT}/snapshots/pythia-{1b,160m}/`: the 32 anchor snapshots plus the eight held-out steps.
 
 ## Outputs
-`scripts/eval_heldout.py` writes, into its `--out-dir`:
-- `heldout_ev.csv` — per-checkpoint explained variance on held-out folds (direct,
-  endpoint, PCA, plus raw/norm ceilings).
-- `heldout_ev.pt` — same rows plus `trained_steps`, `held_out`, ceiling EVs,
-  residuals, `pca_rank`, and the source crosscoder path.
 
-These regenerated metrics (gitignored — not shipped in this code-only release)
-are the reproducible artifacts. This repo ships no
-figure-rendering code; the paper figures are rendered in the separate paper
-LaTeX tree from these metrics.
+Under each `--out-dir`:
 
-## Layout
-| path | role |
-|---|---|
-| `scripts/eval_heldout.py`   | computes per-checkpoint EV on held-out folds |
+- `heldout_ev.csv`: EV per held-out checkpoint for the interpolated heads and each reference (nearest head, raw `W_U` interpolation, endpoint interpolation, rank-50 PCA), with the in-sample EV of the neighboring anchors.
+- `heldout_ev.pt`: the same rows plus `trained_steps`, `held_out`, ceiling EVs, residuals, `pca_rank`, and the source crosscoder path.
+
+## Notes
+
+- The PCA reference uses rank 50 (`--pca-rank`); `--seed` seeds its randomized fit.

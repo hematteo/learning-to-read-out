@@ -1,51 +1,49 @@
 # pareto_frontier_ev_l0
 
-Aggregate Pareto frontier of explained variance (EV) vs L0 sparsity for the W_U
-crosscoder, with a lambda-sweep overlay and dictionary-size sweep, establishing
-that the chosen `(d_sae, lambda)` operating point sits on the frontier.
+How do reconstruction and sparsity trade off across the Pythia-160M
+dictionaries (widths, seeds, `W_U` versus `W_E`, architecture variants, and
+sparsity weights)? The two paper figures plot aggregate EV against mean L0,
+and those values come from the dictionary inventory that `crosscoder_main`
+regenerates. The scripts in this directory add per-snapshot EV and L0 for the
+same fits. It supports the SAE baseline and sparsity-penalty subsections of
+`sec:app-instrument-validation`.
 
-## Figures produced
+## Paper results
 
-| Paper label | Metric file | Producing script |
-|---|---|---|
-| `fig:app-instrument-pareto` | `results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json` | `experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py` |
-| `fig:app-lambda-sweep` | `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` | `experiments/capacity/pareto_frontier_ev_l0/scripts/compute_l0_ev_phase_plane.py` |
+| Paper label | What it shows | Script | Output |
+|---|---|---|---|
+| `fig:app-instrument-pareto` | `W_U` dictionaries reach high EV at sparse activation counts with small seed spread, and `W_E` dictionaries reach lower EV than `W_U` dictionaries of the same width. | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py` | `experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv` |
+| `fig:app-lambda-sweep` | Raising lambda_1 from 0.4 to 1.8 lowers mean L0 from about 160 to about 23 and EV from 0.75 to 0.53. | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py` (`--filter lambda-sweep` for the sweep fits) | `experiments/crosscoders/crosscoder_main/derived/appendix_validation/lambda_sweep.csv`, `full_inventory.csv` |
 
-See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+The commands for both are in the `crosscoder_main` README (Run, step 1).
 
-## Claim
-Aggregate Pareto frontier of explained variance (EV) vs L0 sparsity for the W_U
-crosscoder. Includes lambda-sweep overlay and dictionary-size sweep. Establishes
-the chosen `(d_sae, lambda)` operating point sits on the frontier.
+## Run
 
-## Metrics produced
-This experiment computes metrics only: its scripts compute and persist the EV/L0
-numbers behind the Pareto figures. The figures themselves are rendered in the
-separate paper LaTeX tree from these metrics, not here.
+1. Per-snapshot EV and L0 for eight Pythia-160M fits, seed 0 each (`W_U` d=8,192, 16,384, and 24,576; the 16-checkpoint d=8,192 fit; BatchTopK and gated-retuned d=8,192; `W_E` d=8,192 and 24,576):
+   ```bash
+   uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py
+   ```
+2. Per-snapshot (L0, EV) for the Pythia-160M `W_U` fits across seeds (d=8,192 seeds 0 to 4, d=16,384, d=24,576 seeds 0 to 2, the 16-checkpoint d=8,192 fit):
+   ```bash
+   uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_l0_ev_phase_plane.py
+   ```
+3. Final-snapshot SAE EV against crosscoder EV, as a text table (point `--sae-dir`, `--cc-d8192`, and `--cc-d16384` at your checkpoints):
+   ```bash
+   uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_sae_pareto_table.py
+   ```
 
-- `results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json` —
-  per-arm, per-snapshot EV and L0 (plus NRMSE, arm-level EV mean/min/max,
-  active/dead feature counts) for the 8 Phase-2 grid arms
-  (`compute_ev_l0_phase2.py`).
-- `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` and
-  `…/l0_ev_phase_plane_cache.pt` — per-snapshot `(L0, EV)` table across the
-  crosscoder families, one row per `(label, snapshot index)` (`compute_l0_ev_phase_plane.py`,
-  metrics-only despite its name).
-- `derived/sae_pareto.txt` — single-snapshot SAE vs multi-snapshot crosscoder
-  EV/L0 comparison table (`compute_sae_pareto_table.py`, metrics-only despite its name;
-  written under this experiment's own `derived/`, gitignored).
+## Inputs
 
-## Inputs (SSD canonical paths)
-- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-{160m,1b}/W_U/cross-snapshot-32/d{4096,8192,16384,24576}/seed0.safetensors`
-- `${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-*_d*_seed0.pt`
+- Step 1: `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/{W_U,W_E}/...` (the eight released checkpoints listed in the script), `${UM_SSD_ROOT}/snapshots/`, and the `W_E` snapshot cache `${UM_SSD_ROOT}/we_snapshots/`.
+- Step 2: checkpoints under `${UM_SSD_ROOT}/derived/rates/{wu-d8192-multiseed,wu-d24576-multiseed,wu-d8192-cs16}/` and `${UM_SSD_ROOT}/run4_dsae16384/`, plus `${UM_SSD_ROOT}/snapshots/` (`--release-root` changes the root).
 
-## Reproduce (representative; scripts bootstrap the repo onto `sys.path`)
-- Phase-2 EV/L0:        `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py`
-- Per-snap L0/EV table: `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_l0_ev_phase_plane.py`
-- SAE-vs-CC comparison: `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_sae_pareto_table.py`
-- Phase-2 rate extraction (prereq for new arms): `bash experiments/capacity/pareto_frontier_ev_l0/scripts/extract_rates_phase2.sh`
+## Outputs
 
-## Layout
-| path | role |
-|---|---|
-| `scripts/` | EV/L0 Pareto-frontier metric computation: `compute_ev_l0_phase2.py` (per-snapshot EV/L0 JSON), `compute_l0_ev_phase_plane.py` (per-snapshot `(L0, EV)` CSV/cache), `compute_sae_pareto_table.py` (SAE-vs-crosscoder EV/L0 text table), and `extract_rates_phase2.sh` (firing-rate extraction for new arms). No figures are rendered here. |
+- `results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json`: per-fit, per-snapshot EV and L0, NRMSE, EV mean, min, and max, and active and dead feature counts.
+- `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` (`label, family, d_sae, snap_idx, step, L0, EV`) and `l0_ev_phase_plane_cache.pt`.
+- `experiments/capacity/pareto_frontier_ev_l0/derived/sae_pareto.txt`.
+
+## Notes
+
+- The paper does not plot the per-snapshot outputs of steps 1 to 3.
+- `scripts/extract_rates_phase2.sh` computes firing rates for checkpoints placed under `${UM_SSD_ROOT}/cluster_results/<run>/`; none of the steps above read them.

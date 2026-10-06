@@ -1,57 +1,41 @@
 # persnap_sae_baseline
 
-Per-snapshot SAE baseline: trains an independent SAE on each Pythia snapshot and
-compares it against the cross-snapshot crosscoder. This experiment computes metrics only — it
-computes and persists the per-snapshot recovery / explained-variance / L0 numbers
-that back the appendix figures, but ships no figure-rendering code. The paper
-LaTeX tree renders the figures from these artifacts.
+Can independent per-snapshot SAEs give one sparse feature index across
+training? This experiment trains 32 per-snapshot JumpReLU SAEs on Pythia-160M
+`W_U` (d_sae=8,192, one per checkpoint of the 32-step schedule) and compares
+their per-checkpoint EV and L0 with the checkpoint-spanning dictionaries. It
+supports the SAE baseline comparison in `sec:app-instrument-validation`.
 
-## Figures produced
+## Paper results
 
-| Paper label | Metric file | Producing script |
-|---|---|---|
-| `fig:app-persnap-sae-trajectory` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |
-| `fig:app-snapshot-fidelity` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |
-| `fig:app-1b-baseline-suite` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |
-| `fig:app-160m-baselines` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |
-| `fig:app-parameter-budget` | `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` | `experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` |
+| Paper label | What it shows | Script | Output |
+|---|---|---|---|
+| `fig:app-snapshot-fidelity` | On Pythia-160M, the checkpoint-spanning dictionaries (d=8,192 and 24,576) reconstruct early and late checkpoints with one feature index, while per-snapshot SAEs need far higher L0 and the final-snapshot SAE fails on early checkpoints. | SAEs: `scripts/train_persnap_saes.py`. Per-checkpoint EV and L0 of every curve: `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_persnap_fidelity.py` | `experiments/crosscoders/crosscoder_main/derived/appendix_validation/persnap_fidelity.csv` |
 
-See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+## Run
 
-## Claim
+1. Train the per-snapshot SAEs (defaults: `EleutherAI/pythia-160m`, d_sae=8,192, lambda_1=0.3, 100 epochs):
+   ```bash
+   uv run python experiments/baselines/persnap_sae_baseline/scripts/train_persnap_saes.py
+   ```
+2. Compute per-checkpoint EV and L0 for the figure with `crosscoder_main` steps 1 and 2 (`recompute_quality.py`, then `eval_persnap_fidelity.py`); see that README.
+3. Optionally compare the SAEs with the crosscoders checkpoint by checkpoint:
+   ```bash
+   uv run python experiments/baselines/persnap_sae_baseline/scripts/persnap_vs_crosscoder.py
+   uv run python experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py
+   uv run python experiments/baselines/persnap_sae_baseline/scripts/compute_cc_vs_persnap_gap.py
+   ```
 
-Establishes that the cross-snapshot crosscoder is on par with per-snap SAEs while
-admitting trajectory analysis. Each appendix figure is rendered downstream from the
-single comparison JSON, which records per-snapshot EV/L0 for the per-snap SAEs vs
-the T4.6 d=24576 seed-0 crosscoder.
+## Inputs
 
-## Reproduce (in order; scripts bootstrap the repo onto `sys.path`)
-
-1. **Train per-snapshot SAEs:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/train_persnap_saes.py --model {pythia-160m,pythia-1b}`
-2. **Compare vs crosscoder:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/persnap_vs_crosscoder.py`
-3. **Persist comparison metrics:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` and `uv run python experiments/baselines/persnap_sae_baseline/scripts/compute_cc_vs_persnap_gap.py`
-
-## Inputs (SSD canonical paths)
-
-- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-{160m,1b}/W_U/cross-snapshot-32/d*/seed0.safetensors`
-- Per-snapshot SAEs (trained by `train_persnap_saes.py`)
+- `${UM_SSD_ROOT}/snapshots/pythia-160m/EleutherAI_pythia-160m_step*_wu.pt`
+- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d{8192,24576}/seed0.safetensors`
+- `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/per-snapshot-saes/d8192/`: released per-snapshot SAEs (default of `compute_cc_vs_persnap_gap.py`).
+- `${UM_SSD_ROOT}/derived/rates/wu-d8192-persnap/train.log`: per-snapshot SAE training log that `build_persnap_comparison.py` parses for EV and L0 (`--sae-log`).
 
 ## Outputs
 
-- `figures/persnap_sae_baseline/crosscoder_vs_persnap.json` — per-snapshot EV
-  (and per-snap-SAE L0) for the per-snap SAEs vs the T4.6 d=24576 seed-0 crosscoder
-  (written by `build_persnap_comparison.py`).
-- `crosscoder_vs_persnap_gap.txt` — per-snapshot crosscoder EV, per-snap-SAE EV, and
-  their gap, plus mean/max/min gap summary (written by `compute_cc_vs_persnap_gap.py`,
-  which despite its name persists a text table, not a figure; `--out-dir` controls
-  the location).
-- Per-snapshot recovery (`R = 1 - MSE/Var`) and mean L0 for both the crosscoder and
-  the per-snap SAEs are reported to stdout by `persnap_vs_crosscoder.py`.
-- Per-snapshot SAE checkpoints `wu_sae_dsae8192_step{step}.pt` (written by
-  `train_persnap_saes.py`).
-
-## Layout
-
-| path | role |
-|---|---|
-| `scripts/` | per-snapshot SAE baseline code: `train_persnap_saes` / `build_persnap_comparison` plus the crosscoder-vs-per-snap comparison (`persnap_vs_crosscoder`, `compute_cc_vs_persnap_gap`). `compute_cc_vs_persnap_gap` persists a metrics text table only — no figures are rendered in this repo. |
+- `${UM_SSD_ROOT}/wu_crosscoder/per_snap_sae/wu_sae_dsae8192_step<step>.pt`: trained SAEs (`train_persnap_saes.py`).
+- stdout: per-snapshot recovery `R = 1 - MSE/Var` and mean L0 for the d=8,192 crosscoder and the SAEs (`persnap_vs_crosscoder.py`).
+- `figures/persnap_sae_baseline/crosscoder_vs_persnap.json`: per-snapshot SAE EV and L0 and per-snapshot EV of the d=24,576 seed-0 crosscoder, stored under the key `crosscoder_t46_d24576_seed0` (`build_persnap_comparison.py`).
+- `figures/persnap_sae_baseline/crosscoder_vs_persnap_gap.txt`: per-snapshot crosscoder EV, SAE EV, and their gap, with mean, max, and min (`compute_cc_vs_persnap_gap.py`, `--out-dir`).

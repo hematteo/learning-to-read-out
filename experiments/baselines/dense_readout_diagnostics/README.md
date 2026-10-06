@@ -1,96 +1,45 @@
 # dense_readout_diagnostics
 
-Dense W_U diagnostics that serve as paper-facing controls for sparse readout
-formation: a spectral-capacity diagnostic, an adjacent-subspace reorganization
-timing diagnostic, and a mean-direction / centering audit. The model set is
-Pythia-1B (primary), Pythia-160M (companion), Pythia-6.9B (scale stress test),
-and OLMo-2-7B (cross-family check). Together they show that centered W_U remains
-high-dimensional across families, motivating sparse trajectory dictionaries over
-simple SVD/PCA summaries.
+Is raw `W_U` geometry dominated by a mean row shared across the vocabulary,
+and when do its dominant dense subspaces move? This experiment computes the
+mean-direction audit that motivates the `center_scale` preprocessing and the
+adjacent-checkpoint movement of the top centered singular subspaces. It
+supports the mean-direction check (`sec:app-mean-direction-preprocessing`)
+and the dense baselines (`sec:app-linear-baselines`) of the dictionary
+validation appendix.
 
-## Figures produced
+## Paper results
 
-| Paper label | Metric file | Producing script |
-|---|---|---|
-| `fig:app-spectral-capacity` | `results/experiments/dense_readout_diagnostics/spectral_metrics.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_spectral_capacity.py` |
-| `fig:app-dense-reorg-pythia` | `results/experiments/dense_readout_diagnostics/dense_reorganization/subspace_metrics.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_dense_reorganization_timing.py` |
-| `fig:app-dense-reorg-olmo` | `figures/dense_readout_diagnostics/dense_reorganization_timing_olmo.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_dense_reorganization_timing.py` |
-| `fig:app-mean-direction-preprocessing` | `results/experiments/dense_readout_diagnostics/mean_direction_metrics.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_mean_direction_audit.py` |
-| `fig:app-mean-direction-spectral-gap` | `results/experiments/dense_readout_diagnostics/mean_direction_metrics.csv` | `experiments/baselines/dense_readout_diagnostics/scripts/build_mean_direction_audit.py` |
+| Paper label | What it shows | Script | Output |
+|---|---|---|---|
+| `fig:app-mean-direction-preprocessing` | The mean row grows and aligns with the raw top right singular vector after early training, inducing a positive row-cosine floor that centering removes. | `scripts/build_mean_direction_audit.py` | `results/experiments/dense_readout_diagnostics/mean_direction_metrics.{csv,pt}` |
+| `fig:app-mean-direction-spectral-gap` | Centering lowers the top spectral gap sigma_1/sigma_2 at late checkpoints in Pythia-1B, Pythia-6.9B, and OLMo-2-7B. | `scripts/build_mean_direction_audit.py` | `results/experiments/dense_readout_diagnostics/mean_direction_metrics.csv` |
+| `fig:app-dense-reorg-pythia` | Top-10 subspace drift peaks on the checkpoint pair ending at step 256 in Pythia-160M and 1B and at step 512 in Pythia-6.9B. | `scripts/build_dense_reorganization_timing.py` | `results/experiments/dense_readout_diagnostics/dense_reorganization/{subspace_metrics,sv_stability}.csv` |
 
-See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+## Run
 
-## Claim
-
-Dense W_U diagnostics act as appendix controls for sparse readout formation. The
-spectral-capacity diagnostic and the adjacent-subspace timing diagnostic show
-that centered W_U stays high-dimensional across Pythia and OLMo, and the
-mean-direction audit confirms the spectral-gap and stable-rank preprocessing
-choices. This experiment computes and persists the metrics behind these
-diagnostics; it renders no figures. Paper figures are rendered in the separate
-paper LaTeX tree from these regenerated metrics (gitignored — not shipped in
-this code-only release).
-
-## Reproduce
-
-```bash
-uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_spectral_capacity.py
-uv run python experiments/baselines/dense_readout_diagnostics/scripts/plot_spectral_capacity.py
-uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_dense_reorganization_timing.py
-uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_mean_direction_audit.py
-```
-
-`plot_spectral_capacity.py` renders no figures: it reads the spectral metrics
-and writes plot-ready numeric rows (CSV/.pt) for the paper LaTeX tree to render.
-
-The default run uses the 32 cross-snapshot checkpoint schedule and computes the
-top centered W_U right-singular directions with randomized PCA. OLMo uses its own
-32 stage-1 checkpoint schedule and is interpreted as cross-family evidence, not
-controlled Pythia scaling.
+1. Compute the mean-direction audit (top two right singular directions by block power iteration):
+   ```bash
+   uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_mean_direction_audit.py
+   ```
+2. Compute adjacent-checkpoint subspace movement (randomized PCA of centered `W_U` on the 32-checkpoint schedule):
+   ```bash
+   uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_dense_reorganization_timing.py
+   ```
 
 ## Inputs
 
 - `${UM_SSD_ROOT}/snapshots/pythia-{160m,1b,6.9b}/EleutherAI_pythia-*_step*_wu.pt`
 - `${UM_SSD_ROOT}/snapshots/OLMo-2-1124-7B/allenai_OLMo-2-1124-7B_step*_wu.pt`
 
-Use `UM_SSD_ROOT` to override the SSD root.
-
-The diagnostics persist three families of metrics:
-
-- Dense spectral-capacity: effective-rank and stable-rank fractions, cumulative
-  explained variance, and normalized spectra (`spectral_*` and
-  `spectral_capacity_multimodel.*`).
-- Dense adjacent-subspace timing on the controlled Pythia models and the
-  OLMo-2-7B cross-family check (`subspace_metrics.csv`, `sv_stability.csv`, plus
-  the OLMo timing CSV).
-- Mean-direction / centering audit: spectral-gap and stable-rank preprocessing
-  checks (`mean_direction_*`).
-
 ## Outputs
 
-All outputs are persisted metrics (CSV/.pt/.json); no figures are written.
+- `results/experiments/dense_readout_diagnostics/mean_direction_metrics.{csv,pt}`, `mean_direction_provenance.json`: per (model, step) mean-row norm ratio, alignment with the raw top singular vector, raw and centered spectral gap, stable rank, and mean pairwise row cosine.
+- `results/experiments/dense_readout_diagnostics/dense_reorganization/subspace_metrics.csv`, `sv_stability.csv`, `top_svd_vectors.pt`, `provenance.json`: chordal Grassmann distance per adjacent pair and subspace rank, and top-vector stability.
+- `figures/dense_readout_diagnostics/dense_reorganization_timing.{csv,pt}`, `dense_reorganization_timing_olmo.csv`: the same subspace metrics as tables.
 
-```text
-results/experiments/dense_readout_diagnostics/
-  spectral_metrics.csv
-  spectral_cumulative.csv
-  spectral_spectra.pt
-  spectral_provenance.json
-  mean_direction_metrics.csv
-  mean_direction_metrics.pt
-  mean_direction_provenance.json
+## Notes
 
-results/experiments/dense_readout_diagnostics/dense_reorganization/
-  subspace_metrics.csv
-  sv_stability.csv
-  top_svd_vectors.pt
-  provenance.json
-
-figures/dense_readout_diagnostics/
-  spectral_capacity_multimodel.{csv,pt}
-  dense_reorganization_timing.{csv,pt}
-  dense_reorganization_timing_olmo.csv
-```
-
-The `figures/` path above holds plot-ready numeric tables (`.csv`/`.pt`)
-consumed by the paper LaTeX tree, not rendered images.
+- Both scripts default to Pythia-160M, 1B, 6.9B, and OLMo-2-7B (`--models`). The dense reorganization figure shows only the three Pythia models, and the mean-direction figures omit Pythia-160M.
+- OLMo-2-7B uses its own 32-checkpoint stage-1 schedule.
+- `--copy-to-paper` (off by default) also writes the timing tables into a local `paper/` tree.
