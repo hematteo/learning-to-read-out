@@ -28,14 +28,13 @@
 #                     experiment carrying a fig:main-* label lists paper/main.tex;
 #                     [] means no shipped prose file cites the experiment's figures
 #
-# ─── CODE-ONLY RELEASE ───────────────────────────────────────────────────────
-# This repository ships code only — no data and no metrics. Each experiment
-# computes and PERSISTS the metrics behind its figures (CSV/JSON/.pt) when run —
-# those regenerated files are the reproducible artifacts (gitignored, not
-# shipped) — and ships NO figure-rendering code. The `paper_labels:` and
-# `paper_figures:` fields below are documentational: they map each experiment's
-# metrics to the paper figures they back, which are rendered in the separate
-# paper LaTeX tree, not in this repo.
+# ─── WHAT EXPERIMENTS PRODUCE ─────────────────────────────────────────────────
+# Each experiment computes and saves the metrics behind its figures (CSV, JSON,
+# or .pt, gitignored) when run. paper_figures/ redraws the paper figures from a
+# small shipped copy of those metrics (paper_figures/data/). The `paper_labels:`
+# and `paper_figures:` fields below map each experiment's metrics to the paper
+# figures they back; `paper_figures:` paths name files in the paper's LaTeX
+# source.
 
 # Top-level paper_only_labels are labels owned by the paper itself, not produced
 # by an experiment pipeline.

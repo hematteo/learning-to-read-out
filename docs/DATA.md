@@ -147,8 +147,8 @@ This released copy is also the scripts' default (resolved under
 
 ## Derived metrics (regenerated, not shipped)
 
-This is a code-only release: it ships **no** derived metrics. When an experiment
-runs, its small CSV/JSON metric summaries are written **co-located with the
+Apart from the small copy in `paper_figures/data/` that `make figures` reads, no
+derived metrics ship with the repository. When an experiment runs, its small CSV/JSON metric summaries are written **co-located with the
 experiment that owns them** (and gitignored), under:
 
     experiments/<...>/<experiment_id>/derived/...

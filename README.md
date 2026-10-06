@@ -52,7 +52,7 @@ learning rate.
 ```bash
 git clone https://github.com/hematteo/learning-to-read-out.git
 cd learning-to-read-out
-make install   # uv sync --extra dev; also builds the vendored SAE library in lib/
+make install   # uv sync --extra dev --extra figures
 ```
 
 Checkpoints, snapshots, and outputs are stored under `UM_SSD_ROOT`
@@ -82,7 +82,7 @@ Everything trained for the paper is on Hugging Face:
 | Repository | Contents |
 |---|---|
 | [`hematteo/parameter-trajectory-crosscoders`](https://huggingface.co/hematteo/parameter-trajectory-crosscoders) | Trained trajectory crosscoders (Pythia-160M, 1B, 6.9B; OLMo-2-7B) with training sidecars, aggregates, activation rates, attribution artifacts, and held-out eval tokens |
-| [`hematteo/readout-recipe-control`](https://huggingface.co/hematteo/readout-recipe-control) | The controlled 31M pretraining runs (readout learning rate 0.25×, 1×, 4×; short and long warmup) |
+| [`hematteo/readout-recipe-control`](https://huggingface.co/hematteo/readout-recipe-control) | The controlled 31M pretraining runs (readout learning rate 0.25×, 1×, 4×, and a shorter warmup; also a long-warmup run the paper does not use) |
 | [`datasets/hematteo/wu-crosscoder-snapshots`](https://huggingface.co/datasets/hematteo/wu-crosscoder-snapshots) | Pre-extracted `W_U` snapshot stacks |
 
 To skip retraining, download the dictionaries at the pinned release revision:
@@ -134,15 +134,24 @@ That experiment's README gives the data preparation and the other three conditio
 
 ## Evaluation: reproducing the paper
 
-This is a code-only release. The scripts compute and save the metrics behind each
-figure and table (CSV, JSON, or `.pt`, under the gitignored `results/` tree). No
-data or metric files ship with the repository, and figures are rendered in the
-paper's LaTeX tree.
+Reproduction has three levels:
+
+1. **Redraw the figures** from the small data files that ship in
+   [`paper_figures/data/`](paper_figures/data/README.md) (CPU, about 30 s):
+
+   ```bash
+   make figures   # writes paper_figures/out/*.pdf
+   ```
+
+   This covers Figures 2 to 5 and ten appendix figures.
+2. **Recompute the figure data** from the released dictionaries and checkpoints with
+   each experiment's analysis scripts.
+3. **Retrain** the dictionaries or the 31M runs (see [Training](#training)).
 
 To reproduce a specific figure, find its label in [`docs/REPRODUCE.md`](docs/REPRODUCE.md),
-which links it to the experiment and the script that produces its metrics. Each
-experiment's README lists its commands in order. The main-text results map as
-follows:
+which links it to the experiment and the script that produces its metrics and lists
+the known deviations from the paper's runs. Each experiment's README lists its
+commands in order. The main-text results map as follows:
 
 | Paper | Experiment |
 |---|---|
@@ -191,10 +200,10 @@ seeded, CPU-only example of the full fit.
 | `experiments/` | One directory per experiment, grouped by theme, each with a README and its scripts; [`experiments.yaml`](experiments.yaml) maps them to paper figures |
 | `scripts/` | Shared command-line entry points: `extract/`, `train/`, `eval/`, `audit/` |
 | `configs/` | Settings of record for each published dictionary |
+| `paper_figures/` | Scripts and data that redraw the paper's figures (`make figures`) |
 | `notebooks/`, `examples/` | Guided tours and minimal examples |
 | `tests/` | CPU-only pytest suite |
 | `docs/` | [`REPRODUCE.md`](docs/REPRODUCE.md), [`DATA.md`](docs/DATA.md), [`THIRD_PARTY.md`](docs/THIRD_PARTY.md) |
-| `lib/` | Vendored OpenMOSS [Language-Model-SAEs](https://github.com/OpenMOSS/Language-Model-SAEs); see [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) |
 
 Module and file names use a few abbreviations: `wu`/`we` for `W_U`/`W_E`, `hln` for
 the post-final-LayerNorm hidden state, `sva` for subject–verb agreement, `persnap`
@@ -223,5 +232,6 @@ Machine-readable metadata is in [`CITATION.cff`](CITATION.cff).
 
 ## License
 
-MIT; see [`LICENSE`](LICENSE). The vendored library under `lib/` is also MIT
-(© 2024 OpenMOSS); see [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
+MIT; see [`LICENSE`](LICENSE). The crosscoder implementation comes from the
+MIT-licensed OpenMOSS [Language-Model-SAEs](https://github.com/OpenMOSS/Language-Model-SAEs)
+(`llamascopium` on PyPI) with one local patch; see [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
