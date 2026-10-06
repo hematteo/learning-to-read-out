@@ -1,0 +1,17 @@
+family,h_step,alignment,probe_acc_1d,probe_acc,native_readout_acc
+sva,1000,none,0.996875,0.9875,0.94375
+sva,143000,none,1.0,1.0,1.0
+sva_across_pp,1000,none,1.0,0.9841460022886712,0.695
+sva_across_pp,143000,none,1.0,1.0,0.9715
+sva_subject_rc,1000,none,1.0,1.0,0.3133333333333333
+sva_subject_rc,143000,none,1.0,1.0,0.7541666666666667
+sva_object_rc,1000,none,0.9766666666666668,0.9483333333333333,0.485
+sva_object_rc,143000,none,1.0,1.0,0.905
+ioi_role_balanced,1000,none,0.997,0.9954999749993748,0.4875
+ioi_role_balanced,143000,none,1.0,1.0,0.9995
+numeric_gt_v2,1000,none,0.9505,0.9555,0.237
+numeric_gt_v2,143000,none,1.0,1.0,0.631
+numeric_lt_v2,1000,none,0.9495,0.963,0.7535
+numeric_lt_v2,143000,none,1.0,1.0,0.4505
+numeric_tf_v2,1000,none,0.9435,0.9614999999999998,0.5
+numeric_tf_v2,143000,none,0.9935,0.985,0.512

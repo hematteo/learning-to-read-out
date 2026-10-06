@@ -59,6 +59,10 @@ dev = [
     "pytest",
     "ruff",
 ]
+# Redraws the paper figures from paper_figures/data (CPU only).
+figures = [
+    "matplotlib>=3.10,<3.11",
+]
 
 [tool.uv]
 # llamascopium 2.0.0b34 declares torch>=2.11, which has no CUDA 11.8 build. The

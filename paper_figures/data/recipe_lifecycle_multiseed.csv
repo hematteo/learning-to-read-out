@@ -1,0 +1,13 @@
+seed,condition,median_peak_step,reorg_peak_step
+0,wu_lr_0p25,128.0,2048
+0,baseline,64.0,1024
+0,wu_lr_4x,32.0,512
+0,warmup_short,64.0,1024
+1,wu_lr_0p25,128.0,2048
+1,baseline,64.0,2048
+1,wu_lr_4x,32.0,512
+1,warmup_short,64.0,1024
+2,wu_lr_0p25,128.0,2048
+2,baseline,64.0,1024
+2,wu_lr_4x,32.0,512
+2,warmup_short,64.0,1024

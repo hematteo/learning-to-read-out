@@ -1,12 +1,12 @@
 # Front door for the learning-to-read-out code release.
 # Targets are ordered to mirror the reproduction pipeline:
-#   install -> test -> audit -> extract -> train -> analyze
-# `make help` lists them. This is a code-only release (no data, no metrics shipped):
-# see docs/REPRODUCE.md for the figure -> metrics map and docs/DATA.md for the external assets
-# each stage needs and where regenerated metrics land.
+#   install -> test -> audit -> figures -> extract -> train -> analyze
+# `make help` lists them. `make figures` redraws the paper figures from the small data files in
+# paper_figures/data/; the other stages recompute those data from public checkpoints. See
+# docs/REPRODUCE.md for the figure -> metrics map and docs/DATA.md for the external assets.
 
 .DEFAULT_GOAL := help
-.PHONY: help install test lint audit extract train analyze clean
+.PHONY: help install test lint audit figures extract train analyze clean
 
 help:  ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -14,8 +14,8 @@ help:  ## List available targets
 
 # Plain sync (may re-resolve) so developers can pick up dependency changes;
 # CI uses `uv sync --locked --extra dev` to validate the committed lockfile.
-install:  ## Create the environment (uv sync with dev tools)
-	uv sync --extra dev
+install:  ## Create the environment (uv sync with dev tools and the figure extra)
+	uv sync --extra dev --extra figures
 
 test:  ## Run the test suite (CPU only, no data, no GPU)
 	uv run --extra dev pytest -q
@@ -26,6 +26,9 @@ lint:  ## Ruff lint (same check as CI)
 audit:  ## Validate the experiments.yaml <-> experiments/ <-> paper/ correspondence
 	uv run python scripts/audit/check_layout.py
 	uv run python scripts/audit/gen_reproduce_index.py --check
+
+figures:  ## Redraw the paper figures into paper_figures/out/ (CPU, about 30 s)
+	uv run --extra figures python paper_figures/make_all.py
 
 extract:  ## Stage 1: build W_E snapshots from HF checkpoints (needs network + disk)
 	@echo "Example: uv run python scripts/extract/extract_we_pythia.py --model EleutherAI/pythia-160m"
@@ -43,8 +46,8 @@ train:  ## Stage 2: train a trajectory crosscoder from snapshots (needs GPU for 
 
 analyze:  ## Stage 3: compute & persist the metrics behind each figure (no figures rendered)
 	@echo "Per-experiment metric commands are in docs/REPRODUCE.md (mapped from experiments.yaml)."
-	@echo "Code-only release: metrics are regenerated on run (gitignored), not shipped;"
-	@echo "paper figures are rendered in the paper LaTeX tree from those metrics."
+	@echo "Recomputed metrics land under results/ and figures/ (gitignored); paper_figures/data/"
+	@echo "README.md lists which script regenerates each file that make figures reads."
 
 clean:  ## Remove caches and build artefacts (keeps source and results)
 	rm -rf .pytest_cache .ruff_cache .mypy_cache

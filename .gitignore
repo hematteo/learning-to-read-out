@@ -128,3 +128,6 @@ experiments/**/*.npy
 experiments/**/*.npz
 experiments/**/*.png
 experiments/**/*.pdf
+
+# Redrawn paper figures (paper_figures/make_all.py)
+paper_figures/out/
