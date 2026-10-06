@@ -104,7 +104,7 @@ Implementation notes for the multi-GPU production path, flagged in
    into `CrosscoderConfig` so the W_E/W_D/b_E/b_D params are constructed
    as DTensors sharded along the `head` axis. Llamascopium's Crosscoder
    class already supports this — see
-   `lib/Language-Model-SAEs/src/llamascopium/models/crosscoder.py:122-152`.
+   `llamascopium/models/crosscoder.py` (PyPI 2.0.0b34).
    Estimated effort: half a day on a multi-GPU host.
 
 2. **Verify the LR-decay schedule.** Ge §A.4 specifies 10% linear warm-up

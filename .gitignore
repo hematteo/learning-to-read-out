@@ -62,14 +62,7 @@ texput.log
 **/_scratch/
 _logs/
 
-# Third-party / large
-# llamascopium (OpenMOSS Language-Model-SAEs, MIT) is vendored and TRACKED so the
-# repo installs from a clean clone; see docs/THIRD_PARTY.md. Ignore only its artefacts.
-lib/Language-Model-SAEs/.venv/
-lib/Language-Model-SAEs/**/__pycache__/
-lib/Language-Model-SAEs/.ruff_cache/
-lib/Language-Model-SAEs/.pytest_cache/
-lib/Language-Model-SAEs/.mypy_cache/
+# Large outputs
 results/
 cache/
 

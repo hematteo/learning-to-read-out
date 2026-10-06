@@ -10,7 +10,7 @@ overview and quickstart, then read these in order:
    figure.
 2. [DATA.md](DATA.md) — external models, checkpoints, and corpora, plus the
    `UM_SSD_ROOT` storage layout the analysis scripts read from.
-3. [THIRD_PARTY.md](THIRD_PARTY.md) — the vendored OpenMOSS `llamascopium`
-   library, the single local patch, and what was trimmed.
+3. [THIRD_PARTY.md](THIRD_PARTY.md) — the OpenMOSS `llamascopium` dependency,
+   its one local patch, and the torch pin.
 
 Back to the repository root: [../README.md](../README.md).

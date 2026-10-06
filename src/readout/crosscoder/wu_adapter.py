@@ -21,6 +21,7 @@ from readout.core.paths import snapshot_dir as _snapshot_dir
 from readout.core.repro import git_commit, log_run_provenance, seed_everything
 from readout.core.resume import atomic_write_torch
 
+from . import _llamascopium_patch  # noqa: F401  (DTensor-safe encoder init)
 from ._schedules import lr_multiplier as _lr_multiplier
 
 # Ge et al. 2026 (arxiv 2509.17196) §4 "Experimental setup": 32 snapshots out of 154.

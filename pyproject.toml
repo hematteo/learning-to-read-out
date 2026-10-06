@@ -27,8 +27,8 @@ dependencies = [
     "scikit-learn>=1.5,<2",
     "datasets>=4.8.4,<5",
     "einops>=0.8,<1",
-    # Pinned so non-uv installers (plain `pip install .`, which ignores
-    # [tool.uv.sources]) get at least the PyPI version the local patch targets.
+    # OpenMOSS Language-Model-SAEs (MIT). readout.crosscoder._llamascopium_patch
+    # targets this exact version.
     "llamascopium==2.0.0b34",
     "safetensors>=0.4,<1",
     "requests>=2,<3",
@@ -48,14 +48,6 @@ packages = ["src/readout"]
 torch = [
     { index = "pytorch-cu118", marker = "sys_platform == 'linux'" },
 ]
-# THIRD-PARTY: OpenMOSS Language-Model-SAEs / llamascopium (MIT, (c) 2024
-# OpenMOSS), vendored under lib/ and built from source. The production trainer uses its
-# Crosscoder/CrosscoderConfig model and SparseAdam optimizer for the production
-# W_U dictionaries (src/readout/crosscoder/wu_adapter.py). The vendored copy carries one
-# local patch — a DTensor-safe init_encoder_with_decoder_transpose that avoids a
-# deadlock during 4-GPU head-parallel training — so the published PyPI wheel
-# (2.0.0b34) is not a drop-in substitute. See docs/THIRD_PARTY.md.
-llamascopium = { path = "lib/Language-Model-SAEs", editable = true }
 
 [[tool.uv.index]]
 name = "pytorch-cu118"
@@ -68,9 +60,13 @@ dev = [
     "ruff",
 ]
 
+[tool.uv]
+# llamascopium 2.0.0b34 declares torch>=2.11, which has no CUDA 11.8 build. The
+# paper's runs used torch 2.7.1+cu118 with the same llamascopium code.
+override-dependencies = ["torch>=2.5,<3"]
+
 [tool.ruff]
 line-length = 120
-extend-exclude = ["lib"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
@@ -93,7 +89,7 @@ known-first-party = ["readout", "experiments"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = [
-    # Vendored llamascopium decorates unused model classes with
+    # llamascopium decorates unused model classes with
     # @torch.autocast(device_type="cuda") at import time; harmless on CPU.
     "ignore:CUDA is not available:UserWarning",
 ]

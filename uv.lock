@@ -8,6 +8,12 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'linux'",
 ]
 
+[manifest]
+overrides = [
+    { name = "torch", marker = "sys_platform != 'linux'", specifier = ">=2.5,<3" },
+    { name = "torch", marker = "sys_platform == 'linux'", specifier = ">=2.5,<3", index = "https://download.pytorch.org/whl/cu118" },
+]
+
 [[package]]
 name = "accelerate"
 version = "1.13.0"
@@ -611,7 +617,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=4.8.4,<5" },
     { name = "einops", specifier = ">=0.8,<1" },
     { name = "huggingface-hub", specifier = ">=0.30,<2" },
-    { name = "llamascopium", editable = "lib/Language-Model-SAEs" },
+    { name = "llamascopium", specifier = "==2.0.0b34" },
     { name = "nltk", specifier = ">=3.8,<4" },
     { name = "numpy", specifier = ">=1.26,<3" },
     { name = "pandas", specifier = ">=2.2,<3" },
@@ -632,7 +638,7 @@ provides-extras = ["dev"]
 [[package]]
 name = "llamascopium"
 version = "2.0.0b34"
-source = { editable = "lib/Language-Model-SAEs" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cattrs" },
     { name = "datasets" },
@@ -658,79 +664,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wandb" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "cattrs", specifier = ">=26.1.0" },
-    { name = "datasets", specifier = ">=3.0.2" },
-    { name = "einops", specifier = ">=0.8.0" },
-    { name = "jaxtyping", specifier = ">=0.2.34" },
-    { name = "json-repair", specifier = ">=0.44.1" },
-    { name = "more-itertools", specifier = ">=10.7.0" },
-    { name = "numpy" },
-    { name = "openai", specifier = ">=1.52.2" },
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pydantic", specifier = ">=2.10.6" },
-    { name = "pydantic-settings", specifier = ">=2.7.1" },
-    { name = "pymongo", specifier = ">=4.10.1" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "sae-lens", marker = "extra == 'sae-lens'", specifier = ">=6.37.5" },
-    { name = "safetensors", specifier = ">=0.4.5" },
-    { name = "tomlkit", specifier = ">=0.13.2" },
-    { name = "torch", specifier = ">=2.5" },
-    { name = "torch-npu", marker = "extra == 'npu'", specifier = ">=2.9.0rc1" },
-    { name = "transformer-lens", specifier = ">=2.16.2" },
-    { name = "transformers", specifier = ">=4.57.1" },
-    { name = "triton", marker = "extra == 'triton'" },
-    { name = "typer", specifier = ">=0.15.0" },
-    { name = "typing-extensions", specifier = ">=4.13.2" },
-    { name = "wandb", specifier = ">=0.18.5" },
-]
-provides-extras = ["npu", "triton", "sae-lens"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "apscheduler", specifier = ">=3.11.1" },
-    { name = "argparse", specifier = ">=1.4.0" },
-    { name = "basedpyright", specifier = ">=1.21.0" },
-    { name = "commitizen", specifier = ">=4.11.0" },
-    { name = "gradio", specifier = ">=5.34.0" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
-    { name = "ipywidgets", specifier = ">=8.1.5" },
-    { name = "jupyter", specifier = ">=1.1.1" },
-    { name = "matplotlib", specifier = ">=3.10.8" },
-    { name = "mongomock", specifier = ">=4.3.0" },
-    { name = "nbformat", specifier = ">=5.10.4" },
-    { name = "numba", specifier = ">=0.65.0" },
-    { name = "pandas", specifier = ">=2.2.3" },
-    { name = "pre-commit", specifier = ">=4.0.1" },
-    { name = "pyfakefs", specifier = ">=5.7.3" },
-    { name = "pytest", specifier = ">=8.3.3" },
-    { name = "pytest-mock", specifier = ">=3.14.0" },
-    { name = "ruff", specifier = ">=0.7.1" },
-    { name = "scikit-learn", specifier = ">=1.6.0" },
-    { name = "scipy", specifier = ">=1.17.1" },
-    { name = "sqlalchemy", specifier = ">=2.0.44" },
-    { name = "tabulate", specifier = ">=0.9.0" },
-]
-docs = [
-    { name = "griffe-pydantic", specifier = ">=1.3.1" },
-    { name = "mkdocs-gen-files", specifier = ">=0.5.0" },
-    { name = "mkdocs-glightbox", specifier = ">=0.5.2" },
-    { name = "mkdocs-literate-nav", specifier = ">=0.6.2" },
-    { name = "mkdocs-material", specifier = ">=9.7.1" },
-    { name = "mkdocs-section-index", specifier = ">=0.3.10" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.1" },
-    { name = "pymdown-extensions", specifier = ">=10.21.2" },
-]
-flash-attn = [{ name = "flash-attn", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=2.7.4.post1" }]
-server = [
-    { name = "fastapi", specifier = ">=0.115.4" },
-    { name = "kaleido", specifier = "==0.2.1" },
-    { name = "msgpack", specifier = ">=1.1.0" },
-    { name = "plotly", specifier = ">=5.24.1" },
-    { name = "uvicorn", specifier = ">=0.32.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/9a/e4/372e1feb0938f954f918216c23334b9be60bcbfb3de69b9720ddb74aa98a/llamascopium-2.0.0b34.tar.gz", hash = "sha256:43abd3a15378181d9d0c28a9725487e6ef601b8336eadd174c840f380975a905", size = 197054, upload-time = "2026-04-18T16:24:58.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/9a/45a8ab6335866327bed8be043234f5d521fcb8522b3f52d1a052950304c2/llamascopium-2.0.0b34-py3-none-any.whl", hash = "sha256:f8f325ec0f2766f68744fc6eb0fa0453de70c51c5e21f368eadee89a261af792", size = 242254, upload-time = "2026-04-18T16:24:56.619Z" },
 ]
 
 [[package]]

@@ -50,7 +50,7 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-cache-${{ runner.os }}-${{ hashFiles('uv.lock') }}
           restore-keys: hf-cache-${{ runner.os }}-
-      - name: Install dependencies (builds the vendored SAE lib)
+      - name: Install dependencies
         run: uv sync --locked --extra dev
       # Fetch the tokenizer before pytest so a cache miss is one visible
       # download step here, not a hidden network dependency inside the tests.

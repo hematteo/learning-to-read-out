@@ -131,7 +131,7 @@ class _JumpReLUHead(nn.Module):
     Since ``pre`` is shared across heads, firing is identical across all K
     snapshots — there is no per-snapshot decoder-norm scaling. The production
     llamascopium crosscoder instead gates ``pre * ||W_D[k]|| > theta`` per
-    snapshot (lib/Language-Model-SAEs/src/llamascopium/models/crosscoder.py,
+    snapshot (llamascopium/models/crosscoder.py,
     ``encode``).
 
     Backward: soft, unwindowed sigmoid surrogate

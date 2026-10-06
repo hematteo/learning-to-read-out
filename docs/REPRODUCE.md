@@ -120,7 +120,7 @@ Reproducing a figure end-to-end therefore means running stages 1 and 2 first, or
 downloading the released artifacts.
 
 > Quickest check of the code itself: `make install && make test`. This needs no
-> data and confirms the library and the vendored crosscoder import and run.
+> data and confirms the library and the crosscoder import and run.
 
 ## Figure to experiment to metrics
 

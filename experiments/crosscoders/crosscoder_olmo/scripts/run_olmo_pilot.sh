@@ -13,7 +13,7 @@
 #
 # Prereqs:
 #   - W_U cache populated by extract_wu_olmo.py at $WU_CACHE
-#   - lib/Language-Model-SAEs/ installed (uv sync at the repo root)
+#   - environment installed (uv sync at the repo root)
 
 set -euo pipefail
 

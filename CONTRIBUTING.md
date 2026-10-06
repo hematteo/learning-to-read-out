@@ -6,8 +6,7 @@ future researcher can still reproduce and extend the published analyses.
 ## Setup and gates
 
 ```bash
-make install   # uv sync --extra dev (installs the readout package editable,
-               # builds the vendored SAE lib)
+make install   # uv sync --extra dev (installs the readout package editable)
 make test      # pytest — CPU-only, no data (~20 s); first networked run fetches
                # one small tokenizer (cached; those tests skip offline)
 make lint      # ruff, same check as CI
@@ -58,6 +57,5 @@ paper figures render in the separate LaTeX tree from these metrics.
   see the environment-variable table in `docs/DATA.md`); never hardcode
   machine paths.
 - Comment non-obvious tensor shapes: `# (batch, seq, d_model)`.
-- The vendored `lib/Language-Model-SAEs` is third-party (see
-  `docs/THIRD_PARTY.md`); don't edit it except to port an upstream fix, and
-  record any local patch in that doc.
+- llamascopium is a PyPI dependency with one local patch
+  (`src/readout/crosscoder/_llamascopium_patch.py`, see `docs/THIRD_PARTY.md`).

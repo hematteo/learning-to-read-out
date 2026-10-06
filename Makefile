@@ -14,7 +14,7 @@ help:  ## List available targets
 
 # Plain sync (may re-resolve) so developers can pick up dependency changes;
 # CI uses `uv sync --locked --extra dev` to validate the committed lockfile.
-install:  ## Create the environment (uv sync with dev tools; builds the vendored SAE lib)
+install:  ## Create the environment (uv sync with dev tools)
 	uv sync --extra dev
 
 test:  ## Run the test suite (CPU only, no data, no GPU)

@@ -204,7 +204,7 @@ def main() -> int:
     amp_dtype_map = {"fp32": None, "bf16": torch.bfloat16}
 
     # Head-parallel implementation note, scoped 2026-04-27 after reading
-    # lib/Language-Model-SAEs/src/llamascopium/{models/crosscoder.py, optim.py}.
+    # llamascopium/{models/crosscoder.py, optim.py} (PyPI 2.0.0b34).
     # The library already supports head parallelism end-to-end — the only gap
     # is that wu_adapter.build_crosscoder does not accept a device_mesh kwarg.
     #

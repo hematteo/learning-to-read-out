@@ -27,5 +27,5 @@ make install
 uv run --with matplotlib --with jupyterlab jupyter lab notebooks/
 ```
 
-Notebook 02 additionally needs the vendored SAE library, which `make install`
-already builds; on Colab its setup cell installs everything itself.
+Notebook 02 additionally needs `llamascopium`, which `make install` already
+installs; on Colab its setup cell installs it.
