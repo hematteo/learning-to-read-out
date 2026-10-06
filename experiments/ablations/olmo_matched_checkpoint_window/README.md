@@ -11,8 +11,8 @@ compares its activation-rate geometry against the canonical OLMo-2-7B run.
 
 | Paper label | Metric file | Producing script |
 |---|---|---|
-| `fig:app-olmo-window-population` (Fig. E.3) | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv` (+ `.pt`) | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
-| `sec:app-olmo-checkpoint-window-control` (Appendix E.3 text: early-decaying shares 0.02% late-start, 24.1% selected, 25.4% selected restricted to steps ≥ 256; late-start and OLMo-2-7B activation-rate decayer and early-dominant shares) | `figures/olmo_matched_checkpoint_window/late_start_profile_fractions.csv`, `figures/olmo_matched_checkpoint_window/comparison_summary.csv` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
+| `fig:app-olmo-window-population` (Fig. E.3) | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv` (+ `.pt`) | `experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py` |
+| `sec:app-olmo-checkpoint-window-control` (Appendix E.3 text: early-decaying shares 0.02% late-start, 24.1% selected, 25.4% selected restricted to steps ≥ 256; late-start and OLMo-2-7B activation-rate decayer and early-dominant shares) | `figures/olmo_matched_checkpoint_window/late_start_profile_fractions.csv`, `figures/olmo_matched_checkpoint_window/comparison_summary.csv` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py` |
 
 The script also writes an activation-rate metric grid
 (`olmo_matched_checkpoint_window_metric_grid.{csv,pt}`), decoder-norm heatmap,
@@ -61,11 +61,11 @@ Then build the population-lifecycle diagnostics, the profile shares of Appendix
 E.3 (selected, selected restricted to steps ≥ 256 without refitting, and
 late-start Pythia-1B dictionaries, under the refined rules of
 `tab:lifecycle-profile-rules`), and the activation-rate comparison. Run the
-lifecycle experiment's `plot_normalized_trajectories.py` first; it writes the
+lifecycle experiment's `compute_normalized_trajectories.py` first; it writes the
 decoder-norm caches read here:
 
 ```bash
-uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py
+uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py
 ```
 
 ## Inputs
@@ -76,12 +76,12 @@ uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/build
   crosscoder_main appendix-validation pipeline).
 - `results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0_rates.pt`
   — precomputed firing-rate blob (keys `rates`, optional `norms`, `steps`) for
-  the trained late-start crosscoder, read by `build_late_start_vs_olmo_figures.py`;
+  the trained late-start crosscoder, read by `compute_late_start_vs_olmo.py`;
   derive it from the trained checkpoint with `scripts/extract/extract_rates.py`.
 - `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/{olmo2_7b_d32768,pythia1b_d24576}_decoder_norms.npy`
   — cross-experiment data dependency: the OLMo-2-7B and selected Pythia-1B
   decoder-norm caches built by the lifecycle experiment
-  (`experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py`);
+  (`experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py`);
   run that script first if the cache is missing.
 
 ## Outputs

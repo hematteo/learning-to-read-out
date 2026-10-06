@@ -5,8 +5,7 @@ Pipeline (per task family, per (h_step, snapshot_step) cell):
   1. Encode all V vocab rows through the W_U crosscoder at ``snapshot_step``
      to get per-vocab feature activations a_{v,f} and decoders D_f.
 
-  2. Reconstruct W_recon = sum_f a_{v,f} D_f * scale_t (matches
-     ``run_step1000_feature_rescue.reconstruct``). Verify it
+  2. Reconstruct W_recon = sum_f a_{v,f} D_f * scale_t. Verify it
      approximately matches the native W_U at snapshot_step.
 
   3. For each example with answers (y+, y-), compute per-feature attribution
@@ -393,7 +392,7 @@ def main() -> None:
     gc.collect()
     V, K, d = x_perm.shape
 
-    # Joint encoder forward over snapshots (matches Exp 1 of run_step1000_feature_rescue).
+    # Joint encoder forward over snapshots.
     print(f"[encode] joint encoder accumulation V={V} K={K}", flush=True)
     W_E = sd["W_E"].to(args.device).float()
     b_E = sd["b_E"].to(args.device).float()

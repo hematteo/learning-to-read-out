@@ -11,9 +11,9 @@ itself.
 
 | Paper label | Metric file | Producing script |
 |---|---|---|
-| `fig:main-selected-normalized-trajectories` (Fig. 2) | `selected_decoder_norm_trajectories.{csv,pt}`, `normalized_trajectories.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py` |
+| `fig:main-selected-normalized-trajectories` (Fig. 2) | `selected_decoder_norm_trajectories.{csv,pt}`, `normalized_trajectories.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py` |
 | `tab:lifecycle-profile-rules` (Table E.1) | rules only (hand-typeset); implemented in `src/readout/dynamics/lifecycle.py` (`classify_profiles_refined`) | — |
-| `fig:app-lifecycle-profile-composition` (Fig. E.1) | `selected_lifecycle_profile_composition_refined_{summary,features}.csv`, `selected_lifecycle_profile_composition_refined.pt` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py` |
+| `fig:app-lifecycle-profile-composition` (Fig. E.1) | `selected_lifecycle_profile_composition_refined_{summary,features}.csv`, `selected_lifecycle_profile_composition_refined.pt` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_lifecycle_profile_composition.py` |
 | `fig:app-selected-population-lifecycle-diagnostics` (Fig. E.2), and the adjacent text's window-peak share and mean $\rho_f$ of features peaking by step 128 | `selected_population_lifecycle_diagnostics_{peak_counts,norm_mass,window_peaks,early_peak_decay}.csv`, `selected_population_lifecycle_diagnostics.pt` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/build_population_diagnostics.py` |
 | `tab:app-reorganization-window-stats` (Table E.2) | `reorganization_window_summary_selected.csv` (windows, $p$), `reorganization_window_bootstrap_counts_selected.csv` (resamples per window) | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py` |
 | `fig:app-reorganization-window-metrics` (Fig. E.4) | `reorganization_window_metrics_selected.{csv,pt}`, `reorganization_window_summary_selected.csv` | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py` |
@@ -39,8 +39,8 @@ sparsity.
 1. Decoder-norm trajectories (bootstrap — also writes the per-run
    `<key>_decoder_norms.npy` caches under
    `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/` that
-   the later steps consume): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py`
-2. Profile composition (consumes `selected_decoder_norm_trajectories.pt`): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py`
+   the later steps consume): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py`
+2. Profile composition (consumes `selected_decoder_norm_trajectories.pt`): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_lifecycle_profile_composition.py`
 3. Population diagnostics (peak counts and decoder-norm mass): `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/build_population_diagnostics.py`
 4. Reorganization windows, null $p$ values, and bootstrap resample counts: `uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py`
 5. Stability across the 21 Pythia dictionary fits (needs steps 2 and 4 for its
@@ -93,4 +93,4 @@ shipped in this code-only release).
 ## Layout
 | path | role |
 |---|---|
-| `scripts/` | lifecycle metric computation (no figure rendering): `plot_normalized_trajectories.py` (decoder-norm trajectories), `plot_lifecycle_profile_composition.py` (profile composition), `build_population_diagnostics.py` (peak counts and norm mass), `find_reorganization_steps.py` (reorganization-step peaks/windows and bootstrap counts), `lifecycle_stability.py` (profile fractions and windows across dictionary fits), `plot_selected_wishbone.py` (wishbone scores/clusters); `lifecycle_common.py` holds the shared run table and cache loaders. The profile rules live in `src/readout/dynamics/lifecycle.py`. |
+| `scripts/` | lifecycle metric computation (no figure rendering): `compute_normalized_trajectories.py` (decoder-norm trajectories), `compute_lifecycle_profile_composition.py` (profile composition), `build_population_diagnostics.py` (peak counts and norm mass), `find_reorganization_steps.py` (reorganization-step peaks/windows and bootstrap counts), `lifecycle_stability.py` (profile fractions and windows across dictionary fits), `plot_selected_wishbone.py` (wishbone scores/clusters); `lifecycle_common.py` holds the shared run table and cache loaders. The profile rules live in `src/readout/dynamics/lifecycle.py`. |

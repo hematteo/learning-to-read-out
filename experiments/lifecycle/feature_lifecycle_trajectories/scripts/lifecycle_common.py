@@ -2,12 +2,11 @@
 
 Not an entry point. Holds the `Run` dataclass, the rates/decoder-norm loaders,
 and the decoder-geometry cache machinery that `find_reorganization_steps.py`
-and `plot_selected_wishbone.py` both use, so the entry scripts never import
-each other.
+uses, so the entry scripts never import each other.
 
 Cache layout (all under `CACHE`, gitignored, regenerated on demand):
   - `<key>_decoder_norms.npy`               (K, D) — written by
-    plot_normalized_trajectories.py; run that script first.
+    compute_normalized_trajectories.py; run that script first.
   - `<geometry key>_adjacent_rotation_radians.npy` (K-1, D) and
     `<geometry key>_cos_to_terminal.npy`    (K, D) — derived on first miss by
     `ensure_geometry_cache` from the released crosscoder checkpoints
@@ -36,7 +35,7 @@ OLMO_STEPS_32 = np.asarray(_OLMO_STEPS_LIST, dtype=np.int64)
 
 # Released crosscoder checkpoints carrying the (K, D, d) decoder tensor the
 # geometry caches are derived from, keyed by Run.key (same instruments as
-# plot_normalized_trajectories.SELECTED_RUNS / the README input list).
+# compute_normalized_trajectories.SELECTED_RUNS / the README input list).
 GEOMETRY_CHECKPOINTS: dict[str, Path] = {
     "pythia160m_d24576": release_root() / "pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors",
     "pythia1b_d24576": release_root() / "pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors",
@@ -95,7 +94,7 @@ def load_decoder_norms(run: Run, *, dtype: np.dtype | type = np.float32) -> np.n
     path = decoder_norms_path(run)
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} missing — run plot_normalized_trajectories.py first to build the decoder-norm cache"
+            f"{path} missing — run compute_normalized_trajectories.py first to build the decoder-norm cache"
         )
     return np.load(path).astype(dtype)
 

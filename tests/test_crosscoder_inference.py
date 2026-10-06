@@ -70,7 +70,7 @@ def test_matches_historical_scaled_divide_form():
     pre = _helper_pre(sd, snaps)
     thr = inf.jumprelu_threshold(sd)
     for k in range(K):
-        # Verbatim historical form (run_step1000_feature_rescue.encode_at_step).
+        # Reference form: per-step decoder-norm gate, written out explicitly.
         W_D_k = sd["W_D"][k]
         decoder_norm = torch.linalg.norm(W_D_k.float(), dim=-1)
         scaled = pre * decoder_norm[None, :]

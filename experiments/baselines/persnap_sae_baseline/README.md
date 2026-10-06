@@ -29,7 +29,7 @@ the T4.6 d=24576 seed-0 crosscoder.
 
 1. **Train per-snapshot SAEs:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/train_persnap_saes.py --model {pythia-160m,pythia-1b}`
 2. **Compare vs crosscoder:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/persnap_vs_crosscoder.py`
-3. **Persist comparison metrics:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` and `uv run python experiments/baselines/persnap_sae_baseline/scripts/plot_cc_vs_persnap_gap.py`
+3. **Persist comparison metrics:** `uv run python experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py` and `uv run python experiments/baselines/persnap_sae_baseline/scripts/compute_cc_vs_persnap_gap.py`
 
 ## Inputs (SSD canonical paths)
 
@@ -42,7 +42,7 @@ the T4.6 d=24576 seed-0 crosscoder.
   (and per-snap-SAE L0) for the per-snap SAEs vs the T4.6 d=24576 seed-0 crosscoder
   (written by `build_persnap_comparison.py`).
 - `crosscoder_vs_persnap_gap.txt` — per-snapshot crosscoder EV, per-snap-SAE EV, and
-  their gap, plus mean/max/min gap summary (written by `plot_cc_vs_persnap_gap.py`,
+  their gap, plus mean/max/min gap summary (written by `compute_cc_vs_persnap_gap.py`,
   which despite its name persists a text table, not a figure; `--out-dir` controls
   the location).
 - Per-snapshot recovery (`R = 1 - MSE/Var`) and mean L0 for both the crosscoder and
@@ -54,4 +54,4 @@ the T4.6 d=24576 seed-0 crosscoder.
 
 | path | role |
 |---|---|
-| `scripts/` | per-snapshot SAE baseline code: `train_persnap_saes` / `build_persnap_comparison` plus the crosscoder-vs-per-snap comparison (`persnap_vs_crosscoder`, `plot_cc_vs_persnap_gap`). `plot_cc_vs_persnap_gap` persists a metrics text table only — no figures are rendered in this repo. |
+| `scripts/` | per-snapshot SAE baseline code: `train_persnap_saes` / `build_persnap_comparison` plus the crosscoder-vs-per-snap comparison (`persnap_vs_crosscoder`, `compute_cc_vs_persnap_gap`). `compute_cc_vs_persnap_gap` persists a metrics text table only — no figures are rendered in this repo. |

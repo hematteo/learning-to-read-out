@@ -1,4 +1,4 @@
-"""Plot #2: L0 vs EV phase-plane scatter across crosscoder families.
+"""Per-checkpoint (L0, EV) pairs across crosscoder families.
 
 For each checkpoint we compute (L0_per_snap, EV_per_snap) at each of K
 snapshots using the canonical joint forward pass. EV is per-snapshot mean-centered:

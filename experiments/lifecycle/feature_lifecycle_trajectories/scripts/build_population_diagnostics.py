@@ -13,7 +13,7 @@ reorganization window, and the mean relative decoder norm rho_f(t) of the
 features that peak by step 128.
 
 Reads the `<key>_decoder_norms.npy` caches written by
-plot_normalized_trajectories.py (run that first). Writes metrics only, to
+compute_normalized_trajectories.py (run that first). Writes metrics only, to
 results/experiments/lifecycle/feature_lifecycle_trajectories/:
 selected_population_lifecycle_diagnostics_{peak_counts,norm_mass,window_peaks,early_peak_decay}.csv
 and the matching .pt sidecar.
@@ -58,7 +58,7 @@ RUNS: tuple[Run, ...] = (
 def load_norms(run: Run) -> np.ndarray:
     path = CACHE / f"{run.key}_decoder_norms.npy"
     if not path.exists():
-        raise FileNotFoundError(f"{path} missing — run plot_normalized_trajectories.py first")
+        raise FileNotFoundError(f"{path} missing — run compute_normalized_trajectories.py first")
     norms = np.load(path).astype(np.float32)  # (K, D)
     if norms.shape[0] != run.steps.shape[0]:
         raise ValueError(f"{run.key}: norms shape {norms.shape}, steps {run.steps.shape}")

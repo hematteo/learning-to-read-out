@@ -9,7 +9,7 @@ that the chosen `(d_sae, lambda)` operating point sits on the frontier.
 | Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:app-instrument-pareto` | `results/experiments/capacity/pareto_frontier_ev_l0/ev_l0_phase2.json` | `experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py` |
-| `fig:app-lambda-sweep` | `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` | `experiments/capacity/pareto_frontier_ev_l0/scripts/plot_l0_ev_phase_plane.py` |
+| `fig:app-lambda-sweep` | `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` | `experiments/capacity/pareto_frontier_ev_l0/scripts/compute_l0_ev_phase_plane.py` |
 
 See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
@@ -29,10 +29,10 @@ separate paper LaTeX tree from these metrics, not here.
   (`compute_ev_l0_phase2.py`).
 - `figures/pareto_frontier_ev_l0/l0_ev_phase_plane.csv` and
   `…/l0_ev_phase_plane_cache.pt` — per-snapshot `(L0, EV)` table across the
-  crosscoder families, one row per `(label, snapshot index)` (`plot_l0_ev_phase_plane.py`,
+  crosscoder families, one row per `(label, snapshot index)` (`compute_l0_ev_phase_plane.py`,
   metrics-only despite its name).
 - `derived/sae_pareto.txt` — single-snapshot SAE vs multi-snapshot crosscoder
-  EV/L0 comparison table (`plot_sae_pareto.py`, metrics-only despite its name;
+  EV/L0 comparison table (`compute_sae_pareto_table.py`, metrics-only despite its name;
   written under this experiment's own `derived/`, gitignored).
 
 ## Inputs (SSD canonical paths)
@@ -41,11 +41,11 @@ separate paper LaTeX tree from these metrics, not here.
 
 ## Reproduce (representative; scripts bootstrap the repo onto `sys.path`)
 - Phase-2 EV/L0:        `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_ev_l0_phase2.py`
-- Per-snap L0/EV table: `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/plot_l0_ev_phase_plane.py`
-- SAE-vs-CC comparison: `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/plot_sae_pareto.py`
+- Per-snap L0/EV table: `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_l0_ev_phase_plane.py`
+- SAE-vs-CC comparison: `uv run python experiments/capacity/pareto_frontier_ev_l0/scripts/compute_sae_pareto_table.py`
 - Phase-2 rate extraction (prereq for new arms): `bash experiments/capacity/pareto_frontier_ev_l0/scripts/extract_rates_phase2.sh`
 
 ## Layout
 | path | role |
 |---|---|
-| `scripts/` | EV/L0 Pareto-frontier metric computation: `compute_ev_l0_phase2.py` (per-snapshot EV/L0 JSON), `plot_l0_ev_phase_plane.py` (per-snapshot `(L0, EV)` CSV/cache), `plot_sae_pareto.py` (SAE-vs-crosscoder EV/L0 text table), and `extract_rates_phase2.sh` (firing-rate extraction for new arms). No figures are rendered here. |
+| `scripts/` | EV/L0 Pareto-frontier metric computation: `compute_ev_l0_phase2.py` (per-snapshot EV/L0 JSON), `compute_l0_ev_phase_plane.py` (per-snapshot `(L0, EV)` CSV/cache), `compute_sae_pareto_table.py` (SAE-vs-crosscoder EV/L0 text table), and `extract_rates_phase2.sh` (firing-rate extraction for new arms). No figures are rendered here. |

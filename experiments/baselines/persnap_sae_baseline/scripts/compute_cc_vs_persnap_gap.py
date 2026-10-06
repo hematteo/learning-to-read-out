@@ -1,4 +1,4 @@
-"""Plot #11: Crosscoder vs per-snap-SAE delta-EV.
+"""Crosscoder vs per-snapshot SAE delta-EV.
 
 For each snapshot index i (training step `steps[i]`):
   crosscoder_EV[i] = (1 - resid.var() / x_dev.var())  using joint encode + decode

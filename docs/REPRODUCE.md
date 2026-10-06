@@ -135,7 +135,7 @@ themselves are rendered in the paper tree (see "How to read this").
 |---|---|---|---|---|
 | Figure 1 (`fig:overview`) | paper only; margins from `contrastive_readout_swap` | TikZ schematic; its two margins are per-example outputs of `run_swap_grid.py` on Pythia-1B (hidden state from step 1000, readouts 1000 and 143k, no alignment) | yes | snapshots + hidden states |
 | Table 1 (`tab:task-protocol`) | paper only | hand-typeset; the tasks are built by `build_task_datasets.py` and `readout.probes.contrastive_tasks` | no | none |
-| Figure 2 (`fig:main-selected-normalized-trajectories`) | `feature_lifecycle_trajectories`, `crosscoder_olmo` | `plot_normalized_trajectories.py` persists the decoder-norm trajectories | no | crosscoders |
+| Figure 2 (`fig:main-selected-normalized-trajectories`) | `feature_lifecycle_trajectories`, `crosscoder_olmo` | `compute_normalized_trajectories.py` persists the decoder-norm trajectories | no | crosscoders |
 | Table 2 (`tab:method-comparison`) | paper only | qualitative comparison | | |
 | Figure 3 (`fig:main-wordnet-matched-controls`) | `concept_evolution_validation` | `run_wordnet_matched_controls.py` | no | `W_U` snapshots |
 | Figure 4 (`fig:main-sva-availability-expression`) | `contrastive_readout_swap` | left panel: `run_swap_grid.py` (Pythia-6.9B, 32 checkpoints, `--wu-round bf16`) and `run_controlled_hidden_probes.py`; right panel: `build_task_datasets.py --task-set availability`, `extract_hidden_dense.py`, `run_availability_probes.py --group-split` (persist `probe_summary.csv`) | yes | snapshots + hidden states |
@@ -165,11 +165,11 @@ themselves are rendered in the paper tree (see "How to read this").
 
 | Paper item | Experiment | Metrics / scripts | Needs GPU | Needs SSD data |
 |---|---|---|---|---|
-| Figure E.1 (`fig:app-lifecycle-profile-composition`) | `feature_lifecycle_trajectories` | `plot_lifecycle_profile_composition.py` (refined ruleset, `*_refined_*` files) | no | crosscoders |
+| Figure E.1 (`fig:app-lifecycle-profile-composition`) | `feature_lifecycle_trajectories` | `compute_lifecycle_profile_composition.py` (refined ruleset, `*_refined_*` files) | no | crosscoders |
 | Table E.1 (`tab:lifecycle-profile-rules`) | paper only | rules implemented in `readout.dynamics.lifecycle.classify_profiles_refined` | | |
 | Figure E.2 (`fig:app-selected-population-lifecycle-diagnostics`) and the adjacent window-peak and $\rho_f$ numbers | `feature_lifecycle_trajectories` | `build_population_diagnostics.py` | no | decoder-norm caches |
 | Table E.2, Figure E.4 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | `feature_lifecycle_trajectories`, `crosscoder_olmo` | `find_reorganization_steps.py` (windows, circular-shift $p$ values, bootstrap resample counts) | no | crosscoders + aggregates |
-| Figure E.3 (`fig:app-olmo-window-population`) and the late-start profile shares | `olmo_matched_checkpoint_window` | `train_late_start.py` (optional; the dictionary is released), `build_late_start_vs_olmo_figures.py` | for retrain | snapshots + crosscoders |
+| Figure E.3 (`fig:app-olmo-window-population`) and the late-start profile shares | `olmo_matched_checkpoint_window` | `train_late_start.py` (optional; the dictionary is released), `compute_late_start_vs_olmo.py` | for retrain | snapshots + crosscoders |
 | Table E.3 (`tab:app-lifecycle-stability`) | `feature_lifecycle_trajectories` | `lifecycle_stability.py --stage all` (21 dictionary fits; about 25 min and 15 GB RAM on CPU) | no | released crosscoders + aggregates |
 
 ### Appendix F (vocabulary family probes)

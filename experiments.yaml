@@ -231,8 +231,8 @@ experiments:
       - ${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt
       - experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt
       - figures/feature_lifecycle_trajectories/section52_lifecycle/cache/pythia1b_d24576_decoder_norms.npy
-      # OLMo decoder-norm geometry cache read by build_late_start_vs_olmo_figures.py;
-      # produced by feature_lifecycle_trajectories' plot_normalized_trajectories.py — run that first.
+      # OLMo decoder-norm geometry cache read by compute_late_start_vs_olmo.py;
+      # produced by feature_lifecycle_trajectories' compute_normalized_trajectories.py — run that first.
       - figures/feature_lifecycle_trajectories/section52_lifecycle/cache/olmo2_7b_d32768_decoder_norms.npy
     paper_labels:
       - fig:app-olmo-window-population
@@ -362,8 +362,8 @@ experiments:
       - ${UM_SSD_ROOT}/snapshots/pythia-160m/EleutherAI_pythia-160m_step*_wu.pt
       - experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/{p69b_sparse,olmo27b}_d32768_seed0.pt
     entry:
-      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py"
-      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_lifecycle_profile_composition.py"
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py"
+      - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_lifecycle_profile_composition.py"
       - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/build_population_diagnostics.py"
       - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py"
       - "uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/lifecycle_stability.py --stage all --out-dir results/experiments/lifecycle/feature_lifecycle_trajectories/lifecycle_stability"

@@ -11,7 +11,7 @@ find_reorganization_steps.py, under the same null seed convention
 Stages (``--stage``, default ``all``), each writing one CSV under ``--out-dir``:
   validate    the four selected dictionaries from the lifecycle caches (the window
               script's inputs), beside the regenerated selected-dictionary CSVs in
-              ``--reference-dir``; run plot_lifecycle_profile_composition.py and
+              ``--reference-dir``; run compute_lifecycle_profile_composition.py and
               find_reorganization_steps.py first              -> validation.csv
   pythia1b    widths 8192 / 16384 / 24576, seed 0              -> pythia1b_widths.csv
   pythia160m  cross-snapshot-32 widths and seeds               -> pythia160m_widths_seeds.csv

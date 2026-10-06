@@ -3,7 +3,7 @@
 Covers readout.dynamics.lifecycle.profile_fractions, the release-safetensors path of
 readout.crosscoder.extract_rates.compute_rates_canonical, and the helpers of
 feature_lifecycle_trajectories/scripts/lifecycle_stability.py and
-olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py. The
+olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py. The
 experiment scripts are loaded with their scripts dir on ``sys.path`` (the precedent of
 test_recipe_control_lifecycle.py). CPU only, no data: tiny synthetic tensors.
 """
@@ -47,7 +47,7 @@ def ls():
 
 @pytest.fixture(scope="module")
 def late():
-    return _load(LATE_START_SCRIPTS, "build_late_start_vs_olmo_figures")
+    return _load(LATE_START_SCRIPTS, "compute_late_start_vs_olmo")
 
 
 def _profile_norms() -> np.ndarray:
