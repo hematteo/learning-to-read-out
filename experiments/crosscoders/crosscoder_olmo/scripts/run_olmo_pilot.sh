@@ -2,14 +2,14 @@
 # Stage-1 pilot: OLMo-2-7B-1124 cross-family crosscoder fit at d_SAE=16384.
 # Runs on a single A100-80GB. ~3 h wall.
 #
-# Goal (per SCHEDULE.md decision rules):
+# Goal (pre-registered decision rules, see eval_decision_rules.py):
 #   - Reduced-baseline CUSUM perm test fires (p < 0.01)
 #   - Rate-rotation correlation r > 0.5
-#   - EV >= 0.40
+#   - EV >= 0.55
 #   - Dead-feature rate < 30%
 #
-# If all four pass, advance to run_olmo_production.sh (4x A100-80GB,
-# d_SAE=32768, head-parallel).
+# Proceed to run_olmo_production.sh (4x A100-80GB, d_SAE=32768, head-parallel) if
+# the rate-rotation gate passes and at least two of the other three pass.
 #
 # Prereqs:
 #   - W_U cache populated by extract_wu_olmo.py at $WU_CACHE
@@ -63,4 +63,4 @@ uv run python scripts/train/train_crosscoder.py \
 echo
 echo "Pilot done. Result: ${OUT_DIR}/cc_olmo27b_dsae16384_seed${SEED}.pt"
 echo "Next: run permutation_test.py + rate-rotation analysis to evaluate"
-echo "decision rules in SCHEDULE.md."
+echo "the pilot decision rules (eval_decision_rules.py)."

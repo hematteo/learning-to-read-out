@@ -42,7 +42,7 @@ def _maybe_load_terminal_W_U(model_name: str) -> torch.Tensor | None:
 
     Only missing/unreadable snapshot files are tolerated (returns None); any
     other failure (bad payload shape, dtype, ...) propagates so it can't
-    silently disable the row-norm-matched filtering the README advertises.
+    silently disable the row-norm-matched filtering.
     """
     try:
         # Pythia uses step 143000 as terminal.
@@ -107,9 +107,9 @@ def main() -> None:
     if W_U is None and not args.no_norm_match:
         print(
             f"[WARN] no terminal W_U found for {args.model}: the row-norm-matched "
-            "distractor filtering advertised in the README is DISABLED for this "
+            "distractor filtering is DISABLED for this "
             "build. Pass --no-norm-match to acknowledge, or make the terminal "
-            "snapshot available (see docs/DATA.md).",
+            "snapshot available (see docs/REPRODUCE.md).",
             flush=True,
         )
 

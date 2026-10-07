@@ -1,8 +1,8 @@
 # Settings-of-record for the DENSE / default-lambda Pythia-6.9B W_U trajectory
-# crosscoder (comparison-only run; sidecar p69b_normal_*). Used for the
-# fig:app-p69b-dense-vs-sparse contrast, not the headline 6.9B result.
+# crosscoder (comparison-only run; sidecar p69b_normal_*). Listed in tab:full-inventory
+# and tab:app-lifecycle-stability; not the headline 6.9B result.
 # Field names mirror the scripts/train/train_crosscoder.py CLI flags.
-# Documentation/record only; not auto-loaded. See configs/README.md.
+# Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 name: pythia-6.9b_wu_d32768_seed0_dense
 model: EleutherAI/pythia-6.9b
 matrix: W_U

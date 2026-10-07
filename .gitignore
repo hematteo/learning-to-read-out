@@ -121,7 +121,7 @@ experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/
 **/derived/**/*.txt
 
 # Experiment outputs are regenerated, not source — code only, no metrics ship
-# (see docs/DATA.md / docs/REPRODUCE.md for regeneration).
+# (see docs/REPRODUCE.md for regeneration).
 experiments/**/*.pt
 experiments/**/*.pth
 experiments/**/*.npy

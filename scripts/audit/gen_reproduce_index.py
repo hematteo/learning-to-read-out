@@ -55,7 +55,7 @@ def render_table() -> str:
         elif lbl in paper_only and lbl not in by_label_exp:
             src_col = "(paper LaTeX tree only)"
         else:
-            src_col = "(produced; see experiments.yaml / tables below)"
+            src_col = "(produced; see the sections above)"
         lines.append(f'| <a id="{lbl}"></a>`{lbl}` | {exps_col} | {src_col} |')
     return "\n".join(lines)
 

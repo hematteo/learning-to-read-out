@@ -35,7 +35,7 @@ OLMO_STEPS_32 = np.asarray(_OLMO_STEPS_LIST, dtype=np.int64)
 
 # Released crosscoder checkpoints carrying the (K, D, d) decoder tensor the
 # geometry caches are derived from, keyed by Run.key (same instruments as
-# compute_normalized_trajectories.SELECTED_RUNS / the README input list).
+# compute_normalized_trajectories.SELECTED_RUNS).
 GEOMETRY_CHECKPOINTS: dict[str, Path] = {
     "pythia160m_d24576": release_root() / "pythia-160m/W_U/cross-snapshot-32/d24576/seed0.safetensors",
     "pythia1b_d24576": release_root() / "pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors",
@@ -133,7 +133,7 @@ def ensure_geometry_cache(run: Run) -> tuple[Path, Path]:
         raise FileNotFoundError(
             f"{rotation_path.name} / {cos_terminal_path.name} missing and the released "
             f"crosscoder checkpoint to derive them from is unavailable ({ckpt_path}); "
-            "see the experiment README Inputs section"
+            "see docs/REPRODUCE.md (Appendix E inputs)"
         )
     from readout.crosscoder.checkpoints import load_checkpoint
 

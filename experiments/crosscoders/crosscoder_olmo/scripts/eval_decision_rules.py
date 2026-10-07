@@ -1,4 +1,4 @@
-"""Evaluate the SCHEDULE.md decision rules against a trained OLMo crosscoder.
+"""Evaluate the pre-registered OLMo pilot decision rules against a trained crosscoder.
 
 Computes the four pilot-stage / seven production-stage gates and emits a
 JSON verdict. Designed to be run immediately after wu_adapter.py finishes
@@ -21,13 +21,12 @@ from pathlib import Path
 
 import torch
 
-# Pre-registered thresholds from SCHEDULE.md (committed 2026-04-27).
-# EV bumped from 0.40 to 0.55 per code review: Run 5 1B/d_SAE=8192 hit 0.477,
-# so 0.40 admits an undertrained crosscoder (Run 2 failure mode).
+# Pre-registered thresholds. The EV gate is 0.55 because a gate of 0.40 admits an
+# undertrained crosscoder (a Pythia-1B d_SAE=8192 fit reached 0.477).
 PILOT_THRESHOLDS = {
     "rate_rotation_r_min": 0.5,  # PRIMARY: baseline-window-free
     "perm_test_p_value_max": 0.01,  # SECONDARY: reduced-baseline CUSUM
-    "ev_min": 0.55,  # bumped from 0.40 — Run 5 floor + headroom
+    "ev_min": 0.55,
     "dead_feature_rate_max": 0.30,
 }
 
@@ -297,7 +296,7 @@ def main() -> int:
             "pass": bool(ok),
         }
 
-    # Pre-registered partial-credit decision rule (SCHEDULE.md §"Stage 1" / §"Stage 2"):
+    # Pre-registered partial-credit decision rule:
     #   Pilot:      proceed iff A passes AND ≥2 of {B, C, D} pass.
     #   Production: headline holds iff A passes AND ≥4 of 6 secondary checks pass;
     #               this script computes 4 of 6 secondaries (perm, decoder-cos, EV, dead),

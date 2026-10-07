@@ -3,7 +3,7 @@
 #   install -> test -> audit -> figures -> extract -> train -> analyze
 # `make help` lists them. `make figures` redraws the paper figures from the small data files in
 # paper_figures/data/; the other stages recompute those data from public checkpoints. See
-# docs/REPRODUCE.md for the figure -> metrics map and docs/DATA.md for the external assets.
+# docs/REPRODUCE.md for the figure -> metrics map and docs/REPRODUCE.md for the external assets.
 
 .DEFAULT_GOAL := help
 .PHONY: help install test lint audit figures extract train analyze clean
@@ -32,7 +32,7 @@ figures:  ## Redraw the paper figures into paper_figures/out/ (CPU, about 30 s)
 
 extract:  ## Stage 1: build W_E snapshots from HF checkpoints (needs network + disk)
 	@echo "Example: uv run python scripts/extract/extract_we_pythia.py --model EleutherAI/pythia-160m"
-	@echo "Snapshot schedule: readout.core.model_specs.DEFAULT_STEPS_32. See docs/DATA.md."
+	@echo "Snapshot schedule: readout.core.model_specs.DEFAULT_STEPS_32. See docs/REPRODUCE.md."
 	@echo "(W_U snapshots are auto-extracted on cache-miss by the train target.)"
 
 train:  ## Stage 2: train a trajectory crosscoder from snapshots (needs GPU for >160M)
@@ -40,7 +40,7 @@ train:  ## Stage 2: train a trajectory crosscoder from snapshots (needs GPU for 
 	@echo "           --model EleutherAI/pythia-160m --expansion-factor 32.0 \\"
 	@echo "           --batch-size 1024 --lr 5e-5 --n-epochs 300 --seed 0 \\"
 	@echo "           --input-preprocess center_scale --amp-dtype fp32 \\"
-	@echo "           --tanh-stretch 1.0 \\"
+	@echo "           --tanh-stretch 1.0 --l1-warmup-fraction 0.05 \\"
 	@echo "           --output local_snapshots/wu_cc_pythia160m_seed0.pt"
 	@echo "Settings-of-record for each published run: configs/runs/*.yaml"
 

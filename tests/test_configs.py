@@ -1,7 +1,7 @@
 """Validate the committed crosscoder run configs (CPU-only, no data/GPU).
 
 These are the settings-of-record under ``configs/runs/`` (see
-``configs/README.md``). Each file must parse, identify its model, and carry
+``docs/REPRODUCE.md``). Each file must parse, identify its model, and carry
 numeric hyperparameters as numbers — guarding against a stray quote or typo
 silently corrupting the reproducibility record.
 """

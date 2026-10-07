@@ -1,7 +1,7 @@
 # Settings-of-record for the cross-family OLMo-2-7B W_U trajectory crosscoder
 # (production run; 4-GPU head-parallel). Field names mirror the
 # scripts/train/train_crosscoder.py / train_distributed.py CLI flags.
-# Documentation/record only; not auto-loaded. See configs/README.md.
+# Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 #
 # PROVENANCE NOTE. The run of record is the 2026-05-02 vast.ai run whose
 # checkpoint (cc_olmo27b_dsae32768_seed0.pt) was converted into the released

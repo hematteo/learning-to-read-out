@@ -31,7 +31,7 @@ from readout.core.paths import repo_root, ssd_path
 REPO = repo_root()
 DEFAULT_SNAP_DIR = Path(os.environ.get("WU_SNAP_DIR", str(ssd_path("snapshots"))))
 # Canonical released Pythia eval corpus — same resolution as
-# readout.dynamics.temporal_patch.CORPUS_TOKENS_PYTHIA (see docs/DATA.md).
+# readout.dynamics.temporal_patch.CORPUS_TOKENS_PYTHIA (see docs/REPRODUCE.md).
 # Override with the READOUT_EVAL_TOKENS env var or a per-call path.
 EVAL_TOKENS_PT = Path(
     os.environ.get(
@@ -66,7 +66,7 @@ def load_token_corpus_counts(vocab: int, eval_tokens: Path | None = None) -> tor
             f"eval-tokens corpus not found at {path}. Point READOUT_EVAL_TOKENS "
             "(or the eval_tokens argument) at the released corpus: "
             "<UM_SSD_ROOT>/hf_release/parameter-trajectory-crosscoders/"
-            "evaluation/eval-corpus/eval_tokens.pt (see docs/DATA.md); "
+            "evaluation/eval-corpus/eval_tokens.pt (see docs/REPRODUCE.md); "
             "UM_SSD_ROOT selects the SSD root."
         )
     data = torch.load(path, map_location="cpu", weights_only=False)

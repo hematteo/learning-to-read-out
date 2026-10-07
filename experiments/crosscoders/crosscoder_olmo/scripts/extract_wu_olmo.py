@@ -34,7 +34,7 @@ import requests
 import torch
 from transformers import AutoModelForCausalLM
 
-# Pre-registered schedule from SCHEDULE.md (committed 2026-04-27).
+# Pre-registered checkpoint schedule (32 OLMo-2-7B steps).
 OLMO2_7B_STEPS = [
     150,
     600,

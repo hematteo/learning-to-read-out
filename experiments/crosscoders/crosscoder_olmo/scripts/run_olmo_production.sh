@@ -2,10 +2,10 @@
 # Stage-2 production: OLMo-2-7B-1124 cross-family crosscoder fit at d_SAE=32768.
 # Runs on 4x A100-80GB with head-parallelism (Ge §A.3). ~3 h wall.
 #
-# Conditional on Stage-1 pilot passing all four decision-rule gates
-# (see SCHEDULE.md). If pilot fails, do not run this.
+# Conditional on the Stage-1 pilot passing its decision rule
+# (eval_decision_rules.py). If pilot fails, do not run this.
 #
-# Goal (per SCHEDULE.md decision rules, production stage):
+# Goal (pre-registered decision rules, production stage):
 #   - Reduced-baseline CUSUM perm test fires (p < 0.001)
 #   - Rate-rotation correlation r > 0.7
 #   - Decoder cosine vs step-150 baseline drops < 0.7 by step 1000
@@ -17,7 +17,7 @@
 # Prereqs:
 #   - W_U cache populated by extract_wu_olmo.py at $WU_CACHE
 #   - 4x A100-80GB visible to torchrun (CUDA_VISIBLE_DEVICES=0,1,2,3)
-#   - Pilot at d_SAE=16384 has cleared all four pilot gates
+#   - Pilot at d_SAE=16384 has passed its decision rule
 
 set -euo pipefail
 
@@ -39,7 +39,7 @@ import json, os, sys
 try:
     with open(os.environ['VERDICT_PATH']) as f:
         d = json.load(f)
-    # Pre-registered partial-credit rule (SCHEDULE.md §'Stage 1'):
+    # Pre-registered partial-credit rule (pilot stage):
     #   proceed iff primary (rate_rotation_r) passes AND ≥2 of {B,C,D} pass.
     # The eval script writes this as decision.proceed; older verdicts only
     # had all_gates_pass — fall back to that for backward compatibility.
@@ -57,7 +57,7 @@ except Exception as e:
     exit 1
 }
 if [[ "${PROCEED}" != "True" ]]; then
-    echo "ERROR: pilot decision.proceed=${PROCEED}. Aborting production per SCHEDULE.md."
+    echo "ERROR: pilot decision.proceed=${PROCEED}. Aborting production."
     echo "Verdict file: ${PILOT_VERDICT}"
     exit 2
 fi

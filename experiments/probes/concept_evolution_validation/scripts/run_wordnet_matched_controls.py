@@ -43,7 +43,7 @@ from readout.probes.wu_probes_gpu import probe_balanced_accuracy_batched
 REPO = repo_root()
 
 # Canonical released Pythia eval corpus — same resolution as
-# readout.dynamics.temporal_patch.CORPUS_TOKENS_PYTHIA (see docs/DATA.md);
+# readout.dynamics.temporal_patch.CORPUS_TOKENS_PYTHIA (see docs/REPRODUCE.md);
 # override with --eval-tokens.
 DEFAULT_EVAL_TOKENS = ssd_path("hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt")
 
@@ -391,7 +391,7 @@ def run(args: argparse.Namespace) -> None:
     if not eval_tokens.exists():
         raise FileNotFoundError(
             f"eval-tokens corpus not found at {eval_tokens}; pass --eval-tokens "
-            "or set UM_SSD_ROOT so the released corpus resolves (see docs/DATA.md)."
+            "or set UM_SSD_ROOT so the released corpus resolves (see docs/REPRODUCE.md)."
         )
     counts = load_eval_counts(eval_tokens, vocab_size)
     cov = build_token_covariates(tokenizer, counts, vocab_size)

@@ -183,7 +183,7 @@ def encode_snapshot_local(W_U: torch.Tensor, pieces: dict) -> torch.Tensor:
 SSD = ssd_path()
 # Canonical (Pythia-tokenized) eval corpus — ships with the released HF
 # artifacts (byte-identical to the archived original); override with
-# --eval-tokens (see docs/DATA.md).
+# --eval-tokens (see docs/REPRODUCE.md).
 CORPUS_TOKENS_PYTHIA = SSD / "hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt"
 # OLMo-tokenized variant; regenerate with scripts/extract/build_eval_corpus_olmo.py
 # (this is that builder's default --output). Selected by temporal_patch_grid.py
@@ -871,7 +871,7 @@ def load_crosscoder(ctx: PatchContext, seed: int) -> tuple[dict, dict, list[int]
     """Returns (state_dict, preprocess_stats, steps).
 
     For 1B (run5_pythia1b_capsweep) the stats live in the aggregates sidecar
-    distributed as a released artifact (see docs/DATA.md). For 160M they lived
+    distributed as a released artifact (see docs/REPRODUCE.md). For 160M they lived
     in the legacy Run-3 .pt; the released safetensors sidecars ship none, so
     they are rebuilt deterministically from the raw snapshots on load
     (bitwise means, ulp-level scales — see
@@ -889,7 +889,7 @@ def load_crosscoder(ctx: PatchContext, seed: int) -> tuple[dict, dict, list[int]
         if not agg_path.exists():
             raise FileNotFoundError(
                 f"Aggregates sidecar missing: {agg_path}. The per-model "
-                f"aggregates are distributed as released artifacts; see docs/DATA.md "
+                f"aggregates are distributed as released artifacts; see docs/REPRODUCE.md "
                 f"to obtain "
                 f"derived/aggregates/aggregates_*_d{ctx.d_sae}_seed{seed}.pt."
             )

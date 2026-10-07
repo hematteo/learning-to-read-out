@@ -11,7 +11,6 @@ Checks:
   3.  [WARN]  src/ modules with `if __name__ == "__main__"` blocks.
   4.  [ERROR] No stray .py at experiments/ root (loose scripts wrapped in <id>/scripts/).
   5.  [ERROR] Top-level dirs match the expected set; underscore-prefix dirs always allowed.
-  6.  [ERROR] Every experiments/<id>/ has a README.md.
   7.  [ERROR] experiments/<id>/ ↔ experiments.yaml entry parity (no orphans either side).
   8.  [WARN]  Every \\label{fig:...} in paper/main.tex appears in some experiment's
               paper_labels: in experiments.yaml. Warning (not error) because some labels
@@ -109,17 +108,16 @@ ALLOWED_TOP_LEVEL = {
     "logs",  # runtime job logs (gitignored; created by Makefile / launch scripts)
     "local_snapshots",  # default UM_SSD_ROOT output root (gitignored; created by any default run)
     "reports",
-    "docs",  # companion guides: REPRODUCE.md / DATA.md / THIRD_PARTY.md
+    "docs",  # REPRODUCE.md and the README overview image
     "paper",
     "configs",
     "tests",
     "paper_figures",  # scripts and data that redraw the paper figures
     # underscore-prefix dirs (e.g. _archive/) are always allowed by check 5
 }
-# Files allowed at top level (REPRODUCE.md / DATA.md / THIRD_PARTY.md now live under docs/)
+# Files allowed at top level
 ALLOWED_TOP_FILES = {
     "README.md",
-    "CONTRIBUTING.md",
     "CITATION.cff",
     "LICENSE",
     "Makefile",
@@ -180,8 +178,8 @@ def check_src_no_main() -> list[str]:
 def check_experiments_no_loose() -> list[str]:
     """No loose .py at experiments/ root or inside topic dirs.
 
-    Layout is 2-level: `experiments/<topic>/<id>/` (with README.md at the leaf).
-    Topic dirs (depth 1, no README) must contain only sub-dirs.
+    Layout is 2-level: `experiments/<topic>/<id>/`. Topic dirs (depth 1) must
+    contain only sub-dirs.
     """
     issues: list[str] = []
     exp = REPO / "experiments"
@@ -359,10 +357,9 @@ def check_scripts_imports() -> list[str]:
 def _experiment_dirs() -> list[Path]:
     """Leaf experiment dirs across the 2-level topic layout.
 
-    Discovery is structural, NOT README-based: every non-hidden,
-    non-underscore directory at `experiments/<topic>/<id>/` depth is a leaf,
-    so a README-less experiment still surfaces in checks 6 and 7 instead of
-    silently vanishing. A depth-1 dir that carries its own README.md is a
+    Discovery is structural: every non-hidden, non-underscore directory at
+    `experiments/<topic>/<id>/` depth is a leaf, so every experiment surfaces in
+    check 7 (manifest parity). A depth-1 dir that carries its own README.md is a
     (legacy single-level) experiment, mirroring check 4's handling; other
     depth-1 dirs are topic containers and only their children are leaves.
     """
@@ -392,11 +389,6 @@ def _load_experiments_yaml() -> dict | None:
         return None
     return yaml.safe_load(EXPERIMENTS_YAML.read_text())
 
-
-def check_experiment_readmes() -> list[str]:
-    return [
-        _c(6, f"{p.relative_to(REPO)}/ missing README.md") for p in _experiment_dirs() if not (p / "README.md").exists()
-    ]
 
 
 def check_yaml_dir_parity() -> list[str]:
@@ -611,7 +603,6 @@ def main() -> int:
     errors += check_scripts_verbs()
     errors += check_experiments_no_loose()
     errors += check_top_level()
-    errors += check_experiment_readmes()
     errors += check_yaml_dir_parity()
     errors += check_readme_exists()
     errors += check_scripts_imports()

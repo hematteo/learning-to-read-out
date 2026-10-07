@@ -2,9 +2,9 @@
 
 Two audit behaviors are pinned here because both regressed silently before:
 
-  1. check 6 discovers experiment leaf dirs STRUCTURALLY (any non-hidden,
-     non-underscore ``experiments/<topic>/<id>/`` dir), so a README-less
-     experiment FAILS the audit instead of vanishing from discovery.
+  1. experiment leaf dirs are discovered STRUCTURALLY (any non-hidden,
+     non-underscore ``experiments/<topic>/<id>/`` dir), so every experiment is
+     checked against the manifest instead of vanishing from discovery.
   2. check 10 flags ``scripts/`` files importing the ``scripts`` or
      ``experiments`` packages (the entry layer depends only on src/).
 
@@ -45,51 +45,17 @@ def _point_at_fake_repo(monkeypatch, cl, repo: Path):
     monkeypatch.setattr(cl, "README", repo / "README.md")
 
 
-# ── check 6: README-less experiment dirs fail ──────────────────────────
+# ── experiment discovery is structural ─────────────────────────────
 
 
-def test_readme_less_experiment_dir_fails_check_6(tmp_path, monkeypatch, cl):
-    ok = tmp_path / "experiments" / "lifecycle" / "exp_ok"
-    ok.mkdir(parents=True)
-    (ok / "README.md").write_text("# ok\n")
-    bad = tmp_path / "experiments" / "lifecycle" / "exp_bad"
-    bad.mkdir(parents=True)
+def test_experiment_dirs_are_discovered_structurally(tmp_path, monkeypatch, cl):
+    """Any non-underscore experiments/<topic>/<id>/ dir is a leaf, documented or not."""
+    (tmp_path / "experiments" / "lifecycle" / "exp_a").mkdir(parents=True)
+    (tmp_path / "experiments" / "lifecycle" / "exp_b" / "scripts").mkdir(parents=True)
     # Underscore-prefixed dirs are internal and stay exempt.
     (tmp_path / "experiments" / "lifecycle" / "_wip").mkdir()
     _point_at_fake_repo(monkeypatch, cl, tmp_path)
-
-    issues = cl.check_experiment_readmes()
-    assert len(issues) == 1, f"expected exactly the README-less leaf, got {issues}"
-    assert "[check-06]" in issues[0]
-    assert "exp_bad" in issues[0] and "missing README.md" in issues[0]
-    assert not any("exp_ok" in i or "_wip" in i for i in issues)
-
-
-def test_readme_less_experiment_still_discovered_as_leaf(tmp_path, monkeypatch, cl):
-    """Discovery must be structural, not README-based: the README-less dir
-    surfaces in _experiment_dirs instead of silently vanishing."""
-    bad = tmp_path / "experiments" / "lifecycle" / "exp_bad"
-    bad.mkdir(parents=True)
-    _point_at_fake_repo(monkeypatch, cl, tmp_path)
-    assert [p.name for p in cl._experiment_dirs()] == ["exp_bad"]
-
-
-def test_main_exits_1_on_missing_experiment_readme_then_0_when_added(tmp_path, monkeypatch, cl, capsys):
-    """End-to-end wiring: the check-6 error flips main() to exit code 1."""
-    leaf = tmp_path / "experiments" / "lifecycle" / "exp_bad"
-    (leaf / "scripts").mkdir(parents=True)
-    (tmp_path / "README.md").write_text("# front door\n")
-    (tmp_path / "experiments.yaml").write_text(
-        "experiments:\n  - id: exp_bad\n    scripts_dir: experiments/lifecycle/exp_bad/scripts/\n"
-    )
-    _point_at_fake_repo(monkeypatch, cl, tmp_path)
-    monkeypatch.setattr(sys, "argv", ["check_layout.py"])
-
-    assert cl.main() == 1
-    assert "check-06" in capsys.readouterr().err
-
-    (leaf / "README.md").write_text("# now documented\n")
-    assert cl.main() == 0
+    assert [p.name for p in cl._experiment_dirs()] == ["exp_a", "exp_b"]
 
 
 # ── check 10: scripts/ must not import scripts.* / experiments.* ───────

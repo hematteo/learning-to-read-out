@@ -4,7 +4,7 @@
 # and CUSUM p > 0.1. Defends against the "crosscoder finds structure in
 # anything" attack (Run 3 §7.2 control, p=0.613 on Gaussian snapshots).
 #
-# Pre-registered prediction (per SCHEDULE.md "Required controls"):
+# Pre-registered prediction:
 #   rate-rotation r within 95% CI of 0
 #   reduced-baseline CUSUM p > 0.1
 #

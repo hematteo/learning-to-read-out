@@ -3,7 +3,7 @@
 # step 256 (no sub-step-150 checkpoints), matching the OLMo availability
 # constraint (paper appendix checkpoint-window control). Field names mirror the
 # train_late_start.py / train_crosscoder.py CLI flags.
-# Documentation/record only; not auto-loaded. See configs/README.md.
+# Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 name: pythia-1b_wu_d24576_seed0_olmo-matched-window
 model: EleutherAI/pythia-1b
 matrix: W_U
@@ -13,7 +13,7 @@ d_sae: 24576              # expansion_factor 12.0 at d_model=2048 (24576 / 2048)
 expansion_factor: 12.0
 n_snapshots: 32           # late-start schedule (NOT DEFAULT_STEPS_32)
 
-# Late-start 32-snapshot schedule (README; starts at step 256, not 0)
+# Late-start 32-snapshot schedule (starts at step 256, not 0)
 steps:
   - 256
   - 512
@@ -85,7 +85,6 @@ source: >
   pythia1b_wu_late_start32_dsae24576_seed0.pt (lr=5e-5, batch_size=1024,
   n_epochs=300, amp_dtype=bf16, lambda=0.3, tanh_stretch=1.0,
   init_threshold=0.1);
-  experiments/ablations/olmo_matched_checkpoint_window/README.md
-  (late-start 32-step schedule, d_sae 24576);
+  docs/REPRODUCE.md, Appendix E (late-start 32-step schedule, d_sae 24576);
   experiments.yaml: olmo_matched_checkpoint_window;
   paper appendix checkpoint-window control (late-start Pythia-1B).

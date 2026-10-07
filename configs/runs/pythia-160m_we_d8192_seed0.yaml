@@ -2,7 +2,7 @@
 # Pythia-160M (read-write asymmetry appendix). Multi-seed pilot (seeds 0-4);
 # this config records the seed-0 point. Field names mirror the
 # scripts/train/train_crosscoder.py CLI flags.
-# Documentation/record only; not auto-loaded. See configs/README.md.
+# Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 name: pythia-160m_we_d8192_seed0
 model: EleutherAI/pythia-160m
 matrix: W_E

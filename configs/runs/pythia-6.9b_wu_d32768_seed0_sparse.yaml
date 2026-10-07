@@ -1,7 +1,7 @@
 # Settings-of-record for the SELECTED sparse/high-sparsity Pythia-6.9B W_U
 # trajectory crosscoder (paper-facing 6.9B run; sidecar p69b_sparse_*).
 # Field names mirror the scripts/train/train_crosscoder.py CLI flags.
-# Documentation/record only; not auto-loaded. See configs/README.md.
+# Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 name: pythia-6.9b_wu_d32768_seed0_sparse
 model: EleutherAI/pythia-6.9b
 matrix: W_U

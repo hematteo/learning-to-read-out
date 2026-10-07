@@ -51,7 +51,7 @@ def main():
         "--eval-tokens",
         type=Path,
         default=tpl.CORPUS_TOKENS_PYTHIA,
-        help="Evaluation-token tensor (ids/scripts/languages dict); see docs/DATA.md.",
+        help="Evaluation-token tensor (ids/scripts/languages dict); see docs/REPRODUCE.md.",
     )
     args = ap.parse_args()
 

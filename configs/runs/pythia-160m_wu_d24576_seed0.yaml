@@ -1,6 +1,6 @@
 # Settings-of-record for the main Pythia-160M W_U trajectory crosscoder.
 # Field names mirror the scripts/train/train_crosscoder.py CLI flags.
-# Documentation/record only; not auto-loaded. See configs/README.md.
+# Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 name: pythia-160m_wu_d24576_seed0
 model: EleutherAI/pythia-160m
 matrix: W_U

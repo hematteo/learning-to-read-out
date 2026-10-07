@@ -26,28 +26,50 @@ checkpoint's readout) and probes on fixed hidden states, on Pythia (160M to 6.9B
 and OLMo-2-7B, and in controlled 31M pretraining runs that vary only the readout's
 learning rate.
 
-## Contents
+## Core algorithms
 
-- [Requirements](#requirements)
-- [Quickstart](#quickstart)
-- [Pretrained dictionaries and checkpoints](#pretrained-dictionaries-and-checkpoints)
-- [Training](#training)
-- [Evaluation: reproducing the paper](#evaluation-reproducing-the-paper)
-- [Results](#results)
-- [Using the library](#using-the-library)
-- [Repository layout](#repository-layout)
-- [Citation](#citation)
-- [License](#license)
+| Method in the paper | Code |
+|---|---|
+| Parameter-trajectory crosscoding: one sparse dictionary over every readout row's trajectory | `readout.crosscoder`: `load_snapshots`, `preprocess_snapshots`, `train`, `quick_quality`; encoding and reconstruction in `readout.crosscoder.inference` |
+| Readout swap and contrast margin | `readout.probes.readout_swap`: `compute_margin`, `evaluate_swap_cell`, `align_readout` (mean, scale, row norm, or orthogonal Procrustes alignment) |
+| Availability, native expression, best swept readout | `readout.probes.availability_expression`: `availability_probe`, `native_and_best_swept` |
+| Contrastive tasks (Table 1) | `readout.probes.contrastive_tasks` (`build_sva`, `build_ioi_role_balanced`, `build_numeric_greater_than`, ...) |
+| Lifecycle profiles | `readout.dynamics.lifecycle`: `classify_profiles_refined`, `profile_fractions` |
+| Reorganization score and window | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py`, with change metrics from `readout.dynamics.metrics` |
+| Sparse feature localization | `experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py` |
+| Readout learning rate control | `experiments/ablations/pretraining_recipe_control/scripts/train_control.py` (`--readout-lr-mult`) |
 
-## Requirements
+Fitting Pythia-160M's trajectory crosscoder with the paper's settings
+(`configs/runs/pythia-160m_wu_d24576_seed0.yaml`; a GPU is advisable):
 
-- Python 3.11 or 3.12, with the environment managed by [`uv`](https://docs.astral.sh/uv/).
-- The test suite, examples, and notebooks run CPU-only on Linux, macOS, or Windows
-  (all three are tested in CI).
-- Training crosscoders on models above 160M, and the 31M pretraining runs, target
-  Linux with CUDA 11.8 (torch is pinned to the cu118 wheels on Linux; other
-  platforms install torch from PyPI). Device selection is automatic
-  (CUDA > MPS > CPU).
+```python
+from readout.crosscoder import load_snapshots, preprocess_snapshots, quick_quality, train
+
+W, steps = load_snapshots("EleutherAI/pythia-160m")  # (32, V, d_model): W_U at 32 checkpoints
+x, _ = preprocess_snapshots(W, mode="center_scale")   # center and scale each checkpoint's rows
+crosscoder = train(
+    x, expansion_factor=32.0, lr=5e-5, l1_coefficient=0.3, tanh_stretch_coefficient=1.0,
+    l1_warmup_fraction=0.05, use_sparse_adam=False, n_epochs=300, batch_size=1024, seed=0,
+)
+print(quick_quality(crosscoder, x))  # explained variance, mean L0, dead rate
+```
+
+Scoring the same hidden states with two checkpoints' readouts:
+
+```python
+from readout.probes.readout_swap import compute_margin
+
+native = compute_margin(h_t, W_U_t, y_plus, y_minus)   # (N,) margin under checkpoint t's own readout
+swapped = compute_margin(h_t, W_U_s, y_plus, y_minus)  # same hidden states, readout of checkpoint s
+```
+
+The settings of record for every dictionary in the paper are in
+[`configs/runs/`](configs/runs/), and `scripts/train/train_crosscoder.py` trains
+from them.
+
+## Installation
+
+Python 3.11 or 3.12, with the environment managed by [`uv`](https://docs.astral.sh/uv/):
 
 ```bash
 git clone https://github.com/hematteo/learning-to-read-out.git
@@ -55,37 +77,38 @@ cd learning-to-read-out
 make install   # uv sync --extra dev --extra figures
 ```
 
-Checkpoints, snapshots, and outputs are stored under `UM_SSD_ROOT`
-(default `./local_snapshots`); see [`docs/DATA.md`](docs/DATA.md) for the layout and
-disk requirements.
+The tests, examples, notebooks, and figure scripts run on CPU on Linux, macOS, and
+Windows. Training dictionaries above 160M parameters and the 31M pretraining runs
+target Linux with CUDA 11.8 (torch is pinned to the cu118 wheels on Linux). Device
+selection is automatic (CUDA, then MPS, then CPU). Large inputs and outputs live under
+`UM_SSD_ROOT` (default `./local_snapshots`).
 
 ## Quickstart
 
 ```bash
-make test                                    # full test suite, CPU-only, no data needed
-uv run python examples/minimal_crosscoder.py # fit a trajectory crosscoder on a synthetic W_U stack
+make test                                     # test suite, CPU only, no data
+uv run python examples/minimal_crosscoder.py  # seeded crosscoder fit on a synthetic W_U stack, seconds
+make figures                                  # redraw the paper's figures into paper_figures/out/
 ```
 
-The test suite fetches one small tokenizer (Pythia-160M) on the first networked run
-and skips those tests offline. Two Colab-ready notebooks walk through the core
-analyses on public Pythia checkpoints, with no release artifacts needed:
+The example prints `FINAL  EV: untrained=... -> trained=...`; explained variance
+rises from about 0 to about 0.8. Two Colab notebooks run the core analyses on
+public Pythia checkpoints:
 
 | Notebook | What it shows |
 |---|---|
-| [`01_availability_expression_lag.ipynb`](notebooks/01_availability_expression_lag.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/01_availability_expression_lag.ipynb) The availability–expression lag via readout swaps |
-| [`02_wu_trajectory_crosscoders.ipynb`](notebooks/02_wu_trajectory_crosscoders.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/02_wu_trajectory_crosscoders.ipynb) Trajectory crosscoders from a toy to real `W_U` snapshots, lifecycles, and vocabulary families |
+| [`01_availability_expression_lag.ipynb`](notebooks/01_availability_expression_lag.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/01_availability_expression_lag.ipynb) | Hidden states encode a task distinction before the native readout expresses it (readout swaps on Pythia-160M) |
+| [`02_wu_trajectory_crosscoders.ipynb`](notebooks/02_wu_trajectory_crosscoders.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/02_wu_trajectory_crosscoders.ipynb) | A trajectory crosscoder on a toy and on real Pythia-160M snapshots, with feature lifecycles |
 
-## Pretrained dictionaries and checkpoints
+To run them locally: `uv run --extra figures --with jupyterlab jupyter lab notebooks/`.
 
-Everything trained for the paper is on Hugging Face:
+## Released dictionaries and checkpoints
 
 | Repository | Contents |
 |---|---|
-| [`hematteo/parameter-trajectory-crosscoders`](https://huggingface.co/hematteo/parameter-trajectory-crosscoders) | Trained trajectory crosscoders (Pythia-160M, 1B, 6.9B; OLMo-2-7B) with training sidecars, aggregates, activation rates, attribution artifacts, and held-out eval tokens |
+| [`hematteo/parameter-trajectory-crosscoders`](https://huggingface.co/hematteo/parameter-trajectory-crosscoders) | Trained trajectory crosscoders (Pythia-160M, 1B, 6.9B; OLMo-2-7B) with training sidecars, aggregates, activation rates, attribution artifacts, and held-out evaluation tokens |
 | [`hematteo/readout-recipe-control`](https://huggingface.co/hematteo/readout-recipe-control) | The controlled 31M pretraining runs (readout learning rate 0.25×, 1×, 4×, and a shorter warmup; also a long-warmup run the paper does not use) |
 | [`datasets/hematteo/wu-crosscoder-snapshots`](https://huggingface.co/datasets/hematteo/wu-crosscoder-snapshots) | Pre-extracted `W_U` snapshot stacks |
-
-To skip retraining, download the dictionaries at the pinned release revision:
 
 ```bash
 hf download hematteo/parameter-trajectory-crosscoders \
@@ -93,83 +116,22 @@ hf download hematteo/parameter-trajectory-crosscoders \
     --local-dir "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders"
 ```
 
-## Training
+## Reproducing the paper
 
-**Trajectory crosscoders.** `W_U` snapshots are extracted from the public Hugging
-Face checkpoints automatically on a cache miss, so training needs only a model name.
-For example, the Pythia-160M dictionary used in the paper:
+[`docs/REPRODUCE.md`](docs/REPRODUCE.md) is the single reproduction guide. It covers
+three levels:
 
-```bash
-uv run python scripts/train/train_crosscoder.py \
-    --model EleutherAI/pythia-160m --expansion-factor 32.0 \
-    --batch-size 1024 --lr 5e-5 --n-epochs 300 --seed 0 \
-    --input-preprocess center_scale --amp-dtype fp32 --tanh-stretch 1.0 \
-    --output local_snapshots/wu_cc_pythia160m_seed0.pt
-```
+1. **Redraw the figures** with `make figures` (CPU, about 30 s) from the 4.9 MB of
+   data in [`paper_figures/data/`](paper_figures/data/README.md). This covers
+   Figures 2 to 5 and ten appendix figures.
+2. **Recompute that data** from the released dictionaries and checkpoints with the
+   analysis scripts in `experiments/`, one folder per paper result.
+3. **Retrain** the dictionaries (`scripts/train/train_crosscoder.py`) or the 31M runs.
 
-The settings of record for every dictionary in the paper are in
-[`configs/runs/`](configs/runs/):
-
-| Config | Model | Matrix | Width |
-|---|---|---|---|
-| `pythia-160m_wu_d24576_seed0.yaml` | Pythia-160M | `W_U` | 24,576 |
-| `pythia-1b_wu_d24576_seed0.yaml` | Pythia-1B | `W_U` | 24,576 |
-| `pythia-6.9b_wu_d32768_seed0_{sparse,dense}.yaml` | Pythia-6.9B | `W_U` | 32,768 |
-| `olmo-2-7b_wu_d32768_seed0.yaml` | OLMo-2-7B | `W_U` | 32,768 |
-| `pythia-160m_we_d8192_seed0.yaml` | Pythia-160M | `W_E` | 8,192 |
-
-**Controlled pretraining runs.** The 31M runs with a scaled readout learning
-rate are trained by
-[`experiments/ablations/pretraining_recipe_control/`](experiments/ablations/pretraining_recipe_control/),
-for example:
-
-```bash
-uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control.py \
-    --data $UM_SSD_ROOT/pile_slice/pile_neox20b.bin --out-dir $UM_SSD_ROOT/runs/baseline \
-    --model-size 31M --global-batch 1024 --max-tokens 10e9 \
-    --readout-lr-mult 1.0 --warmup-steps 1430
-```
-
-That experiment's README gives the data preparation and the other three conditions.
-
-## Evaluation: reproducing the paper
-
-Reproduction has three levels:
-
-1. **Redraw the figures** from the small data files that ship in
-   [`paper_figures/data/`](paper_figures/data/README.md) (CPU, about 30 s):
-
-   ```bash
-   make figures   # writes paper_figures/out/*.pdf
-   ```
-
-   This covers Figures 2 to 5 and ten appendix figures.
-2. **Recompute the figure data** from the released dictionaries and checkpoints with
-   each experiment's analysis scripts.
-3. **Retrain** the dictionaries or the 31M runs (see [Training](#training)).
-
-To reproduce a specific figure, find its label in [`docs/REPRODUCE.md`](docs/REPRODUCE.md),
-which links it to the experiment and the script that produces its metrics and lists
-the known deviations from the paper's runs. Each experiment's README lists its
-commands in order. The main-text results map as follows:
-
-| Paper | Experiment |
-|---|---|
-| Figure 1 (overview margins), Table 1 | [`experiments/probes/contrastive_readout_swap/`](experiments/probes/contrastive_readout_swap/) |
-| Figure 2 (feature lifecycles), reorganization window | [`experiments/lifecycle/feature_lifecycle_trajectories/`](experiments/lifecycle/feature_lifecycle_trajectories/), with dictionaries from [`experiments/crosscoders/`](experiments/crosscoders/) |
-| Figure 3 (WordNet categories in the readout) | [`experiments/probes/concept_evolution_validation/`](experiments/probes/concept_evolution_validation/) |
-| Figure 4 (availability before expression) | [`experiments/probes/contrastive_readout_swap/`](experiments/probes/contrastive_readout_swap/) |
-| Section 4.4 (sparse feature ablation) | [`experiments/causal/contrastive_task_feature_rescue/`](experiments/causal/contrastive_task_feature_rescue/) |
-| Figure 5 (readout learning rate) | [`experiments/ablations/pretraining_recipe_control/`](experiments/ablations/pretraining_recipe_control/) |
-
-The pipeline stages are `make extract`, `make train`, and `make analyze`
-(`make help` prints each one's commands), and `make audit` checks that every
-experiment, manifest entry ([`experiments.yaml`](experiments.yaml)), and figure
-label line up.
+For each paper result it gives the commands in order, the inputs and outputs, and
+the known deviations from the paper's runs.
 
 ## Results
-
-Headline findings; see the paper for the full analysis and controls.
 
 | Finding | Result |
 |---|---|
@@ -180,39 +142,36 @@ Headline findings; see the paper for the full analysis and controls.
 | A few features carry task margins | Ablating 8 selected features drops Pythia-1B SVA accuracy from 0.900 to 0.487 (matched controls stay ≥ 0.900); greater-than drops from 0.512 to 0.084 |
 | Readout learning rate sets the timing | In 31M runs, each 4× increase in the readout learning rate halves the median feature peak step (128 → 64 → 32, in every fit); final validation losses agree within 0.06 nats |
 
-## Using the library
-
-The trajectory-crosscoder and probe code is an installable package, `readout`:
-
-```python
-from readout.crosscoder import build_crosscoder, train, quick_quality
-from readout.core.data import center_and_project
-```
-
-[`examples/minimal_crosscoder.py`](examples/minimal_crosscoder.py) is a small,
-seeded, CPU-only example of the full fit.
-
 ## Repository layout
 
 | Path | Contents |
 |---|---|
-| `src/readout/` | The `readout` package: `core/` (paths, model specs, data), `crosscoder/` (trajectory training), `dynamics/` (lifecycle metrics), `probes/`, `baselines/` |
-| `experiments/` | One directory per experiment, grouped by theme, each with a README and its scripts; [`experiments.yaml`](experiments.yaml) maps them to paper figures |
-| `scripts/` | Shared command-line entry points: `extract/`, `train/`, `eval/`, `audit/` |
-| `configs/` | Settings of record for each published dictionary |
-| `paper_figures/` | Scripts and data that redraw the paper's figures (`make figures`) |
-| `notebooks/`, `examples/` | Guided tours and minimal examples |
-| `tests/` | CPU-only pytest suite |
-| `docs/` | [`REPRODUCE.md`](docs/REPRODUCE.md), [`DATA.md`](docs/DATA.md), [`THIRD_PARTY.md`](docs/THIRD_PARTY.md) |
+| `src/readout/` | The `readout` package: `crosscoder/` (trajectory crosscoding), `probes/` (readout swaps, availability probes, tasks), `dynamics/` (lifecycle metrics), `core/` (data, paths, model specs) |
+| `scripts/` | Command-line entry points: `extract/`, `train/`, `eval/`, `audit/` |
+| `experiments/` | Analysis scripts behind each paper result; [`experiments.yaml`](experiments.yaml) maps them to the paper's figures and tables |
+| `paper_figures/` | Scripts and data that redraw the paper's figures |
+| `configs/runs/` | Settings of record for each published dictionary |
+| `notebooks/`, `examples/` | Colab tours and a minimal example |
+| `tests/` | CPU-only test suite |
 
-Module and file names use a few abbreviations: `wu`/`we` for `W_U`/`W_E`, `hln` for
-the post-final-LayerNorm hidden state, `sva` for subject–verb agreement, `persnap`
-for the per-snapshot SAE baseline, `cc` for crosscoder, `ev` for explained
-variance, and `l0` for active features per row. [`CONTRIBUTING.md`](CONTRIBUTING.md)
-describes the layout rules that `make audit` enforces in CI.
+`make test`, `make lint`, and `make audit` are the checks CI runs. Code imported by
+more than one experiment lives in `src/readout/`; an experiment's `scripts/` may
+import `readout` and its own sibling modules but no other experiment. In file names,
+`wu`/`we` mean `W_U`/`W_E`, `hln` the final hidden state after LayerNorm, `cc` a
+crosscoder, and `persnap` the per-checkpoint SAE baseline.
 
-A companion repository,
-[`sparse-readout-prism`](https://github.com/hematteo/sparse-readout-prism)
+## Third-party code
+
+The crosscoder model and optimizer come from OpenMOSS
+[Language-Model-SAEs](https://github.com/OpenMOSS/Language-Model-SAEs) (MIT), installed
+from PyPI as `llamascopium==2.0.0b34`. `src/readout/crosscoder/_llamascopium_patch.py`
+replaces one method, `Crosscoder.init_encoder_with_decoder_transpose`, with a version
+that transposes each local shard, because the upstream version deadlocked in 4-GPU
+head-parallel training; single-device behavior is unchanged. llamascopium declares
+`torch>=2.11`, which has no CUDA 11.8 build, so `pyproject.toml` overrides that
+requirement to keep Linux on torch 2.7.1+cu118, the version the paper's runs used.
+
+A companion repository, [`sparse-readout-prism`](https://github.com/hematteo/sparse-readout-prism)
 ([arXiv:2609.01936](https://arxiv.org/abs/2609.01936)), factorizes a model's final
 `W_U` into a sparse feature basis for logit-lens analysis.
 
@@ -228,10 +187,6 @@ A companion repository,
 }
 ```
 
-Machine-readable metadata is in [`CITATION.cff`](CITATION.cff).
-
 ## License
 
-MIT; see [`LICENSE`](LICENSE). The crosscoder implementation comes from the
-MIT-licensed OpenMOSS [Language-Model-SAEs](https://github.com/OpenMOSS/Language-Model-SAEs)
-(`llamascopium` on PyPI) with one local patch; see [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
+MIT; see [`LICENSE`](LICENSE).

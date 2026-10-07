@@ -11,7 +11,7 @@ Usage:
       --model EleutherAI/pythia-160m --expansion-factor 32.0 \
       --batch-size 1024 --lr 5e-5 --n-epochs 300 --seed 0 \
       --input-preprocess center_scale --amp-dtype fp32 \
-      --tanh-stretch 1.0 \
+      --tanh-stretch 1.0 --l1-warmup-fraction 0.05 \
       --output local_snapshots/wu_cc_pythia160m_seed0.pt
 
 The settings-of-record for each published crosscoder are in configs/runs/*.yaml
