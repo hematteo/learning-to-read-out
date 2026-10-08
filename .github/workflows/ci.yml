@@ -74,21 +74,6 @@ jobs:
       - name: Lint
         run: uv run --extra dev ruff check .
 
-  audit:
-    name: layout audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --locked --extra dev
-      - name: Validate layout contract
-        run: uv run --extra dev python scripts/audit/check_layout.py
-      - name: Figure index in sync with experiments.yaml
-        run: uv run --extra dev python scripts/audit/gen_reproduce_index.py --check
-
   figures:
     name: redraw paper figures
     runs-on: ubuntu-latest

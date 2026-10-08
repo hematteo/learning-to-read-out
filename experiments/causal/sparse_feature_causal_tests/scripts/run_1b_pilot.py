@@ -159,7 +159,7 @@ def encode_reconstruct_rows(
 
     The crosscoder encoder first sums preactivations from every snapshot head.
     For a target decoder head, JumpReLU firing uses that shared preactivation
-    multiplied by the target decoder norm. This matches `scripts/eval/recompute_metrics.py`.
+    multiplied by the target decoder norm, as in ``readout.crosscoder.inference.encode_at_step``.
     """
     R = len(row_ids)
     D = pieces.W_D.shape[0]

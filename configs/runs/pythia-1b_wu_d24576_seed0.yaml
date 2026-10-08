@@ -52,4 +52,4 @@ source: >
   sidecars (training_batch_size=1024);
   scripts/train/train_crosscoder.py docstring (shared Pythia recipe:
   input_preprocess=center_scale, amp_dtype=fp32, seed=0);
-  experiments.yaml: crosscoder_main inputs (pythia-1b W_U cross-snapshot-32 d24576 seed0).
+  the released checkpoint pythia-1b/W_U/cross-snapshot-32/d24576/seed0.

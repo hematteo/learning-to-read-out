@@ -1,8 +1,7 @@
 """analyze_lifecycle.py (pretraining_recipe_control) on a synthetic trajectory crosscoder.
 
 The script lives in an experiment ``scripts/`` dir (a sibling import of ``rc_common``),
-so it is loaded with the scripts dir on ``sys.path`` (pytest's monkeypatch), the
-precedent set by ``test_check_layout.py``. No data, no GPU: a hand-built decoder
+so it is loaded with the scripts dir on ``sys.path`` (pytest's monkeypatch). No data, no GPU: a hand-built decoder
 tensor with one feature per designed profile is written as the crosscoder payload.
 """
 

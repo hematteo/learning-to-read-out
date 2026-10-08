@@ -1,12 +1,12 @@
 # Front door for the learning-to-read-out code release.
 # Targets are ordered to mirror the reproduction pipeline:
-#   install -> test -> audit -> figures -> extract -> train -> analyze
+#   install -> test -> figures -> extract -> train -> analyze
 # `make help` lists them. `make figures` redraws the paper figures from the small data files in
 # paper_figures/data/; the other stages recompute those data from public checkpoints. See
 # docs/REPRODUCE.md for the figure -> metrics map and docs/REPRODUCE.md for the external assets.
 
 .DEFAULT_GOAL := help
-.PHONY: help install test lint audit figures extract train analyze clean
+.PHONY: help install test lint figures extract train analyze clean
 
 help:  ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -22,10 +22,6 @@ test:  ## Run the test suite (CPU only, no data, no GPU)
 
 lint:  ## Ruff lint (same check as CI)
 	uv run --extra dev ruff check .
-
-audit:  ## Validate the experiments.yaml <-> experiments/ <-> paper/ correspondence
-	uv run python scripts/audit/check_layout.py
-	uv run python scripts/audit/gen_reproduce_index.py --check
 
 figures:  ## Redraw the paper figures into paper_figures/out/ (CPU, about 30 s)
 	uv run --extra figures python paper_figures/make_all.py
@@ -45,7 +41,7 @@ train:  ## Stage 2: train a trajectory crosscoder from snapshots (needs GPU for 
 	@echo "Settings-of-record for each published run: configs/runs/*.yaml"
 
 analyze:  ## Stage 3: compute & persist the metrics behind each figure (no figures rendered)
-	@echo "Per-experiment metric commands are in docs/REPRODUCE.md (mapped from experiments.yaml)."
+	@echo "Per-result commands are in docs/REPRODUCE.md."
 	@echo "Recomputed metrics land under results/ and figures/ (gitignored); paper_figures/data/"
 	@echo "README.md lists which script regenerates each file that make figures reads."
 

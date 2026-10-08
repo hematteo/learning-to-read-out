@@ -60,4 +60,4 @@ source: >
   amp_dtype fp32; quality: EV 0.8526, mean L0 557.3);
   the run's train.log (final line: epoch 299 step 29400);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.json
-  (canon EV/L0, training_batch_size 1024); experiments.yaml: crosscoder_olmo.
+  (canon EV/L0, training_batch_size 1024).

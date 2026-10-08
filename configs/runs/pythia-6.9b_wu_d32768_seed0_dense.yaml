@@ -47,8 +47,8 @@ source: >
   (optimizer adam, jumprelu_lr_factor 0.3, l1_warmup_fraction 0.1, lr_warmup_fraction 0.1,
   lr_decay_fraction 0.2, decoder_transpose_init 1.0, dead_window_steps 2000);
   checkpoint-embedded training dict of the released dense 6.9B run (lr=1e-5);
-  experiments.yaml: crosscoder_main inputs ("denser/default-lambda comparison only"
-  pythia-6.9b W_U cross-snapshot-32 d32768 seed0);
+  the released checkpoint pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0
+  (default-lambda comparison fit);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/p69b_normal_d32768_seed0.json
   (model, d_sae=32768, training_batch_size=1024, canon EV/L0);
   full_inventory.csv (pythia-6.9b W_U row lambda=0.3, tanh_stretch=1.0,

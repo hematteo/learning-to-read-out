@@ -66,7 +66,7 @@ def main():
         "--input-preprocess",
         choices=["none", "center", "center_scale"],
         default="center_scale",
-        help="Match the production 160M W_U run's default ('center_scale'); see experiments.yaml: crosscoder_main.",
+        help="Match the production 160M W_U run's default ('center_scale').",
     )
     # Schedule (mirror the production 160M W_U run: l1_warmup=0.1, no LR warmup/decay).
     ap.add_argument("--l1-warmup-fraction", type=float, default=0.1)

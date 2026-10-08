@@ -148,13 +148,13 @@ the known deviations from the paper's runs.
 |---|---|
 | `src/readout/` | The `readout` package: `crosscoder/` (trajectory crosscoding), `probes/` (readout swaps, availability probes, tasks), `dynamics/` (lifecycle metrics), `core/` (data, paths, model specs) |
 | `scripts/` | Command-line entry points: `extract/`, `train/`, `eval/`, `audit/` |
-| `experiments/` | Analysis scripts behind each paper result; [`experiments.yaml`](experiments.yaml) maps them to the paper's figures and tables |
+| `experiments/` | Analysis scripts behind each paper result |
 | `paper_figures/` | Scripts and data that redraw the paper's figures |
 | `configs/runs/` | Settings of record for each published dictionary |
 | `notebooks/`, `examples/` | Colab tours and a minimal example |
 | `tests/` | CPU-only test suite |
 
-`make test`, `make lint`, and `make audit` are the checks CI runs. Code imported by
+`make test` and `make lint` are the checks CI runs, along with `make figures`. Code imported by
 more than one experiment lives in `src/readout/`; an experiment's `scripts/` may
 import `readout` and its own sibling modules but no other experiment. In file names,
 `wu`/`we` mean `W_U`/`W_E`, `hln` the final hidden state after LayerNorm, `cc` a

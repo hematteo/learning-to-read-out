@@ -47,4 +47,4 @@ source: >
   (batch_size/lr/n_epochs/seed/input_preprocess/amp_dtype);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv
   (d_sae=24576, lambda=0.3, tanh_stretch=1.0, init_threshold=0.1, epochs=300 row);
-  experiments.yaml: crosscoder_main inputs (pythia-160m W_U cross-snapshot-32 d24576 seed0).
+  the released checkpoint pythia-160m/W_U/cross-snapshot-32/d24576/seed0.

@@ -16,8 +16,7 @@ W_E-aware loading; do not rename these files back to `_wu.pt`.
 
 Saves Ge-exact 32-step snapshots by default
 (matches src/readout/crosscoder/wu_adapter.py:DEFAULT_STEPS), so the resulting
-crosscoder is directly comparable to the production 160M W_U run
-(experiments.yaml: crosscoder_main).
+crosscoder is directly comparable to the production 160M W_U run.
 
 Usage:
   uv run python scripts/extract/extract_we_pythia.py \
