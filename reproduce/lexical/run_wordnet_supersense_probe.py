@@ -545,7 +545,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--out-dir",
         default=None,
-        help="Output dir; defaults to derived/wordnet_supersense_<suffix>/ keyed on --model",
+        help="Output dir; defaults to results/lexical/wordnet_supersense_<suffix>/ keyed on --model",
     )
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=0)

@@ -21,7 +21,7 @@ For each proto-token concept C (the seven families in readout.dynamics.temporal_
 
 Outputs:
 
-  results/temporal_patch_grid/<tag>/
+  results/readout_swaps/temporal_patch_grid/<tag>/
       manifest.json
       summary_global.csv   one row per (h_t, W_U_s)
       summary_concept.csv  one row per (h_t, W_U_s, concept)
@@ -155,7 +155,7 @@ def main():
     )
     ap.add_argument("--n-match", type=int, default=99)
     ap.add_argument("--n-concept-tokens", type=int, default=256)
-    ap.add_argument("--out-dir", type=Path, default=Path("results/temporal_patch_grid/run0"))
+    ap.add_argument("--out-dir", type=Path, default=Path("results/readout_swaps/temporal_patch_grid/run0"))
     args = ap.parse_args()
     seed_everything(args.seed)
 
