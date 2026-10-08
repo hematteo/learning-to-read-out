@@ -35,9 +35,9 @@ learning rate.
 | Availability, native expression, best swept readout | `readout.probes.availability_expression`: `availability_probe`, `native_and_best_swept` |
 | Contrastive tasks (Table 1) | `readout.probes.contrastive_tasks` (`build_sva`, `build_ioi_role_balanced`, `build_numeric_greater_than`, ...) |
 | Lifecycle profiles | `readout.dynamics.lifecycle`: `classify_profiles_refined`, `profile_fractions` |
-| Reorganization score and window | `experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py`, with change metrics from `readout.dynamics.metrics` |
-| Sparse feature localization | `experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py` |
-| Readout learning rate control | `experiments/ablations/pretraining_recipe_control/scripts/train_control.py` (`--readout-lr-mult`) |
+| Reorganization score and window | `reproduce/lifecycle/find_reorganization_steps.py`, with change metrics from `readout.dynamics.metrics` |
+| Sparse feature localization | `reproduce/localization/run_feature_attribution.py` |
+| Readout learning rate control | `reproduce/recipe_control/train_control.py` (`--readout-lr-mult`) |
 
 Fitting Pythia-160M's trajectory crosscoder with the paper's settings
 (`configs/runs/pythia-160m_wu_d24576_seed0.yaml`; a GPU is advisable):
@@ -125,7 +125,7 @@ three levels:
    data in [`paper_figures/data/`](paper_figures/data/README.md). This covers
    Figures 2 to 5 and ten appendix figures.
 2. **Recompute that data** from the released dictionaries and checkpoints with the
-   analysis scripts in `experiments/`, one folder per paper result.
+   analysis scripts in `reproduce/`, one folder per paper section.
 3. **Retrain** the dictionaries (`scripts/train/train_crosscoder.py`) or the 31M runs.
 
 For each paper result it gives the commands in order, the inputs and outputs, and
@@ -147,16 +147,16 @@ the known deviations from the paper's runs.
 | Path | Contents |
 |---|---|
 | `src/readout/` | The `readout` package: `crosscoder/` (trajectory crosscoding), `probes/` (readout swaps, availability probes, tasks), `dynamics/` (lifecycle metrics), `core/` (data, paths, model specs) |
-| `scripts/` | Command-line entry points: `extract/`, `train/`, `eval/`, `audit/` |
-| `experiments/` | Analysis scripts behind each paper result |
+| `scripts/` | Command-line tools: `extract/` (snapshots, hidden states, firing rates) and `train/` (dictionaries) |
+| `reproduce/` | Analysis scripts behind each paper result, one folder per section: `validation/`, `lifecycle/`, `lexical/`, `availability/`, `localization/`, `readout_swaps/`, `recipe_control/` |
 | `paper_figures/` | Scripts and data that redraw the paper's figures |
 | `configs/runs/` | Settings of record for each published dictionary |
 | `notebooks/`, `examples/` | Colab tours and a minimal example |
 | `tests/` | CPU-only test suite |
 
-`make test` and `make lint` are the checks CI runs, along with `make figures`. Code imported by
-more than one experiment lives in `src/readout/`; an experiment's `scripts/` may
-import `readout` and its own sibling modules but no other experiment. In file names,
+CI runs `make test`, `make lint`, and `make figures`. Code shared across sections lives
+in `src/readout/`; a script in `reproduce/` imports only `readout` and helpers in its own
+folder. In file names,
 `wu`/`we` mean `W_U`/`W_E`, `hln` the final hidden state after LayerNorm, `cc` a
 crosscoder, and `persnap` the per-checkpoint SAE baseline.
 

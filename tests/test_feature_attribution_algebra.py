@@ -1,5 +1,5 @@
 """Tests for the per-feature attribution and ablate/preserve algebra in
-experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py.
+reproduce/localization/run_feature_attribution.py.
 
 These tests build a tiny synthetic crosscoder state (no real model required)
 and verify two invariants:
@@ -31,7 +31,7 @@ import torch
 
 def _load_attribution_module():
     repo = Path(__file__).resolve().parents[1]
-    p = repo / "experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py"
+    p = repo / "reproduce/localization/run_feature_attribution.py"
     spec = importlib.util.spec_from_file_location("rfa", p)
     m = importlib.util.module_from_spec(spec)
     sys.modules["rfa"] = m

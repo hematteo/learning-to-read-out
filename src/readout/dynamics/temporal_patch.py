@@ -91,7 +91,7 @@ CORPUS_TOKENS_PYTHIA = SSD / "hf_release/parameter-trajectory-crosscoders/evalua
 # OLMo-tokenized variant; regenerate with scripts/extract/build_eval_corpus_olmo.py
 # (this is that builder's default --output). Selected by temporal_patch_grid.py
 # for --model olmo-2-7b.
-CORPUS_TOKENS_OLMO = _REPO / "results/experiments/causal/temporal_localization_patching/eval_tokens_olmo.pt"
+CORPUS_TOKENS_OLMO = _REPO / "results/readout_swaps/eval_tokens_olmo.pt"
 
 
 @dataclass
@@ -147,7 +147,7 @@ CFG_PYTHIA_6_9B = ModelCfg(
     steps_canonical=list(DEFAULT_STEPS_32),
 )
 
-# OLMo-2-7B's published step list (matches experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py).
+# OLMo-2-7B's published step list (matches scripts/extract/extract_wu_olmo.py).
 CFG_OLMO_2_7B = ModelCfg(
     model_name="allenai/OLMo-2-1124-7B",
     ckpt_template=str(SSD / "olmo2_7b/wu_cc_olmo7b_dsae{d_sae}_seed{seed}.pt"),

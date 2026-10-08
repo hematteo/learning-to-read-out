@@ -25,8 +25,8 @@ from readout.crosscoder.extract_rates import compute_rates_canonical
 from readout.crosscoder.inference import reconstruct_preprocess_stats
 from readout.dynamics.lifecycle import PROFILE_ORDER, classify_profiles_refined, profile_fractions
 
-LIFECYCLE_SCRIPTS = repo_root() / "experiments/lifecycle/feature_lifecycle_trajectories/scripts"
-LATE_START_SCRIPTS = repo_root() / "experiments/ablations/olmo_matched_checkpoint_window/scripts"
+LIFECYCLE_SCRIPTS = repo_root() / "reproduce/lifecycle"
+LATE_START_SCRIPTS = repo_root() / "reproduce/lifecycle"
 STEPS = np.asarray(DEFAULT_STEPS_32, dtype=np.int64)
 K = STEPS.size
 

@@ -72,7 +72,7 @@ Optional overrides, all defaulting under `UM_SSD_ROOT`:
 | `WU_CACHE_DIR` | `src/readout/crosscoder/wu_adapter.py`, `src/readout/crosscoder/checkpoint_loaders.py` | the trainer's `W_U` snapshot cache |
 | `CLUSTER_SCRATCH` | `src/readout/crosscoder/checkpoint_loaders.py` | scratch directory searched by run discovery (default `~/scratch`) |
 | `DYNAMICS_DATA_ROOT` | `src/readout/dynamics/discovery.py` | training-run tree the analysis table discovers runs under (default `<ssd>/wu_crosscoder`) |
-| `DYNAMICS_DERIVED_ROOT` | `src/readout/dynamics/derive.py` | per-run derived-artifact cache (default `experiments/crosscoders/crosscoder_main/derived`) |
+| `DYNAMICS_DERIVED_ROOT` | `src/readout/dynamics/derive.py` | per-run derived-artifact cache (default `results/validation`) |
 | `READOUT_COMMIT` | `src/readout/core/repro.py` | git commit recorded in provenance when running without `.git` |
 | `HF_HOME`, `HF_HUB_CACHE` | Hugging Face libraries and extraction scripts | Hugging Face cache locations |
 
@@ -193,7 +193,7 @@ decay fractions).
 
 - Nothing loads these files. To retrain, pass every field as a flag to
   `scripts/train/train_crosscoder.py`, or to
-  `experiments/crosscoders/crosscoder_olmo/scripts/train_distributed.py` for the
+  `scripts/train/train_distributed.py` for the
   four-GPU head-parallel Pythia-6.9B and OLMo-2-7B runs. Pythia-160M trains on one
   GPU and is the cheapest end-to-end path. Several CLI defaults are not the
   published values: `--n-epochs 20`, `--batch-size 2048`, `--input-preprocess none`,
@@ -260,23 +260,23 @@ decoder-norm trajectories of the four selected dictionaries, their lifecycle
 profiles, and the reorganization window with circular-shift nulls and a feature
 bootstrap.
 
-Experiment: `experiments/lifecycle/feature_lifecycle_trajectories/`. The OLMo-2-7B
+Experiment: `reproduce/lifecycle/`. The OLMo-2-7B
 dictionary comes from [`crosscoder_olmo`](#crosscoder_olmo-olmo-2-7b-dictionary);
 the dictionary-quality numbers at the start of the section are Figure D.1
 ([Appendix D](#d-dictionary-validation)).
 
 ```bash
 # 1. Decoder-norm trajectories; also writes the per-run <key>_decoder_norms.npy caches
-uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_normalized_trajectories.py
+uv run python reproduce/lifecycle/compute_normalized_trajectories.py
 # 2. Lifecycle profiles (reads selected_decoder_norm_trajectories.pt)
-uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/compute_lifecycle_profile_composition.py
+uv run python reproduce/lifecycle/compute_lifecycle_profile_composition.py
 # 3. Peak counts and decoder-norm mass per checkpoint
-uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/build_population_diagnostics.py
+uv run python reproduce/lifecycle/build_population_diagnostics.py
 # 4. Reorganization windows, null p values, and bootstrap counts
-uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_reorganization_steps.py
+uv run python reproduce/lifecycle/find_reorganization_steps.py
 ```
 
-| Paper item | Step | Output, under `results/experiments/lifecycle/feature_lifecycle_trajectories/` |
+| Paper item | Step | Output, under `results/lifecycle/` |
 |---|---|---|
 | Figure 2 (`fig:main-selected-normalized-trajectories`) | 1 | `selected_decoder_norm_trajectories{,_full}.{csv,pt}` (trajectory quantiles per snapshot); `normalized_trajectories.csv` (normalized norms per panel, feature, and snapshot, Pythia-160M and 1B) |
 | Window and p values in the text; Table E.2 and Figure E.4 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | 4 | `reorganization_window_metrics_selected.{csv,pt}`, `reorganization_window_summary_selected.csv`, `reorganization_window_bootstrap_counts_selected.csv`; also `reorganization_step_pair_metrics_selected.csv`, `reorganization_step_peaks_selected.csv`, `reorganization_bootstrap_selected.csv` |
@@ -284,7 +284,7 @@ uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/find_
 
 Step 1 writes the decoder-norm and decoder-geometry caches (`<key>_decoder_norms.npy`,
 `<key>_adjacent_rotation_radians.npy`, `<key>_cos_to_terminal.npy`) to
-`figures/feature_lifecycle_trajectories/section52_lifecycle/cache/`, deriving the
+`results/lifecycle/cache/`, deriving the
 geometry from the released checkpoints on first run; later steps and the late-start
 control read them.
 
@@ -301,18 +301,18 @@ supersense (lexicographer file) categories one-vs-rest on the centered `W_U` row
 Pythia-160M and Pythia-1B at every checkpoint, with a metadata-only baseline and
 matched-random and label-shuffle nulls on Pythia-160M.
 
-Experiment: `experiments/probes/concept_evolution_validation/`. Download WordNet
+Experiment: `reproduce/lexical/`. Download WordNet
 first ([External assets](#external-assets-and-licenses)).
 
 ```bash
 # Probe every category at every checkpoint (row split)
-uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py --model pythia-160m
-uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py --model pythia-1b
+uv run python reproduce/lexical/run_wordnet_supersense_probe.py --model pythia-160m
+uv run python reproduce/lexical/run_wordnet_supersense_probe.py --model pythia-1b
 # Matched controls on Pythia-160M
-uv run python experiments/probes/concept_evolution_validation/scripts/run_wordnet_matched_controls.py
+uv run python reproduce/lexical/run_wordnet_matched_controls.py
 ```
 
-| Paper item | Script | Output, under `experiments/probes/concept_evolution_validation/derived/` |
+| Paper item | Script | Output, under `results/lexical/` |
 |---|---|---|
 | Figure 3 (`fig:main-wordnet-matched-controls`) | `run_wordnet_matched_controls.py` | `wordnet_matched_controls_160m/wordnet_matched_control_summary_160m.csv` |
 | Separability and largest-gain counts in the text; Figure F.1 | `run_wordnet_supersense_probe.py --model pythia-160m` | `wordnet_supersense_160m/wordnet_supersense_probe_trajectory_160m.csv` |
@@ -341,30 +341,30 @@ under each checkpoint's readout (readout swap) and compares linear probes on the
 final hidden state (availability) with native and swept readout accuracy
 (expression) on Pythia-1B and Pythia-6.9B.
 
-Experiment: `experiments/probes/contrastive_readout_swap/`. Outputs are under
-`results/experiments/probes/contrastive_readout_swap/`.
+Experiment: `reproduce/availability/`. Outputs are under
+`results/availability/`.
 
 ```bash
 # 1. Pythia-1B localization inventories and swap grid (also used by Figure 1, Section 4.4, Table H.2)
-uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py \
-    --model EleutherAI/pythia-1b --out-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b
-uv run python experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py --model pythia-1b \
-    --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b \
-    --out-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b \
+uv run python reproduce/availability/build_task_datasets.py \
+    --model EleutherAI/pythia-1b --out-dir results/availability/datasets/pythia-1b
+uv run python reproduce/availability/run_swap_grid.py --model pythia-1b \
+    --datasets-dir results/availability/datasets/pythia-1b \
+    --out-dir results/availability/run0_pythia1b \
     --alignments none scale row_norm procrustes
 
 # 2. Pythia-6.9B 32-checkpoint SVA and IOI trajectories (bf16 forward pass, bf16-rounded W_U)
-RUN=results/experiments/probes/contrastive_readout_swap/run_pythia-6.9b_probe_trajectory
-DS=results/experiments/probes/contrastive_readout_swap/datasets/pythia-6.9b_trajectory
+RUN=results/availability/run_pythia-6.9b_probe_trajectory
+DS=results/availability/datasets/pythia-6.9b_trajectory
 STEPS32="0 1 2 4 8 16 32 64 128 256 512 1000 2000 3000 4000 5000 6000 7000 8000 9000 14000 21000 27000 34000 \
   47000 61000 75000 89000 102000 116000 130000 143000"
-uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py \
+uv run python reproduce/availability/build_task_datasets.py \
     --model EleutherAI/pythia-6.9b --families sva ioi_role_balanced --n-max-per-family 2000 \
     --rng-seed 0 --no-norm-match --out-dir $DS
-uv run python experiments/probes/contrastive_readout_swap/scripts/run_swap_grid.py \
+uv run python reproduce/availability/run_swap_grid.py \
     --model pythia-6.9b --datasets-dir $DS --families sva ioi_role_balanced \
     --h-steps $STEPS32 --alignments none --device cuda --dtype bf16 --wu-round bf16 --out-dir $RUN
-uv run python experiments/probes/contrastive_readout_swap/scripts/run_controlled_hidden_probes.py \
+uv run python reproduce/availability/run_controlled_hidden_probes.py \
     --hidden-dir $RUN/hidden --datasets-dir $DS --families sva ioi_role_balanced \
     --stem probe_trajectory_69b --out-dir $RUN/controlled
 
@@ -373,14 +373,14 @@ FAMS="sva sva_across_pp sva_subject_rc sva_object_rc ioi_role_balanced copy_cont
   blimp_det_noun_agreement blimp_anaphor_agreement blimp_npi fv_antonym fv_country_capital fv_en_fr \
   fv_present_past induction numeric_gt_v2 numeric_lt_v2 numeric_tf_v2 relational_facts relational_facts_balanced"
 STEPS="0 1 2 4 8 16 32 64 128 256 512 1000 2000 3000 4000 5000 6000 8000 10000 16000 32000 64000 128000 143000"
-OUT=results/experiments/probes/contrastive_readout_swap/availability
-uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py \
+OUT=results/availability/availability
+uv run python reproduce/availability/build_task_datasets.py \
     --task-set availability --model EleutherAI/pythia-6.9b --families $FAMS \
     --n-max-per-family 2000 --rng-seed 0 --no-norm-match --out-dir $OUT/datasets/pythia-6.9b
-uv run python experiments/probes/contrastive_readout_swap/scripts/extract_hidden_dense.py \
+uv run python reproduce/availability/extract_hidden_dense.py \
     --hf-model EleutherAI/pythia-6.9b --datasets-dir $OUT/datasets/pythia-6.9b --families $FAMS \
     --h-steps $STEPS --out-dir $OUT/run_pythia-6.9b/hidden --device cuda --dtype fp32 --batch-size 8
-uv run python experiments/probes/contrastive_readout_swap/scripts/run_availability_probes.py \
+uv run python reproduce/availability/run_availability_probes.py \
     --model EleutherAI/pythia-6.9b --hidden-dir $OUT/run_pythia-6.9b/hidden \
     --datasets-dir $OUT/datasets/pythia-6.9b --families $FAMS --swept-steps $STEPS --group-split \
     --device cuda --out-dir $OUT/run_pythia-6.9b/probes
@@ -473,24 +473,24 @@ d=24,576 crosscoder, ranks features by attribution to each task margin on half o
 the items, then ablates the top K, or keeps only them, on the other half, against
 random features matched on decoder norm, firing rate, and attribution sign.
 
-Experiment: `experiments/causal/contrastive_task_feature_rescue/`. Run
+Experiment: `reproduce/localization/`. Run
 [Figure 4 step 1](#figure-4-and-section-43-availability-before-expression) first; it
 builds the datasets and caches the step-1000 hidden states.
 
 ```bash
 # Terminal readout, top-K by positive attribution, 50/50 selection and scoring split
-uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py \
+uv run python reproduce/localization/run_feature_attribution.py \
     --model pythia-1b --d-sae 24576 --seed 0 \
-    --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b \
-    --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden \
+    --datasets-dir results/availability/datasets/pythia-1b \
+    --hidden-dir results/availability/run0_pythia1b/hidden \
     --snapshot-step 143000 --h-step 1000 --rank-by pos --K 8 16 32 64 128 256 --split-frac 0.5 --split-seed 0 \
-    --out-dir results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos
+    --out-dir results/localization/run0_pythia1b_s143000_h1000_pos
 ```
 
 The section's accuracies, and the *recon*, *ablate*, and *preserve-only* columns
 (top-8 and *sign*) of Table H.2, are in
 `run0_pythia1b_s143000_h1000_pos/shards/<family>__h1000__s143000.json` under
-`results/experiments/causal/contrastive_task_feature_rescue/`, at `per_K["8"]`:
+`results/localization/`, at `per_K["8"]`:
 `summary_recon`, `summary_ablate_top`, `summary_ablate_ctrl_sign_matched`,
 `summary_preserve_top`, `summary_preserve_ctrl_sign_matched` (`.accuracy`). The
 original terminal readout is `per_K["8"].summary_native_s`. The families are `sva`,
@@ -533,38 +533,38 @@ initialization, data, and data order and differ only in the learning rate
 multiplier of `W_U` (0.25x, 1x, 4x) or, in the fourth run, a shorter warmup; three
 trajectory crosscoder fits per condition give the lifecycle statistics.
 
-Experiment: `experiments/ablations/pretraining_recipe_control/`. The analysis
+Experiment: `reproduce/recipe_control/`. The analysis
 scripts read the checkpoints from `${UM_SSD_ROOT}/runs/<condition>/`, trained in
 steps 2 and 3 or downloaded ([Downloads](#downloads)); they take `--ckpt-root` and
 `--conditions`, which defaults to the four compared conditions.
 
 ```bash
 # 1. Check the model API, initialization, parameter groups, and forward pass (CPU, no GPU, no data)
-uv run python experiments/ablations/pretraining_recipe_control/scripts/selfcheck.py
+uv run python reproduce/recipe_control/selfcheck.py
 # 2. First 10B tokens of the Pythia preshuffled Pile, in Pythia's order
-uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_pythia_preshuffled.py \
+uv run python reproduce/recipe_control/fetch_pythia_preshuffled.py \
     --out ${UM_SSD_ROOT}/pile_slice/pythia_preshuffled.bin --target-tokens 10e9
 # 3. Train one condition on one GPU (baseline shown; other conditions in the table below)
-uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control.py \
+uv run python reproduce/recipe_control/train_control.py \
     --data ${UM_SSD_ROOT}/pile_slice/pythia_preshuffled.bin --sequential-data \
     --out-dir ${UM_SSD_ROOT}/runs/baseline --model-size 31M --global-batch 1024 --max-tokens 10e9 \
     --readout-lr-mult 1.0 --warmup-steps 1430
 # 4. Three trajectory crosscoders per condition, seeds 0 to 2 (one GPU; resumable, skips outputs that exist)
 for s in 0 1 2; do
-  uv run python experiments/ablations/pretraining_recipe_control/scripts/train_control_crosscoder.py \
+  uv run python reproduce/recipe_control/train_control_crosscoder.py \
       --ckpt-root ${UM_SSD_ROOT}/runs --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed $s \
-      --out-dir results/experiments/ablations/pretraining_recipe_control/crosscoders
+      --out-dir results/recipe_control/crosscoders
 done
 # 5. Lifecycle statistics per seed (CPU)
 for s in 0 1 2; do
-  uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_lifecycle.py \
-      --ckpt-root ${UM_SSD_ROOT}/runs --cc-dir results/experiments/ablations/pretraining_recipe_control/crosscoders \
+  uv run python reproduce/recipe_control/analyze_lifecycle.py \
+      --ckpt-root ${UM_SSD_ROOT}/runs --cc-dir results/recipe_control/crosscoders \
       --conditions wu_lr_0p25 baseline wu_lr_4x warmup_short --seed $s --d-sae 8192 \
-      --out-dir results/experiments/ablations/pretraining_recipe_control/lifecycle_seed$s
+      --out-dir results/recipe_control/lifecycle_seed$s
 done
 # 6. Pool the three fits
-R=results/experiments/ablations/pretraining_recipe_control
-uv run python experiments/ablations/pretraining_recipe_control/scripts/aggregate_seed_replication.py \
+R=results/recipe_control
+uv run python reproduce/recipe_control/aggregate_seed_replication.py \
     --seed-stat $R/lifecycle_seed0/lifecycle_stats.json --seed-stat $R/lifecycle_seed1/lifecycle_stats.json \
     --seed-stat $R/lifecycle_seed2/lifecycle_stats.json --seeds 0 1 2 \
     --out-json $R/lifecycle_multiseed_summary.json --out-csv $R/lifecycle_multiseed_table.csv
@@ -582,11 +582,11 @@ The other conditions change only `--out-dir` and these flags of step 3:
 
 | Paper item | Output |
 |---|---|
-| Figure 5 left (`fig:main-recipe-dose-response`) | `results/experiments/ablations/pretraining_recipe_control/lifecycle_multiseed_table.csv` (step 6) |
+| Figure 5 left (`fig:main-recipe-dose-response`) | `results/recipe_control/lifecycle_multiseed_table.csv` (step 6) |
 | Figure 5 right | `${UM_SSD_ROOT}/runs/<condition>/metrics.csv` (validation loss, written by `train_control.py`) |
 | Geometry, swap, and frequency class probe numbers in the text | [Appendix I](#i-readout-learning-rate-control) |
 
-Outputs, under `results/experiments/ablations/pretraining_recipe_control/`; every
+Outputs, under `results/recipe_control/`; every
 script also writes `provenance_<script>.json` (git hash, environment, seed,
 arguments) next to its outputs:
 
@@ -643,7 +643,7 @@ readouts from steps 1000 and 143000, no alignment). Run
 [Figure 4 step 1](#figure-4-and-section-43-availability-before-expression) with
 `--save-per-example` added to the `run_swap_grid.py` call, and read `margins`,
 `margins_native`, `y_plus`, and `y_minus` from
-`results/experiments/probes/contrastive_readout_swap/run0_pythia1b/shards/sva__a-none__h1000__s<s>.pt`.
+`results/availability/run0_pythia1b/shards/sva__a-none__h1000__s<s>.pt`.
 Needs a GPU.
 
 ## Appendix results
@@ -669,28 +669,28 @@ held-out checkpoints, and the training of the OLMo-2-7B dictionary.
 
 #### crosscoder_main
 
-Experiment: `experiments/crosscoders/crosscoder_main/`. Dictionary inventory,
+Experiment: `reproduce/validation/`. Dictionary inventory,
 per-checkpoint EV and L0, next-token fidelity of the reconstructed readout, and PCA
 baselines.
 
 ```bash
 # 1. EV, mean L0, and dead rate of every released dictionary and SAE baseline (step 2 reads the per-snapshot SAE rows)
-uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py \
+uv run python reproduce/validation/recompute_quality.py \
     --ckpt-root "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders" --snap-dir "$UM_SSD_ROOT/snapshots" \
-    --out-csv experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv
-uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py \
+    --out-csv results/validation/appendix_validation/full_inventory.csv
+uv run python reproduce/validation/recompute_quality.py \
     --ckpt-root "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders" --snap-dir "$UM_SSD_ROOT/snapshots" \
-    --filter lambda-sweep --out-csv experiments/crosscoders/crosscoder_main/derived/appendix_validation/lambda_sweep.csv
+    --filter lambda-sweep --out-csv results/validation/appendix_validation/lambda_sweep.csv
 # 2. Per-checkpoint EV and L0 of the Pythia-160M dictionaries and SAE baselines
-uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_persnap_fidelity.py
+uv run python reproduce/validation/eval_persnap_fidelity.py
 # 3. Per-checkpoint FVU, L0, and dead rate of the Pythia-1B width sweep (d=8,192, 16,384, 24,576)
-uv run python experiments/crosscoders/crosscoder_main/scripts/main_1b/eval_persnap_1b.py
+uv run python reproduce/validation/eval_persnap_1b.py
 # 4. Pre-readout hidden-state caches for the fidelity check, one call per model (Pythia-1B shown)
 uv run python scripts/extract/build_hln_cache.py --model pythia-1b --steps all \
     --eval-tokens "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt" \
     --out-dir "$UM_SSD_ROOT/derived/readout_edit_timing_pythia1b" --save-dtype fp32
 # 5. Next-token fidelity per model, then the token-stratified check on Pythia-1B
-F=experiments/crosscoders/crosscoder_main/scripts/appendix_validation
+F=reproduce/validation/appendix_validation
 uv run python $F/readout_functional_fidelity.py --model pythia-160m --d-sae 8192 --seed 0 --steps all \
     --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing
 uv run python $F/readout_functional_fidelity.py --model pythia-1b --d-sae 24576 --seed 0 --steps all \
@@ -701,8 +701,8 @@ uv run python $F/readout_functional_fidelity.py --model pythia-6.9b --d-sae 3276
 uv run python $F/readout_functional_fidelity_strata.py --model pythia-1b --d-sae 24576 --seed 0 --steps all \
     --max-seqs 64 --snapshot-dtype bf16 --hln-dir ${UM_SSD_ROOT}/derived/readout_edit_timing_pythia1b
 # 6. Dense PCA baselines (both scripts default to --models pythia-160m)
-uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_pca_static.py --models pythia-160m pythia-1b pythia-6.9b olmo-2-7b
-uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_concat_pca.py --models pythia-160m pythia-1b pythia-6.9b olmo-2-7b
+uv run python reproduce/validation/eval_pca_static.py --models pythia-160m pythia-1b pythia-6.9b olmo-2-7b
+uv run python reproduce/validation/eval_concat_pca.py --models pythia-160m pythia-1b pythia-6.9b olmo-2-7b
 ```
 
 Step 4 stores fp32 caches for Pythia-160M and 1B and uses the bf16 default for
@@ -711,7 +711,7 @@ model. The fidelity runs read the first 32 sequences (16,352 predictions), the
 default of `build_hln_cache.py`; the strata check reads 64, so build the Pythia-1B
 caches with `--max-seqs 64`.
 
-Outputs, under `experiments/crosscoders/crosscoder_main/derived/` unless stated:
+Outputs, under `results/validation/` unless stated:
 
 - `appendix_validation/full_inventory.csv`, `appendix_validation/lambda_sweep.csv`
   (+ `.provenance.json`): canonical and training-formula EV, MSE, L0, and dead rate
@@ -728,7 +728,7 @@ Outputs, under `experiments/crosscoders/crosscoder_main/derived/` unless stated:
   metadata, and `strata/strata_summary.csv` for the stratified check.
 - `appendix_validation/baselines/raw/pca_static_spectra.pt`: per-snapshot singular
   spectra from `eval_pca_static.py`.
-- `figures/crosscoder_main/appendix_validation/{pca_static,concat_pca}.{csv,pt}`
+- `results/validation/appendix_validation/{pca_static,concat_pca}.{csv,pt}`
   (from the repository root): PCA EV by rank.
 
 Inputs:
@@ -740,7 +740,7 @@ Inputs:
   `pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0{,-sparse}.safetensors`.
 - `${UM_SSD_ROOT}/snapshots/<model>/<slug>_step<N>_wu.pt`, the evaluation corpus,
   and the step-4 caches `${UM_SSD_ROOT}/derived/readout_edit_timing*/hLN_step*.pt`.
-- `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/`:
+- `results/validation/appendix_validation/large_evals/`:
   curated Pythia-6.9B and OLMo-2-7B EV, L0, per-checkpoint values, and activation
   rates ([Known deviations](#known-deviations)).
 
@@ -762,22 +762,22 @@ Notes:
 
 #### crosscoder_olmo (OLMo-2-7B dictionary)
 
-Experiment: `experiments/crosscoders/crosscoder_olmo/`. Extracts `W_U` from the 32
+Experiment: `scripts/`. Extracts `W_U` from the 32
 stage-1 checkpoints of OLMo-2-1124-7B and trains the d=32,768 trajectory crosscoder
 used as the cross-architecture dictionary. Skip it by downloading the released
 `olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.safetensors` ([Downloads](#downloads)).
 
 ```bash
 # 1. Extract W_U at the 32 checkpoints of the paper's OLMo-2-7B schedule (the script default)
-uv run python experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py --cache-dir "$WU_CACHE"
+uv run python scripts/extract/extract_wu_olmo.py --cache-dir "$WU_CACHE"
 # 2. Single-GPU pilot fit (d_sae=16,384, 100 epochs) and its verdict
-WU_CACHE="$WU_CACHE" bash experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_pilot.sh
-uv run python experiments/crosscoders/crosscoder_olmo/scripts/eval_decision_rules.py \
+WU_CACHE="$WU_CACHE" bash scripts/run_olmo_pilot.sh
+uv run python scripts/eval_decision_rules.py \
     --crosscoder /workspace/results/olmo_cross_family/pilot/cc_olmo27b_dsae16384_seed0.pt \
     --wu-cache "$WU_CACHE" --stage pilot \
     --out /workspace/results/olmo_cross_family/pilot/verdict_seed0.json
 # 3. Production dictionary: d_sae=32,768, 300 epochs, batch 1024, head-parallel over four GPUs (train_distributed.py)
-WU_CACHE="$WU_CACHE" bash experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh
+WU_CACHE="$WU_CACHE" bash scripts/run_olmo_production.sh
 ```
 
 Then compute the OLMo-2-7B lifecycle metrics with the
@@ -814,19 +814,19 @@ Hardware: the pilot runs on one A100-80GB in about 3 hours. Production
 
 #### dense_readout_diagnostics
 
-Experiment: `experiments/baselines/dense_readout_diagnostics/`. The mean-direction
+Experiment: `reproduce/validation/`. The mean-direction
 audit behind the `center_scale` preprocessing (`sec:app-mean-direction-preprocessing`)
 and the adjacent-checkpoint movement of the top centered singular subspaces
 (`sec:app-linear-baselines`).
 
 ```bash
 # Mean-direction audit (top two right singular directions by block power iteration)
-uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_mean_direction_audit.py
+uv run python reproduce/validation/build_mean_direction_audit.py
 # Adjacent-checkpoint subspace movement (randomized PCA of centered W_U on the 32-checkpoint schedule)
-uv run python experiments/baselines/dense_readout_diagnostics/scripts/build_dense_reorganization_timing.py
+uv run python reproduce/validation/build_dense_reorganization_timing.py
 ```
 
-Outputs, under `results/experiments/dense_readout_diagnostics/`:
+Outputs, under `results/validation/dense/`:
 
 - `mean_direction_metrics.{csv,pt}`, `mean_direction_provenance.json`: per model and
   step, the mean-row norm ratio, alignment with the raw top singular vector, raw and
@@ -835,7 +835,7 @@ Outputs, under `results/experiments/dense_readout_diagnostics/`:
 - `dense_reorganization/subspace_metrics.csv`, `sv_stability.csv`,
   `top_svd_vectors.pt`, `provenance.json`: chordal Grassmann distance per adjacent
   pair and subspace rank, and top-vector stability (Figure D.9).
-- `figures/dense_readout_diagnostics/dense_reorganization_timing.{csv,pt}` and
+- `results/validation/dense/dense_reorganization_timing.{csv,pt}` and
   `dense_reorganization_timing_olmo.csv` (from the repository root): the same
   subspace metrics as tables.
 
@@ -850,17 +850,17 @@ local `paper/` tree.
 
 #### persnap_sae_baseline
 
-Experiment: `experiments/baselines/persnap_sae_baseline/`. Trains 32 per-snapshot
+Experiment: `reproduce/validation/`. Trains 32 per-snapshot
 JumpReLU SAEs on Pythia-160M `W_U` (d_sae=8,192, one per checkpoint of the
 32-step schedule) to compare with the checkpoint-spanning dictionaries.
 
 ```bash
 # Train the per-snapshot SAEs (defaults: EleutherAI/pythia-160m, d_sae=8,192, lambda_1=0.3, 100 epochs)
-uv run python experiments/baselines/persnap_sae_baseline/scripts/train_persnap_saes.py
+uv run python reproduce/validation/train_persnap_saes.py
 # Optional: compare the SAEs with the crosscoders checkpoint by checkpoint
-uv run python experiments/baselines/persnap_sae_baseline/scripts/persnap_vs_crosscoder.py
-uv run python experiments/baselines/persnap_sae_baseline/scripts/build_persnap_comparison.py
-uv run python experiments/baselines/persnap_sae_baseline/scripts/compute_cc_vs_persnap_gap.py
+uv run python reproduce/validation/persnap_vs_crosscoder.py
+uv run python reproduce/validation/build_persnap_comparison.py
+uv run python reproduce/validation/compute_cc_vs_persnap_gap.py
 ```
 
 Figure D.6 takes its per-checkpoint EV and L0 from [`crosscoder_main`](#crosscoder_main)
@@ -879,16 +879,16 @@ the released SAEs in
 
 Outputs of the optional comparisons: per-snapshot recovery `R = 1 - MSE/Var` and
 mean L0 on stdout (`persnap_vs_crosscoder.py`);
-`figures/persnap_sae_baseline/crosscoder_vs_persnap.json`, the per-snapshot SAE EV
+`results/validation/persnap/crosscoder_vs_persnap.json`, the per-snapshot SAE EV
 and L0 and the per-snapshot EV of the d=24,576 seed-0 crosscoder under the key
 `crosscoder_t46_d24576_seed0` (`build_persnap_comparison.py`); and
-`figures/persnap_sae_baseline/crosscoder_vs_persnap_gap.txt`, per-snapshot
+`results/validation/persnap/crosscoder_vs_persnap_gap.txt`, per-snapshot
 crosscoder EV, SAE EV, and their gap with mean, max, and min
 (`compute_cc_vs_persnap_gap.py`, `--out-dir`).
 
 #### heldout_checkpoints
 
-Experiment: `experiments/ablations/heldout_checkpoints/`. Reconstructs `W_U` at
+Experiment: `reproduce/validation/`. Reconstructs `W_U` at
 eight Pythia checkpoints outside the anchor schedule (steps 10k, 23k, 33k, 43k,
 73k, 93k, 113k, and 123k) with encoder and decoder heads interpolated from the
 neighboring anchors, and compares them with nearest-head, raw-interpolation,
@@ -897,16 +897,16 @@ endpoint, and rank-50 PCA references and the in-sample ceiling
 
 ```bash
 # Pythia-1B dictionary (Figure D.10)
-uv run python experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py \
+uv run python reproduce/validation/eval_heldout.py \
     --crosscoder ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors \
     --snapshot-dir ${UM_SSD_ROOT}/snapshots/pythia-1b \
-    --out-dir results/experiments/ablations/heldout_checkpoints/pythia-1b \
+    --out-dir results/validation/heldout/pythia-1b \
     --model-slug EleutherAI_pythia-1b
 # Pythia-160M dictionary (text)
-uv run python experiments/ablations/heldout_checkpoints/scripts/eval_heldout.py \
+uv run python reproduce/validation/eval_heldout.py \
     --crosscoder ${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/cross-snapshot-32/d8192/seed0.safetensors \
     --snapshot-dir ${UM_SSD_ROOT}/snapshots/pythia-160m \
-    --out-dir results/experiments/ablations/heldout_checkpoints/pythia-160m \
+    --out-dir results/validation/heldout/pythia-160m \
     --model-slug EleutherAI_pythia-160m
 ```
 
@@ -935,20 +935,20 @@ Paper: `sec:app-lifecycle-diagnostics`, with `sec:app-temporal-localization`,
 | Figure E.3 (`fig:app-olmo-window-population`) and the late-start shares in the text | `olmo_matched_checkpoint_window`, below |
 
 The Figure 2 outputs are under
-`results/experiments/lifecycle/feature_lifecycle_trajectories/`.
+`results/lifecycle/`.
 `compute_lifecycle_profile_composition.py` writes the same refined-rule shares under
 two stems; the paper uses the `_refined` files.
 
 #### feature_lifecycle_trajectories
 
-Experiment: `experiments/lifecycle/feature_lifecycle_trajectories/`; steps 1 to 4 are
+Experiment: `reproduce/lifecycle/`; steps 1 to 4 are
 in [Figure 2](#figure-2-the-readout-reorganizes-early). Step 5 repeats the profile
 and window analysis for every Pythia dictionary fit; its `validate` stage needs
 steps 2 and 4.
 
 ```bash
-uv run python experiments/lifecycle/feature_lifecycle_trajectories/scripts/lifecycle_stability.py --stage all \
-    --out-dir results/experiments/lifecycle/feature_lifecycle_trajectories/lifecycle_stability
+uv run python reproduce/lifecycle/lifecycle_stability.py --stage all \
+    --out-dir results/lifecycle/lifecycle_stability
 ```
 
 Outputs: `lifecycle_stability/{pythia160m_widths_seeds,pythia160m_lambda_sweep,pythia1b_widths,pythia69b_sparsity,validation}.csv`,
@@ -974,7 +974,7 @@ Inputs, with `<release>` standing for
 - `${UM_SSD_ROOT}/derived/rates/wu-d24576-multiseed/decoder_norms_dsae24576_seed0.npy`,
   `${UM_SSD_ROOT}/derived/rates/wu-d8192-multiseed/decoder_norms_all_seeds.npy`,
   `${UM_SSD_ROOT}/derived/rates/wu-1b-d24576/decoder_norms_dsae24576_seed0.npy`
-- `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/{p69b_sparse,olmo27b}_d32768_seed0.pt`:
+- `results/validation/appendix_validation/large_evals/{p69b_sparse,olmo27b}_d32768_seed0.pt`:
   Pythia-6.9B and OLMo-2-7B activation rates (curated, not shipped;
   [Known deviations](#known-deviations)).
 
@@ -999,7 +999,7 @@ aggregates.
 
 #### olmo_matched_checkpoint_window
 
-Experiment: `experiments/ablations/olmo_matched_checkpoint_window/`. Tests whether
+Experiment: `reproduce/lifecycle/`. Tests whether
 the near-absence of early-decaying features in OLMo-2-7B follows from its release
 having no checkpoints before step 150: trains a Pythia-1B `W_U` crosscoder
 (d_sae=24,576) on a 32-checkpoint schedule that starts at step 256, and compares its
@@ -1019,34 +1019,34 @@ The late-start schedule is
    `pythia-1b/W_U/cross-snapshot-32-matched-window/d24576/seed0.safetensors`. The
    script defaults match `configs/runs/pythia-1b_wu_d24576_seed0_olmo-matched-window.yaml`.
    ```bash
-   uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/train_late_start.py \
+   uv run python reproduce/lifecycle/train_late_start.py \
        --d-sae 24576 --n-epochs 300 --device cuda
    ```
 2. Compute the per-checkpoint firing rates of the late-start dictionary and save them
-   as `results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0_rates.pt`,
+   as `results/lifecycle/olmo_window/pythia1b_wu_late_start32_dsae24576_seed0_rates.pt`,
    a dict with `rates` `(K, D)`, optional `norms`, and `steps`. No release script
    writes this file ([Known deviations](#known-deviations)).
 3. Run Figure 2 step 1 (`compute_normalized_trajectories.py`), which writes the
    decoder-norm caches read here.
 4. Compute the comparison:
    ```bash
-   uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/compute_late_start_vs_olmo.py
+   uv run python reproduce/lifecycle/compute_late_start_vs_olmo.py
    ```
 
-Outputs, under `figures/olmo_matched_checkpoint_window/`:
+Outputs, under `results/lifecycle/olmo_window/`:
 `olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv`
 and `olmo_matched_checkpoint_window_population_lifecycle_diagnostics.pt` (Figure
 E.3), `late_start_profile_fractions.csv` (early-decaying shares in the text),
 `comparison_summary.csv` (activation-rate decayer and early-dominant shares), and
 sidecars the paper does not use. Step 1 writes the dictionary to
-`results/experiments/olmo_matched_checkpoint_window/pythia1b_wu_late_start32_dsae24576_seed0.pt`
+`results/lifecycle/olmo_window/pythia1b_wu_late_start32_dsae24576_seed0.pt`
 (default `--output`).
 
 Inputs: `${UM_SSD_ROOT}/snapshots/pythia-1b/EleutherAI_pythia-1b_step*_wu.pt` at the
 late-start steps (training only); the step-2 rates file;
-`experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.pt`
+`results/validation/appendix_validation/large_evals/olmo27b_d32768_seed0.pt`
 (OLMo-2-7B firing rates, curated);
-`figures/feature_lifecycle_trajectories/section52_lifecycle/cache/{olmo2_7b_d32768,pythia1b_d24576}_decoder_norms.npy`
+`results/lifecycle/cache/{olmo2_7b_d32768,pythia1b_d24576}_decoder_norms.npy`
 from step 3.
 
 Hardware: step 1 uses CUDA; without it, use `--device mps` and try a smaller pilot
@@ -1063,7 +1063,7 @@ lemma-grouped splits (`sec:app-wordnet-lemma-split`) rerun the probe with
 the inner selection of C:
 
 ```bash
-P=experiments/probes/concept_evolution_validation/scripts/run_wordnet_supersense_probe.py
+P=reproduce/lexical/run_wordnet_supersense_probe.py
 uv run python $P --model pythia-160m --split lemma
 uv run python $P --model pythia-1b --split lemma
 # Split noise on Pythia-160M: seeds 1 to 4, six checkpoints, both splits
@@ -1103,22 +1103,22 @@ Figure 4 step 3:
 AGREE="sva sva_across_pp sva_subject_rc sva_object_rc ioi_role_balanced copy_control fixed_token_control"
 BREADTH="blimp_det_noun_agreement blimp_anaphor_agreement blimp_npi fv_antonym fv_country_capital fv_en_fr \
   fv_present_past induction numeric_gt_v2 numeric_lt_v2 numeric_tf_v2 relational_facts relational_facts_balanced"
-uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py \
+uv run python reproduce/availability/build_task_datasets.py \
     --task-set availability --subject-rc-attractor mismatched --model EleutherAI/pythia-1b --families $AGREE \
     --n-max-per-family 2000 --rng-seed 0 --no-norm-match --out-dir $OUT/datasets/pythia-1b
-uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py \
+uv run python reproduce/availability/build_task_datasets.py \
     --task-set availability --model EleutherAI/pythia-1b --families $BREADTH \
     --n-max-per-family 2000 --rng-seed 0 --no-norm-match --out-dir $OUT/datasets/pythia-1b_breadth
 for RUN in pythia-1b:"$AGREE" pythia-1b_breadth:"$BREADTH"; do
   NAME=${RUN%%:*}; F=${RUN#*:}
-  uv run python experiments/probes/contrastive_readout_swap/scripts/extract_hidden_dense.py \
+  uv run python reproduce/availability/extract_hidden_dense.py \
       --hf-model EleutherAI/pythia-1b --datasets-dir $OUT/datasets/$NAME --families $F \
       --h-steps $STEPS --out-dir $OUT/run_$NAME/hidden --device cuda --dtype fp32 --batch-size 16
 done
-uv run python experiments/probes/contrastive_readout_swap/scripts/run_availability_probes.py \
+uv run python reproduce/availability/run_availability_probes.py \
     --model EleutherAI/pythia-1b --hidden-dir $OUT/run_pythia-1b/hidden --datasets-dir $OUT/datasets/pythia-1b \
     --families $AGREE --swept-steps $STEPS --group-split --device cuda --out-dir $OUT/run_pythia-1b/probes
-uv run python experiments/probes/contrastive_readout_swap/scripts/run_availability_probes.py \
+uv run python reproduce/availability/run_availability_probes.py \
     --model EleutherAI/pythia-1b --hidden-dir $OUT/run_pythia-1b_breadth/hidden \
     --datasets-dir $OUT/datasets/pythia-1b_breadth --families $BREADTH --swept-steps $STEPS --group-split \
     --stratified-prefixes numeric --unprobed-prefixes blimp --device cuda --out-dir $OUT/run_pythia-1b_breadth/probes
@@ -1147,14 +1147,14 @@ Paper: `sec:app-readout-swap`.
 | Figures H.5, H.6 (`fig:app-sparse-feature-causal-curves`, `fig:app-sparse-feature-causal-specificity-k32`) | `run_1b_pilot.py`, `run_specificity_from_pilots.py`, `aggregate_causal_tests.py` | see [sparse_feature_causal_tests](#sparse_feature_causal_tests) |
 
 The first three rows are under
-`results/experiments/causal/temporal_localization_patching/`, and the three
+`results/readout_swaps/`, and the three
 per-language rows under
-`results/experiments/causal/language_stratified_readout_swap/pythia-1b_seed0/`.
+`results/readout_swaps/languages/pythia-1b_seed0/`.
 
 #### temporal_localization_patching and language_stratified_readout_swap
 
-Experiments: `experiments/causal/temporal_localization_patching/` and
-`experiments/causal/language_stratified_readout_swap/`. Pythia-1B hidden states from
+Experiments: `reproduce/readout_swaps/` and
+`reproduce/readout_swaps/`. Pythia-1B hidden states from
 eight checkpoints are held fixed and decoded through each of the 32 readouts
 `W_U^(s)`, recording next-token NLL and the KL to the same-checkpoint readout on the
 nine-language held-out corpus. The per-language run recomputes this raw grid for
@@ -1166,25 +1166,25 @@ orthogonal frame to the native one.
 
 ```bash
 # Optional: rebuild the released evaluation corpus token for token from the 2023-11-01 Wikipedia dumps (network)
-uv run python experiments/causal/temporal_localization_patching/scripts/build_eval_corpus_pythia.py \
-    --output results/experiments/causal/temporal_localization_patching/eval_tokens_pythia.pt
+uv run python reproduce/readout_swaps/build_eval_corpus_pythia.py \
+    --output results/readout_swaps/eval_tokens_pythia.pt
 # Pythia-1B swap grid (Figure H.1); also the parity reference of the per-language run
-uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py \
+uv run python reproduce/readout_swaps/temporal_patch_grid.py \
     --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 \
-    --out-dir results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0
+    --out-dir results/readout_swaps/temporal_patch_grid/pythia-1b_seed0
 # Pythia-160M replication (the default --h-eval-steps are 256 512 1000 2000 143000)
-uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py \
+uv run python reproduce/readout_swaps/temporal_patch_grid.py \
     --model pythia-160m --seed 0 \
-    --out-dir results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-160m_seed0
+    --out-dir results/readout_swaps/temporal_patch_grid/pythia-160m_seed0
 # Per-language grid (all 32 readouts, raw swap, 173,229 targets; resumable, completed cells are skipped)
-uv run python experiments/causal/language_stratified_readout_swap/scripts/run_language_stratified_swap.py \
+uv run python reproduce/readout_swaps/run_language_stratified_swap.py \
     --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 \
     --block-tokens 256 --bootstrap-reps 2000 --bootstrap-seed 0 \
-    --out-dir results/experiments/causal/language_stratified_readout_swap/pythia-1b_seed0 \
-    --reference-summary results/experiments/causal/temporal_localization_patching/temporal_patch_grid/pythia-1b_seed0/summary_global.csv
+    --out-dir results/readout_swaps/languages/pythia-1b_seed0 \
+    --reference-summary results/readout_swaps/temporal_patch_grid/pythia-1b_seed0/summary_global.csv
 # Aligned swaps (none, mean, scale, row_norm, procrustes; default hidden-state checkpoints 256 512 1000 2000 143000)
-uv run python experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py \
-    --model pythia-1b --out-dir results/experiments/causal/temporal_localization_patching/aligned_swap_grid
+uv run python reproduce/readout_swaps/run_aligned_swap_grid.py \
+    --model pythia-1b --out-dir results/readout_swaps/aligned_swap_grid
 ```
 
 Inputs:
@@ -1248,19 +1248,19 @@ Table H.2 takes its *orig.*, *recon*, *ablate*, *preserve-only*, and *sign* colu
 from the [Section 4.4](#section-44-a-few-readout-directions-carry-task-margins) run;
 for greater-than completion, IOI, and relational facts, *orig.* is on the full
 inventory, the `none`-alignment cell (h=1000, s=143000) of
-`results/experiments/probes/contrastive_readout_swap/run0_pythia1b/summary.csv`. The
+`results/availability/run0_pythia1b/summary.csv`. The
 *hidden projection* columns project the selected decoder directions out of the
 step-1000 hidden states and re-score them under the native readout `W_U^(1000)`, on
 the same held-out half:
 
 ```bash
-uv run python experiments/causal/contrastive_task_feature_rescue/scripts/run_converse_intervention.py \
+uv run python reproduce/localization/run_converse_intervention.py \
     --model pythia-1b \
-    --datasets-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b \
-    --hidden-dir results/experiments/probes/contrastive_readout_swap/run0_pythia1b/hidden \
-    --attribution-dir results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos \
+    --datasets-dir results/availability/datasets/pythia-1b \
+    --hidden-dir results/availability/run0_pythia1b/hidden \
+    --attribution-dir results/localization/run0_pythia1b_s143000_h1000_pos \
     --snapshot-step 143000 --h-step 1000 --K 8 16 32 64 128 256 \
-    --out-dir results/experiments/causal/contrastive_task_feature_rescue/converse_pythia1b_s143000_h1000_pos
+    --out-dir results/localization/converse_pythia1b_s143000_h1000_pos
 ```
 
 Outputs, under its `--out-dir`: `<family>__h<h>__s<s>.json` with `baseline` margins
@@ -1275,7 +1275,7 @@ paper's ([Known deviations](#known-deviations)).
 
 #### sparse_feature_causal_tests
 
-Experiment: `experiments/causal/sparse_feature_causal_tests/`
+Experiment: `reproduce/localization/`
 (`sec:app-sparse-feature-causal-tests`). For Pythia-1B and four token groups
 (non-Latin script tokens, punctuation, digits, English function words), ablates the
 top-k positive-attribution features of the released d=24,576 `W_U` crosscoder from
@@ -1286,18 +1286,18 @@ decoder-norm and firing-rate deciles.
 ```bash
 # 1. One selection-and-ablation pass per token group and readout (8 runs)
 for c in non_latin_scripts punctuation digits function_words; do
-  uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py \
+  uv run python reproduce/localization/run_1b_pilot.py \
     --concept $c --snapshot-step 1000 --rank-h-step 1000 --eval-h-steps 512 1000 \
-    --score-mode positive --out-dir results/experiments/sparse_feature_causal_tests/1b_${c}_step1000_positive
-  uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_1b_pilot.py \
+    --score-mode positive --out-dir results/localization/causal_tests/1b_${c}_step1000_positive
+  uv run python reproduce/localization/run_1b_pilot.py \
     --concept $c --snapshot-step 143000 --rank-h-step 143000 --eval-h-steps 143000 \
-    --score-mode positive --out-dir results/experiments/sparse_feature_causal_tests/1b_${c}_step143000_positive
+    --score-mode positive --out-dir results/localization/causal_tests/1b_${c}_step143000_positive
 done
 # 2. Reuse each group's selected features on every group's metric
-uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000
-uv run python experiments/causal/sparse_feature_causal_tests/scripts/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000
+uv run python reproduce/localization/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000
+uv run python reproduce/localization/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000
 # 3. Aggregate the tables behind both figures (CPU, seconds)
-uv run python experiments/causal/sparse_feature_causal_tests/scripts/aggregate_causal_tests.py
+uv run python reproduce/localization/aggregate_causal_tests.py
 ```
 
 Inputs:
@@ -1305,7 +1305,7 @@ Inputs:
 and `${UM_SSD_ROOT}/derived/aggregates/aggregates_pythia-1b_d24576_seed0.pt`
 (per-feature firing-rate and norm aggregates). Steps 1 and 2 need a GPU.
 
-Outputs, under `results/experiments/sparse_feature_causal_tests/`:
+Outputs, under `results/localization/causal_tests/`:
 
 - `1b_<group>_step<step>_positive/`: per-run `summary.csv`, `raw.pt`, and manifest.
 - `specificity_step<step>_h<step>/`: `specificity.csv` and, after step 3,
@@ -1319,10 +1319,10 @@ Outputs, under `results/experiments/sparse_feature_causal_tests/`:
 ### I. Readout learning rate control
 
 Paper: `sec:app-recipe-control`. Experiment:
-`experiments/ablations/pretraining_recipe_control/`; the training, crosscoder, and
+`reproduce/recipe_control/`; the training, crosscoder, and
 lifecycle steps are in [Figure 5](#figure-5-readout-learning-rate).
 
-| Paper item | Source, under `results/experiments/ablations/pretraining_recipe_control/` |
+| Paper item | Source, under `results/recipe_control/` |
 |---|---|
 | Figure I.1 (`fig:app-recipe-control-trajectories`) | Figure 5 step 5, seed 0: `lifecycle_seed0/feature_trajectories.pt` |
 | Table I.1 (`tab:app-recipe-control-summary`) | Figure 5 step 5, seed 0: `lifecycle_seed0/lifecycle_summary.csv` (`lifecycle_stats.json` holds the same values) |
@@ -1336,26 +1336,26 @@ Section 4.5.
 
 ```bash
 # W_U geometry across conditions and checkpoints (CPU)
-uv run python experiments/ablations/pretraining_recipe_control/scripts/analyze_readout_geometry.py \
+uv run python reproduce/recipe_control/analyze_readout_geometry.py \
     --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline warmup_short wu_lr_0p25 wu_lr_4x \
-    --out-csv results/experiments/ablations/pretraining_recipe_control/readout_geometry_pythia.csv
+    --out-csv results/recipe_control/readout_geometry_pythia.csv
 # The 2M-token held-out slice that directly follows the trained 10B tokens (network, 4 MB)
-uv run python experiments/ablations/pretraining_recipe_control/scripts/fetch_heldout_slice.py \
+uv run python reproduce/recipe_control/fetch_heldout_slice.py \
     --out ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin --start-token 10e9 --eval-tokens 2e6
 # Within-run readout swap grid (one GPU, minutes; resumable per cell)
-uv run python experiments/ablations/pretraining_recipe_control/scripts/run_trajectory_swap.py \
+uv run python reproduce/recipe_control/run_trajectory_swap.py \
     --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short \
     --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin \
-    --eval-tokens 120000 --out-dir results/experiments/ablations/pretraining_recipe_control/trajectory
+    --eval-tokens 120000 --out-dir results/recipe_control/trajectory
 # Frequency class probe against the native and best readouts (one GPU or CPU)
-uv run python experiments/ablations/pretraining_recipe_control/scripts/run_expression_lag.py \
+uv run python reproduce/recipe_control/run_expression_lag.py \
     --ckpt-root ${UM_SSD_ROOT}/runs --conditions baseline wu_lr_0p25 wu_lr_4x warmup_short \
     --h-steps 256 512 1024 2048 4769 --eval-bin ${UM_SSD_ROOT}/pile_slice/heldout_after10B_2M.bin \
     --eval-tokens 400000 --max-positions 20000 \
-    --out-dir results/experiments/ablations/pretraining_recipe_control/expression_lag
+    --out-dir results/recipe_control/expression_lag
 ```
 
-Outputs, under `results/experiments/ablations/pretraining_recipe_control/`, each with
+Outputs, under `results/recipe_control/`, each with
 its `provenance_<script>.json`:
 
 - `readout_geometry_pythia.csv`: per-checkpoint `W_U` row-norm statistics, singular
@@ -1393,7 +1393,7 @@ example `--eval-tokens 8192 --seq-len 256 --device cpu`.
   and OLMo-2-7B rows and their per-checkpoint curves come from evaluation files that
   no release script regenerates; `recompute_quality.py` recomputes their aggregate EV
   and L0. The same curated files, under
-  `experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/`
+  `results/validation/appendix_validation/large_evals/`
   and not shipped with the repository, supply the Pythia-6.9B and OLMo-2-7B
   activation rates that `find_reorganization_steps.py` (Figure E.4, Table E.2, and
   the windows quoted in Section 4.1) and `compute_late_start_vs_olmo.py` (Figure E.3)
@@ -1431,7 +1431,7 @@ drift; edit the manifest, not the table.
 |---|---|---|
 | <a id="fig:app-ae-capacity"></a>`fig:app-ae-capacity` | contrastive_readout_swap | paper/figures/availability_expression/rpt_capacity.pdf |
 | <a id="fig:app-ae-grid"></a>`fig:app-ae-grid` | contrastive_readout_swap | paper/figures/availability_expression/rpt_triple_grid.pdf |
-| <a id="fig:app-aligned-readout-swap"></a>`fig:app-aligned-readout-swap` | temporal_localization_patching | results/experiments/causal/temporal_localization_patching/aligned_swap_grid/summary.csv |
+| <a id="fig:app-aligned-readout-swap"></a>`fig:app-aligned-readout-swap` | temporal_localization_patching | results/readout_swaps/aligned_swap_grid/summary.csv |
 | <a id="fig:app-concat-pca"></a>`fig:app-concat-pca` | crosscoder_main | paper/figures/dense_baselines/concatenated_trajectory_pca.pdf |
 | <a id="fig:app-contrastive-readout-lag"></a>`fig:app-contrastive-readout-lag` | contrastive_readout_swap | paper/figures/readout_coordination/readout_lag_narrative_69b.pdf |
 | <a id="fig:app-dense-reorg-pythia"></a>`fig:app-dense-reorg-pythia` | dense_readout_diagnostics | paper/figures/dense_readout/dense_reorganization_timing.pdf |
@@ -1470,19 +1470,19 @@ drift; edit the manifest, not the table.
 | <a id="tab:app-ae-early"></a>`tab:app-ae-early` | contrastive_readout_swap | (produced; see the sections above) |
 | <a id="tab:app-ae-openvocab"></a>`tab:app-ae-openvocab` | contrastive_readout_swap | (produced; see the sections above) |
 | <a id="tab:app-claim-tests"></a>`tab:app-claim-tests` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/experiments/causal/contrastive_task_feature_rescue/run0_pythia1b_s143000_h1000_pos/shards/sva__h1000__s143000.json |
+| <a id="tab:app-contrastive-localisation-ledger"></a>`tab:app-contrastive-localisation-ledger` | contrastive_task_feature_rescue | results/localization/run0_pythia1b_s143000_h1000_pos/shards/sva__h1000__s143000.json |
 | <a id="tab:app-design-rationale"></a>`tab:app-design-rationale` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-lifecycle-stability"></a>`tab:app-lifecycle-stability` | feature_lifecycle_trajectories | (produced; see the sections above) |
 | <a id="tab:app-readout-swap-languages"></a>`tab:app-readout-swap-languages` | language_stratified_readout_swap | paper/figures/readout_coordination/language_swap_table.tex |
-| <a id="tab:app-recipe-control-summary"></a>`tab:app-recipe-control-summary` | pretraining_recipe_control | results/experiments/ablations/pretraining_recipe_control/lifecycle_seed0/lifecycle_summary.csv |
+| <a id="tab:app-recipe-control-summary"></a>`tab:app-recipe-control-summary` | pretraining_recipe_control | results/recipe_control/lifecycle_seed0/lifecycle_summary.csv |
 | <a id="tab:app-reorganization-window-stats"></a>`tab:app-reorganization-window-stats` | feature_lifecycle_trajectories | (produced; see the sections above) |
 | <a id="tab:app-task-construction"></a>`tab:app-task-construction` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:app-terminology-glossary"></a>`tab:app-terminology-glossary` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:app-wordnet-supersense-1b"></a>`tab:app-wordnet-supersense-1b` | concept_evolution_validation | experiments/probes/concept_evolution_validation/derived/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv |
+| <a id="tab:app-wordnet-supersense-1b"></a>`tab:app-wordnet-supersense-1b` | concept_evolution_validation | results/lexical/wordnet_supersense_1b/wordnet_supersense_probe_pos_summary_1b.csv |
 | <a id="tab:checkpoint-suite-comparison"></a>`tab:checkpoint-suite-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:compute-resources"></a>`tab:compute-resources` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:evaluation-controls"></a>`tab:evaluation-controls` | (paper LaTeX tree only) | (paper LaTeX tree only) |
-| <a id="tab:full-inventory"></a>`tab:full-inventory` | crosscoder_main | experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv |
+| <a id="tab:full-inventory"></a>`tab:full-inventory` | crosscoder_main | results/validation/appendix_validation/full_inventory.csv |
 | <a id="tab:lifecycle-profile-rules"></a>`tab:lifecycle-profile-rules` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:method-comparison"></a>`tab:method-comparison` | (paper LaTeX tree only) | (paper LaTeX tree only) |
 | <a id="tab:repro-dictionary-hparams"></a>`tab:repro-dictionary-hparams` | crosscoder_main | (produced; see the sections above) |

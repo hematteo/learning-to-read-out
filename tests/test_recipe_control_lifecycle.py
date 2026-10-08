@@ -17,7 +17,7 @@ import torch
 
 from readout.core.paths import repo_root
 
-SCRIPTS = repo_root() / "experiments" / "ablations" / "pretraining_recipe_control" / "scripts"
+SCRIPTS = repo_root() / "reproduce" / "recipe_control"
 STEPS = [0, 1, 4, 16, 64, 256, 1024]
 K, D, d, V = len(STEPS), 8, 3, 10
 

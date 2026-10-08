@@ -39,7 +39,7 @@ from readout.probes.token_scripts import script_of
 REPO = repo_root()
 DEFAULT_OUT = (
     REPO
-    / "results/experiments/causal/temporal_localization_patching/eval_tokens_olmo.pt"
+    / "results/readout_swaps/eval_tokens_olmo.pt"
 )
 MODEL = "allenai/OLMo-2-1124-7B"
 TARGET_CHARS_PER_LANG = 20_000

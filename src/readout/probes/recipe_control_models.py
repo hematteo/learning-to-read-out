@@ -1,6 +1,6 @@
 """Loaders for the 31M recipe-control checkpoints.
 
-The trainer (``experiments/ablations/pretraining_recipe_control/scripts/train_control.py``)
+The trainer (``reproduce/recipe_control/train_control.py``)
 writes one run directory per arm::
 
     <ckpt_root>/<condition>/config.json

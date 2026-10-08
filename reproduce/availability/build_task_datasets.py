@@ -1,0 +1,180 @@
+"""Build and persist contrastive (y+/y-) task datasets per task family.
+
+Datasets are tokenizer-specific and saved to
+``results/availability/datasets/<model>/``
+as JSON-lines, one file per family. Auditable; reused by the swap-grid eval
+and the sparse-feature attribution experiment.
+
+Usage:
+    uv run python reproduce/availability/build_task_datasets.py \\
+        --model EleutherAI/pythia-1b --out-dir results/availability/datasets/pythia-1b
+
+``--task-set availability`` switches to the availability/expression panel registry
+(``readout.probes.availability_tasks``: 20 families, counterfactual corruptions).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+import torch
+from transformers import AutoTokenizer
+
+from readout.core.paths import (
+    repo_root,  # noqa: E402
+    snapshot_path,  # noqa: E402
+)
+from readout.probes import contrastive_tasks as CT  # noqa: E402
+from readout.probes.availability_tasks import AVAILABILITY_TASK_BUILDERS, build_availability_corruption
+
+TASK_SETS = {
+    "swap_grid": (CT.TASK_BUILDERS, CT.build_corruption),
+    "availability": (AVAILABILITY_TASK_BUILDERS, build_availability_corruption),
+}
+
+REPO = repo_root()
+
+
+def _maybe_load_terminal_W_U(model_name: str) -> torch.Tensor | None:
+    """Use the terminal-step W_U row norms for matched-norm filtering, if available.
+
+    Only missing/unreadable snapshot files are tolerated (returns None); any
+    other failure (bad payload shape, dtype, ...) propagates so it can't
+    silently disable the row-norm-matched filtering.
+    """
+    try:
+        # Pythia uses step 143000 as terminal.
+        p = snapshot_path(model_name, step=143000, kind="wu")
+        if p.exists():
+            W = torch.load(p, map_location="cpu", weights_only=False)
+            if isinstance(W, dict):
+                W = W.get("W_U") or W.get("weight") or next(iter(W.values()))
+            return W.float()
+    except (FileNotFoundError, OSError) as e:
+        print(f"[warn] failed to read terminal W_U snapshot ({e})", flush=True)
+    return None
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--model",
+        default="EleutherAI/pythia-1b",
+        help="HF model name (used only for tokenizer + optional W_U norm match).",
+    )
+    ap.add_argument(
+        "--families",
+        nargs="+",
+        default=None,
+        help="Families to build (default = every family of --task-set).",
+    )
+    ap.add_argument(
+        "--task-set",
+        choices=sorted(TASK_SETS),
+        default="swap_grid",
+        help="swap_grid: contrastive_tasks.TASK_BUILDERS (default). availability: the "
+        f"availability/expression panel registry {list(AVAILABILITY_TASK_BUILDERS)}.",
+    )
+    ap.add_argument(
+        "--subject-rc-attractor",
+        choices=["balanced", "mismatched"],
+        default="balanced",
+        help="availability sva_subject_rc attractor number: independent of the head (default) or "
+        "always mismatched (the earlier variant behind the published Pythia-1B dataset).",
+    )
+    ap.add_argument("--n-max-per-family", type=int, default=2000)
+    ap.add_argument("--rng-seed", type=int, default=0)
+    ap.add_argument(
+        "--out-dir",
+        type=Path,
+        required=True,
+        help="Output directory; one <family>.jsonl per family will be written here.",
+    )
+    ap.add_argument(
+        "--no-norm-match",
+        action="store_true",
+        help="Skip W_U row-norm matched filtering (e.g. when terminal W_U is missing).",
+    )
+    args = ap.parse_args()
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    builders, corrupt_fn = TASK_SETS[args.task_set]
+    families = args.families or list(builders)
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    W_U = None if args.no_norm_match else _maybe_load_terminal_W_U(args.model)
+    if W_U is None and not args.no_norm_match:
+        print(
+            f"[WARN] no terminal W_U found for {args.model}: the row-norm-matched "
+            "distractor filtering is DISABLED for this "
+            "build. Pass --no-norm-match to acknowledge, or make the terminal "
+            "snapshot available (see docs/REPRODUCE.md).",
+            flush=True,
+        )
+
+    summary: list[dict] = []
+    for family in families:
+        if family not in builders:
+            print(f"[skip] unknown family {family!r} for --task-set {args.task_set}", flush=True)
+            continue
+        builder = builders[family]
+        kwargs = {"n_max": args.n_max_per_family, "W_U_for_norm_match": W_U}
+        if "rng_seed" in builder.__code__.co_varnames:
+            kwargs["rng_seed"] = args.rng_seed
+        if args.task_set == "availability" and family == "sva_subject_rc":
+            kwargs["balance_attractor"] = args.subject_rc_attractor == "balanced"
+        examples = builder(tokenizer, **kwargs)
+
+        # Paired corruption examples (families that define one).
+        corrupted: list[CT.Example] = []
+        for ex in examples:
+            c = corrupt_fn(ex, tokenizer)
+            if c is not None:
+                corrupted.append(c)
+
+        out_path = args.out_dir / f"{family}.jsonl"
+        CT.save_examples(out_path, examples)
+        if corrupted:
+            CT.save_examples(args.out_dir / f"{family}_corrupt.jsonl", corrupted)
+
+        # Random-token control distractors as a sidecar manifest.
+        rand_distractors = CT.random_distractor_ids(
+            tokenizer,
+            examples,
+            rng_seed=args.rng_seed,
+        )
+        ctrl_path = args.out_dir / f"{family}_random_distractors.json"
+        ctrl_path.write_text(json.dumps(rand_distractors))
+
+        row = {
+            "family": family,
+            "n": len(examples),
+            "n_corrupt": len(corrupted),
+            "out": str(out_path),
+        }
+        summary.append(row)
+        print(
+            f"[built] {family}: n={len(examples):4d}  corrupt={len(corrupted):4d}  -> {out_path.name}",
+            flush=True,
+        )
+
+    (args.out_dir / "summary.json").write_text(
+        json.dumps(
+            {
+                "model": args.model,
+                "task_set": args.task_set,
+                "subject_rc_attractor": args.subject_rc_attractor,
+                "rng_seed": args.rng_seed,
+                "n_max_per_family": args.n_max_per_family,
+                "norm_match": W_U is not None,
+                "families": summary,
+            },
+            indent=2,
+        )
+    )
+    print(f"[done] wrote {len(summary)} family files to {args.out_dir}", flush=True)
+
+
+if __name__ == "__main__":
+    main()

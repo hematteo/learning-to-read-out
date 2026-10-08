@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from readout.core.paths import crosscoder_main_derived_dir, ssd_path
+from readout.core.paths import ssd_path, validation_results_dir
 from readout.crosscoder.checkpoint_loaders import load_run
 
 from . import metrics
@@ -41,7 +41,7 @@ def default_derived_root() -> Path:
     env = os.environ.get("DYNAMICS_DERIVED_ROOT")
     if env:
         return Path(env)
-    return crosscoder_main_derived_dir()
+    return validation_results_dir()
 
 
 @dataclass

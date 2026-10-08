@@ -16,7 +16,7 @@ import torch.nn.functional as F
 
 from readout.core.paths import repo_root
 
-SCRIPTS = repo_root() / "experiments" / "crosscoders" / "crosscoder_main" / "scripts" / "appendix_validation"
+SCRIPTS = repo_root() / "reproduce" / "validation"
 K, V, d, D = 3, 11, 4, 6
 
 

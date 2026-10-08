@@ -6,7 +6,6 @@ import pytest
 
 from readout.core.paths import (
     aggregate_path,
-    crosscoder_main_derived_dir,
     model_short,
     model_slug,
     release_path,
@@ -14,6 +13,7 @@ from readout.core.paths import (
     snapshot_dir,
     snapshot_path,
     ssd_root,
+    validation_results_dir,
 )
 
 # ── repo_root ──────────────────────────────────────────────────
@@ -111,7 +111,7 @@ def test_aggregate_path(monkeypatch, tmp_path):
     assert p == tmp_path / "derived/aggregates/aggregates_pythia-6.9b_d32768_seed0.pt"
 
 
-def test_crosscoder_main_derived_dir_under_repo():
-    p = crosscoder_main_derived_dir()
+def test_validation_results_dir_under_repo():
+    p = validation_results_dir()
     assert p.is_relative_to(repo_root())
-    assert p.name == "derived"
+    assert p.name == "validation"

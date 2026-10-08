@@ -15,7 +15,7 @@ import torch
 
 from readout.core.paths import repo_root
 
-SCRIPTS = repo_root() / "experiments" / "causal" / "contrastive_task_feature_rescue" / "scripts"
+SCRIPTS = repo_root() / "reproduce" / "localization"
 
 
 @pytest.fixture(scope="module")

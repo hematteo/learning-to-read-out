@@ -5,9 +5,9 @@ is also hand-typeset as ``tab:lifecycle-profile-rules``: the refined ruleset
 implemented by :func:`classify_profiles_refined` assigns each active feature's
 peak-normalized trajectory to one of the five profiles in
 :data:`PROFILE_ORDER`. Both the lifecycle experiment
-(``experiments/lifecycle/feature_lifecycle_trajectories``) and the OLMo
+(``reproduce/lifecycle``) and the OLMo
 matched-checkpoint-window ablation
-(``experiments/ablations/olmo_matched_checkpoint_window``) import from here;
+(``reproduce/lifecycle``) import from here;
 do not re-derive these rules in experiment scripts.
 """
 

@@ -12,7 +12,7 @@ import torch
 from readout.core.paths import repo_root
 from readout.probes import wu_probes_gpu as wpg
 
-SCRIPTS = repo_root() / "experiments" / "probes" / "concept_evolution_validation" / "scripts"
+SCRIPTS = repo_root() / "reproduce" / "lexical"
 
 
 @pytest.fixture(scope="module")

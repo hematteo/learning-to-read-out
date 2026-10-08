@@ -18,7 +18,7 @@ from sklearn.model_selection import GroupKFold
 from readout.core.paths import repo_root
 from readout.probes import availability_expression as AE
 
-SCRIPTS = repo_root() / "experiments/probes/contrastive_readout_swap/scripts"
+SCRIPTS = repo_root() / "reproduce/availability"
 
 
 def test_group_kfold_matches_sklearn_without_ties_and_is_stable_with_ties():

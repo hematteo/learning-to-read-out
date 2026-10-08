@@ -1,5 +1,5 @@
 """Block layout, bootstrap, and argmin-probability helpers of
-experiments/causal/language_stratified_readout_swap/scripts/run_language_stratified_swap.py.
+reproduce/readout_swaps/run_language_stratified_swap.py.
 
 CPU-only, synthetic data: no model, corpus, or snapshot is loaded.
 """
@@ -19,7 +19,7 @@ import torch
 @pytest.fixture(scope="module")
 def lss():
     repo = Path(__file__).resolve().parents[1]
-    p = repo / "experiments/causal/language_stratified_readout_swap/scripts/run_language_stratified_swap.py"
+    p = repo / "reproduce/readout_swaps/run_language_stratified_swap.py"
     spec = importlib.util.spec_from_file_location("lss", p)
     m = importlib.util.module_from_spec(spec)
     sys.modules["lss"] = m

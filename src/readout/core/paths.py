@@ -135,10 +135,6 @@ def aggregate_path(run_id: str) -> Path:
     return ssd_root() / "derived" / "aggregates" / f"aggregates_{run_id}.pt"
 
 
-def crosscoder_main_derived_dir() -> Path:
-    """In-repo dir holding per-run aggregates produced by the main analysis.
-
-    Currently ``experiments/crosscoders/crosscoder_main/derived/``; centralised
-    here so call sites don't hardcode the path.
-    """
-    return repo_root() / "experiments" / "crosscoders" / "crosscoder_main" / "derived"
+def validation_results_dir() -> Path:
+    """In-repo dir (``results/validation/``) for the dictionary validation outputs."""
+    return repo_root() / "results" / "validation"

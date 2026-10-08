@@ -15,7 +15,7 @@ import pytest
 
 from readout.core.paths import repo_root
 
-SCRIPTS = repo_root() / "experiments/lifecycle/feature_lifecycle_trajectories/scripts"
+SCRIPTS = repo_root() / "reproduce/lifecycle"
 
 
 def _load(name):

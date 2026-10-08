@@ -15,7 +15,7 @@ import pytest
 
 from readout.core.paths import repo_root
 
-SCRIPTS = repo_root() / "experiments/causal/sparse_feature_causal_tests/scripts"
+SCRIPTS = repo_root() / "reproduce/localization"
 
 
 @pytest.fixture(scope="module")

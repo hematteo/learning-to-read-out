@@ -49,7 +49,7 @@ source: >
   checkpoint-embedded training dict of the released dense 6.9B run (lr=1e-5);
   the released checkpoint pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0
   (default-lambda comparison fit);
-  experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/p69b_normal_d32768_seed0.json
+  results/validation/appendix_validation/large_evals/p69b_normal_d32768_seed0.json
   (model, d_sae=32768, training_batch_size=1024, canon EV/L0);
   full_inventory.csv (pythia-6.9b W_U row lambda=0.3, tanh_stretch=1.0,
   init_threshold=0.1, epochs=300);

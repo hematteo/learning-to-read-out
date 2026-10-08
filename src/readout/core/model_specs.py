@@ -2,11 +2,7 @@
 
 Centralises the per-model HF names, ``ModelSpec`` records, and the
 cross-snap-32 step schedules so analysis scripts don't carry their own
-copies. Step lists were previously duplicated across
-``experiments/baselines/dense_readout_diagnostics/``,
-``experiments/lifecycle/feature_lifecycle_trajectories/``, and
-``experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/``; the
-canonical source is now this module.
+copies.
 
 This module is THE single source of truth for snapshot-step schedules: other
 modules (and scripts) must import ``DEFAULT_STEPS_32`` from here rather than

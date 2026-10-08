@@ -1,8 +1,7 @@
 """Shared helpers for the developmental-dynamics analysis pipeline.
 
-Analysis scripts under experiments/ (crosscoder_main,
-feature_lifecycle_trajectories, olmo_matched_checkpoint_window) and the
-test suite import from this package:
+The analysis scripts under reproduce/ (validation, lifecycle) and the test
+suite import from this package:
     - discovery: locate available crosscoder runs on disk
     - metrics:   lifecycle, adjacent rotation, CUSUM, active-feature mask
     - lifecycle: the paper's rule-based profile taxonomy

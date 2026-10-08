@@ -45,10 +45,10 @@ source: >
   lr_decay_fraction 0.0, decoder_transpose_init 1.0, dead_window_steps 100);
   released-checkpoint .config.json sidecar (pythia-1b W_U cross-snap-32 d24576
   seed0: lr=2e-5);
-  experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv
+  results/validation/appendix_validation/full_inventory.csv
   (pythia-1b W_U cross-snap-32 d24576 seed0 row: lambda=0.3, tanh_stretch=1.0,
   init_threshold=0.1, epochs=300);
-  experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals JSON
+  results/validation/appendix_validation/large_evals JSON
   sidecars (training_batch_size=1024);
   scripts/train/train_crosscoder.py docstring (shared Pythia recipe:
   input_preprocess=center_scale, amp_dtype=fp32, seed=0);

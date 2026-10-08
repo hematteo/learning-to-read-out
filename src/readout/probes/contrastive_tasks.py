@@ -10,8 +10,8 @@ tokenizer (Pythia uses GPT-NeoX BPE; OLMo / LLaMA use SentencePiece-derived
 BPE — leading-space form differs).
 
 Used by:
-  - experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py
-  - experiments/causal/contrastive_task_feature_rescue/scripts/run_feature_attribution.py
+  - reproduce/availability/build_task_datasets.py
+  - reproduce/localization/run_feature_attribution.py
 """
 
 from __future__ import annotations

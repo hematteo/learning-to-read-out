@@ -56,7 +56,7 @@ def load_wu_snapshot(model_name, step, cache_dir, dtype=torch.float32):
             f"Snapshot {cache_path} missing and model {model_name!r} is not Pythia. "
             f"wu_adapter.load_wu_snapshot only knows the Pythia 'step{{N}}' revision format "
             f"and the `embed_out.weight` unembedding path. Pre-extract via the "
-            f"family-specific extractor (e.g. experiments/crosscoders/crosscoder_olmo/scripts/extract_wu_olmo.py "
+            f"family-specific extractor (e.g. scripts/extract/extract_wu_olmo.py "
             f"for OLMo) and re-run."
         )
     model = AutoModelForCausalLM.from_pretrained(
