@@ -1,119 +1,22 @@
-"""Temporal readout-patch metrics for proto-token families.
+"""Shared helpers for readout swaps and readout feature edits.
 
-This is the headline behavioral pipeline for the W_U lifecycle paper. It
-replaces multilingual NLL with row/readout-local, proto-token-specific,
-matched-confound metrics applied to a temporally-patched W_U.
+Used by the readout swap grids (temporal_localization_patching,
+language_stratified_readout_swap), the sparse feature tests, and several
+validation scripts. It provides the evaluation corpus and its token labels,
+per-checkpoint caches of final hidden states, proto-token concept families
+(punctuation, digits, function words, and others), and the snapshot-local
+pieces of a trajectory crosscoder.
 
-==============================================================================
-1. Snapshot-local activations and the temporal-patch operation
-==============================================================================
-The cross-snapshot crosscoder has snapshot-local encoder/decoder pieces
-(W_E[t], b_E[t], W_D[t], scale[t], mean[t]) and a SHARED log-jumprelu
-threshold. Snapshot-local activations are computed by re-encoding the
-snapshot's W_U through that snapshot's pieces:
+The rank-1 readout contribution of feature k at checkpoint t is
 
-    a_k(t)[v]  =  encode_snapshot_local(W_U_t, pieces_t)[v, k]
-                =  jumprelu( (W_U_t[v] - mean_t)/scale_t @ W_E[t][:,k] + b_E[t,k] )
+    R_k(t)[v, :] = a_k(t)[v] * D_k(t) * scale_t      # (V, d_model)
 
-The rank-1 readout contribution of feature k at snapshot t is therefore:
+where a_k(t) re-encodes W_U_t through checkpoint t's encoder and D_k(t) is its
+decoder row. Patching a feature subset S between checkpoints base and target:
 
-    R_k(t)[v, :]  =  a_k(t)[v] * D_k(t) * scale_t      # (V, d_model)
-
-where D_k(t) = W_D[t, k] (one decoder vector per snapshot). Per-snapshot
-preprocessing scale enters because the crosscoder reconstructs the
-*standardized* W_U; we map back to model-space units.
-
-The temporal patch over a feature subset S, snapshots (base, target):
-
-    delta_S         =  sum_{k in S} [ R_k(target) - R_k(base) ]
-    W_U_patch_in    =  W_U_base    + delta_S
-    W_U_patch_out   =  W_U_target  - delta_S
-
-`patch_in` is the "necessity-of-the-rest, sufficiency-of-S" framing:
-"early-checkpoint W_U with only S patched up to its target form."
-`patch_out` is the "necessity-of-S" framing: "late-checkpoint W_U
-with only S rolled back to its base form." A clean lifecycle claim
-about S predicts both: M(patch_in) > M(base) and M(patch_out) < M(target).
-
-==============================================================================
-2. Headline metric stack (revised 2026-05-01)
-==============================================================================
-Headline (main text):
-  M1. Concept-mass logit ratio (primary).
-  M2. Matched MRR / rank within per-target candidate set.
-  M5. Row-geometry recovery (mechanism-facing).
-
-Appendix:
-  M4. Probe-logit transfer.
-  M6. Candidate-set logit-lens KL.
-
-For each (transition, subset, concept), every metric reports BOTH:
-
-    raw_delta_in  = M(W_patch_in)  - M(W_base)        # forward effect
-    raw_delta_out = M(W_target)    - M(W_patch_out)   # backward effect
-    recovery_in   = raw_delta_in  / (M(target) - M(base))
-    recovery_out  = raw_delta_out / (M(target) - M(base))
-
-Recovery values are FLAGGED as `low_denom` when |M(target)-M(base)| < eps_M
-(per-metric floor; default 0.01 nats for log-space metrics, 0.005 for cosine).
-The PRIMARY statistical test is the paired raw effect of `S = real subset`
-versus `S = matched_random subset`, not the recovery ratio itself.
-
-==============================================================================
-3. Family selectivity (M3) — forward + backward separately
-==============================================================================
-For target concept C and matched off-target concepts C' (averaged):
-
-    selectivity_in  (C, S) = effect_in (C, S) - mean_{C'} effect_in (C', S)
-    selectivity_out (C, S) = effect_out(C, S) - mean_{C'} effect_out(C', S)
-
-Reported per (subset, transition, concept) row.
-
-==============================================================================
-4. Proto-token concept registry (no longer script-only)
-==============================================================================
-Default concepts:
-
-    space_newline       — whitespace and newline tokens
-    punctuation         — pure-ASCII punctuation
-    digits              — numeric tokens
-    ascii_morphology    — short lowercase ASCII subword pieces (suffixes)
-    function_words      — closed-class English function words
-    code_math_latex     — common code/math/LaTeX glyphs and keywords
-    non_latin_scripts   — secondary; collapses Cyrillic+Arabic+Thai+...
-
-Each ConceptDef carries (member_mask, coarse_class set, null_class_pool).
-Matched-distractor sampling is per-concept-aware: distractors for a
-script-concept must be in different scripts; distractors for punctuation
-must be outside the punctuation set, ideally same-coarse-class.
-
-==============================================================================
-5. Pre-registered feature subsets (ranked once, reused across metrics)
-==============================================================================
-For each (base, target) transition, the following subsets are constructed
-*once* per seed and cached in the manifest before any metric is touched:
-
-    transition_top_k        rank by CUSUM peaked in [base, target]
-    decay_top_k             rank by (rate_base - rate_target), positive
-    persistent_top_k        rank by min(rate_base, rate_target)
-    late_rise_top_k         rank by (rate_target - max_{<base} rate)
-    late_specialist_top_k   peak_step >= late_cut, rank by terminal decoder norm
-    matched_random_top_k    matched-control sampled jointly on
-                            (terminal decoder norm, base firing rate),
-                            excluded from any of the above
-
-The control is the matched_random subset; the headline test for "subset S
-matters" is the paired effect of S - matched_random_top_k.
-
-==============================================================================
-6. Outputs
-==============================================================================
-results/temporal_patch_metrics/<tag>/
-    manifest.json       pre-registration: concepts, subsets, transitions, seeds
-    summary.csv         long-form: one row per (transition, subset, concept)
-    selectivity.csv     forward+backward selectivity per (transition, subset, concept)
-    paired_vs_random.csv  paired Δ(real - matched_random) per metric
-    raw.pt              full record dict + per-context arrays for re-analysis
+    delta_S       = sum_{k in S} [R_k(target) - R_k(base)]
+    W_U_patch_in  = W_U_base + delta_S
+    W_U_patch_out = W_U_target - delta_S
 """
 
 from __future__ import annotations
@@ -189,7 +92,6 @@ CORPUS_TOKENS_PYTHIA = SSD / "hf_release/parameter-trajectory-crosscoders/evalua
 # (this is that builder's default --output). Selected by temporal_patch_grid.py
 # for --model olmo-2-7b.
 CORPUS_TOKENS_OLMO = _REPO / "results/experiments/causal/temporal_localization_patching/eval_tokens_olmo.pt"
-OUT_DIR_DEFAULT = _REPO / "results/temporal_patch_metrics"
 
 
 @dataclass
@@ -1054,14 +956,6 @@ def cache_or_build_hLN(ctx: PatchContext, step: int, ids_seqs: torch.Tensor) -> 
 
 
 # Back-compat alias used by older callers.
-def load_hLN_cache(ctx: PatchContext, step: int) -> dict:
-    p = ctx.cfg.hLN_cache_dir / f"hLN_step{step}.pt"
-    if not p.exists():
-        raise FileNotFoundError(
-            f"Hidden-state cache missing: {p}. Either pre-populate via "
-            f"scripts/extract/build_hln_cache.py or use cache_or_build_hLN()."
-        )
-    return torch.load(p, map_location="cpu", weights_only=False)
 
 
 # ---------------------------------------------------------------------------
@@ -2130,12 +2024,3 @@ def run(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-DEFAULT_CONCEPTS = [
-    "space_newline",
-    "punctuation",
-    "digits",
-    "ascii_morphology",
-    "function_words",
-    "code_math_latex",
-    "non_latin_scripts",
-]

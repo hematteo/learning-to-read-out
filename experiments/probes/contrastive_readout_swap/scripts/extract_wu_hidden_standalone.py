@@ -88,7 +88,6 @@ def main():
             "sva",
             "ioi",
             "relational_facts",
-            "hypernym",
             "induction",
             "numeric_gt",
         ],

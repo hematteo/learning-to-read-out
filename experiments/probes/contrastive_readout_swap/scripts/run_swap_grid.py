@@ -185,13 +185,6 @@ def main() -> None:
         action="store_true",
         help="Replace y_minus with random_distractors sidecar (matched-distractor control).",
     )
-    ap.add_argument(
-        "--use-label-permutation",
-        action="store_true",
-        help="MCQ-letter families only: replace y_minus with a uniformly random "
-        "non-gold letter (sidecar <family>_label_permutation.json). Stronger "
-        "than --use-random-distractors for piqa / arc / sciq.",
-    )
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--dtype", choices=["fp32", "bf16", "fp16"], default="fp32")
     ap.add_argument(
@@ -277,28 +270,11 @@ def main() -> None:
             continue
         y_plus = torch.tensor([e.y_plus for e in ex], dtype=torch.long)
         y_minus = torch.tensor([e.y_minus for e in ex], dtype=torch.long)
-        if args.use_random_distractors and args.use_label_permutation:
-            raise ValueError(
-                "--use-random-distractors and --use-label-permutation are "
-                "mutually exclusive; pick one control source per run."
-            )
         if args.use_random_distractors:
             ctrl_path = args.datasets_dir / f"{f}_random_distractors.json"
             if ctrl_path.exists():
                 rand = json.loads(ctrl_path.read_text())
                 y_minus = torch.tensor(rand[: len(ex)], dtype=torch.long)
-        elif args.use_label_permutation:
-            ctrl_path = args.datasets_dir / f"{f}_label_permutation.json"
-            if ctrl_path.exists():
-                rand = json.loads(ctrl_path.read_text())
-                y_minus = torch.tensor(rand[: len(ex)], dtype=torch.long)
-            else:
-                print(
-                    f"[warn] --use-label-permutation requested but no "
-                    f"{f}_label_permutation.json in {args.datasets_dir} — "
-                    f"family {f} will use its native y_minus.",
-                    flush=True,
-                )
         per_family[f] = {"examples": ex, "y_plus": y_plus, "y_minus": y_minus}
 
     # Cache W_U per s_step (and h_step, since native readout is the model's).

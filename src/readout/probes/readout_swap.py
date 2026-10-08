@@ -19,8 +19,7 @@ Given a list of contrastive ``Example``s, this module provides:
     (next-token NLL, KL to native, top-1 agreement, centered-logit R^2) behind
     the recipe-control readout swap grids.
 
-Hidden-state extraction matches ``temporal_patch_metrics._cache_hidden_generic``:
-forward-pre-hook on the readout module (Pythia: embed_out, OLMo/LLaMA: lm_head).
+Hidden-state extraction uses a forward-pre-hook on the readout module (Pythia: embed_out, OLMo/LLaMA: lm_head).
 """
 
 from __future__ import annotations

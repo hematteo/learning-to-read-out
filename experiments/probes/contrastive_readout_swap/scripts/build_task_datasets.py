@@ -147,13 +147,6 @@ def main() -> None:
         ctrl_path = args.out_dir / f"{family}_random_distractors.json"
         ctrl_path.write_text(json.dumps(rand_distractors))
 
-        # MCQ-letter families: also emit a label-permutation control where
-        # y_minus is a uniformly random non-gold letter token. This is the
-        # stronger control for piqa / arc_easy / arc_challenge / sciq.
-        label_perm = CT.mcq_label_permutation_distractor_ids(tokenizer, examples, rng_seed=args.rng_seed)
-        if label_perm is not None:
-            (args.out_dir / f"{family}_label_permutation.json").write_text(json.dumps(label_perm))
-
         row = {
             "family": family,
             "n": len(examples),

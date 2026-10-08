@@ -8,10 +8,8 @@
 # sidecar olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.config.json. Its training
 # log ends at "[epoch 299 step 29400]", i.e. 300 epochs of 98 steps, which fixes
 # batch_size at 1024 (ceil(100352 / 1024) = 98); the paper's hyperparameter
-# table (29,400 optimizer steps) agrees. The launcher committed at release time
-# (experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh)
-# carried batch_size 2048, n_epochs 250, optimizer sparse_adam; on 2026-09-03 it
-# was aligned to the checkpoint record (1024 / 300 / adam). Optimizer caveat:
+# table (29,400 optimizer steps) agrees. docs/REPRODUCE.md gives the torchrun
+# command with these settings. Optimizer caveat:
 # the checkpoint's embedded training dict records `adam` (written from the
 # run's CLI args by train_distributed.py), while the vast.ai launcher of the
 # time passed `--optimizer sparse_adam` and the log does not name the
@@ -60,7 +58,6 @@ source: >
   init_threshold 0.1, batch_size 1024, n_epochs 300, optimizer adam,
   l1_warmup_fraction 0.1, lr_warmup_fraction 0.1, lr_decay_fraction 0.2,
   amp_dtype fp32; quality: EV 0.8526, mean L0 557.3);
-  experiments/crosscoders/crosscoder_olmo/scripts/run_olmo_production.sh (launcher,
-  aligned with the run of record); the run's train.log (final line: epoch 299 step 29400);
+  the run's train.log (final line: epoch 299 step 29400);
   experiments/crosscoders/crosscoder_main/derived/appendix_validation/large_evals/olmo27b_d32768_seed0.json
   (canon EV/L0, training_batch_size 1024); experiments.yaml: crosscoder_olmo.

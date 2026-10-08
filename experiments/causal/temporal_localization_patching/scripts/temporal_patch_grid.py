@@ -14,7 +14,7 @@ Per (h_t, W_U_s) cell, computes:
   entropy          mean entropy of the predicted distribution
   kl_to_native     KL( softmax(h_t W_U_s.T)  ||  softmax(h_t W_U_t.T) )
 
-For each proto-token concept C (the seven families from temporal_patch_metrics):
+For each proto-token concept C (the seven families in readout.dynamics.temporal_patch):
 
   target_nll[C]    mean per-token NLL on tokens whose target falls in C
   concept_mass[C]  logsumexp_C - logsumexp_{matched_null_C} (per-context mean)

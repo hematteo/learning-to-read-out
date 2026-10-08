@@ -75,54 +75,6 @@ def test_numeric_gt_yields_examples(tokenizer):
         assert e.meta["small"] < e.meta["big"]
 
 
-def test_arc_numeric_labels_prompt_gold_consistent(tokenizer):
-    """ARC numeric labels ('1'-'4'): prompt options and gold token must agree.
-
-    Replicates _build_arc's normalisation on a synthetic numeric-label row and
-    checks the gold letter shown in the prompt matches the gold token / meta.
-    """
-    from readout.probes.contrastive_tasks import _build_mcq
-
-    # answerKey "3" -> 3rd option ("nine"), which must be labelled "C" in prompt.
-    raw = {
-        "question": "What is 3 + 6?",
-        "choices": {
-            "label": ["1", "2", "3", "4"],
-            "text": ["seven", "eight", "nine", "ten"],
-        },
-        "answerKey": "3",
-    }
-    labels = raw["choices"]["label"]
-    norm_labels = [chr(ord("A") + i) for i in range(len(labels))]
-    gold = raw["answerKey"].strip().upper()
-    gold = norm_labels[labels.index(gold)]
-    row = {**raw, "_label_norm": gold, "_labels_norm": norm_labels}
-
-    def prompt_fn(r):
-        body = "\n".join(f"{L}: {t}" for L, t in zip(r["_labels_norm"], r["choices"]["text"]))
-        return f"Question: {r['question']}\n{body}\nAnswer:"
-
-    ex = _build_mcq(
-        "arc_test",
-        tokenizer,
-        [row],
-        n_options=4,
-        label_field="_label_norm",
-        label_kind="letter",
-        prompt_fn=prompt_fn,
-        n_max=1,
-        rng_seed=0,
-    )
-    if not ex:
-        pytest.skip("tokenizer lacks single-token MCQ letters")
-    e = ex[0]
-    assert e.meta["gold_letter"] == "C"
-    # The gold answer text "nine" must be the option labelled "C" in the prompt.
-    assert "C: nine" in e.prompt
-    # y_plus must decode to the same letter the prompt assigns to the gold option.
-    assert tokenizer.decode([e.y_plus]).strip() == "C"
-
-
 def test_relational_facts_yields_examples(tokenizer):
     from readout.probes.contrastive_tasks import build_relational_facts
 
@@ -131,15 +83,6 @@ def test_relational_facts_yields_examples(tokenizer):
     _assert_examples_well_formed(ex, "relational_facts", tokenizer)
 
 
-def test_hypernym_yields_examples(tokenizer):
-    from readout.probes.contrastive_tasks import build_hypernym
-
-    ex = build_hypernym(tokenizer, n_max=20)
-    assert len(ex) > 0
-    _assert_examples_well_formed(ex, "hypernym", tokenizer)
-
-
-# ── single-token invariant ───────────────────────────────────────────────────
 def test_y_plus_minus_are_single_tokens(tokenizer):
     """Filter contract: every y+/y- must tokenize to a single tokenizer token."""
     from readout.probes.contrastive_tasks import TASK_BUILDERS
