@@ -8,6 +8,9 @@ and the sparse-feature attribution experiment.
 Usage:
     uv run python experiments/probes/contrastive_readout_swap/scripts/build_task_datasets.py \\
         --model EleutherAI/pythia-1b --out-dir results/experiments/probes/contrastive_readout_swap/datasets/pythia-1b
+
+``--task-set availability`` switches to the availability/expression panel registry
+(``readout.probes.availability_tasks``: 20 families, counterfactual corruptions).
 """
 
 from __future__ import annotations
@@ -24,6 +27,12 @@ from readout.core.paths import (
     snapshot_path,  # noqa: E402
 )
 from readout.probes import contrastive_tasks as CT  # noqa: E402
+from readout.probes.availability_tasks import AVAILABILITY_TASK_BUILDERS, build_availability_corruption
+
+TASK_SETS = {
+    "swap_grid": (CT.TASK_BUILDERS, CT.build_corruption),
+    "availability": (AVAILABILITY_TASK_BUILDERS, build_availability_corruption),
+}
 
 REPO = repo_root()
 
@@ -58,8 +67,22 @@ def main() -> None:
     ap.add_argument(
         "--families",
         nargs="+",
-        default=list(CT.TASK_BUILDERS.keys()),
-        help=f"Families to build (default = all). Available: {list(CT.TASK_BUILDERS)}",
+        default=None,
+        help="Families to build (default = every family of --task-set).",
+    )
+    ap.add_argument(
+        "--task-set",
+        choices=sorted(TASK_SETS),
+        default="swap_grid",
+        help="swap_grid: contrastive_tasks.TASK_BUILDERS (default). availability: the "
+        f"availability/expression panel registry {list(AVAILABILITY_TASK_BUILDERS)}.",
+    )
+    ap.add_argument(
+        "--subject-rc-attractor",
+        choices=["balanced", "mismatched"],
+        default="balanced",
+        help="availability sva_subject_rc attractor number: independent of the head (default) or "
+        "always mismatched (the earlier variant behind the published Pythia-1B dataset).",
     )
     ap.add_argument("--n-max-per-family", type=int, default=2000)
     ap.add_argument("--rng-seed", type=int, default=0)
@@ -77,6 +100,8 @@ def main() -> None:
     args = ap.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    builders, corrupt_fn = TASK_SETS[args.task_set]
+    families = args.families or list(builders)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     W_U = None if args.no_norm_match else _maybe_load_terminal_W_U(args.model)
     if W_U is None and not args.no_norm_match:
@@ -89,20 +114,22 @@ def main() -> None:
         )
 
     summary: list[dict] = []
-    for family in args.families:
-        if family not in CT.TASK_BUILDERS:
-            print(f"[skip] unknown family {family!r}", flush=True)
+    for family in families:
+        if family not in builders:
+            print(f"[skip] unknown family {family!r} for --task-set {args.task_set}", flush=True)
             continue
-        builder = CT.TASK_BUILDERS[family]
+        builder = builders[family]
         kwargs = {"n_max": args.n_max_per_family, "W_U_for_norm_match": W_U}
         if "rng_seed" in builder.__code__.co_varnames:
             kwargs["rng_seed"] = args.rng_seed
+        if args.task_set == "availability" and family == "sva_subject_rc":
+            kwargs["balance_attractor"] = args.subject_rc_attractor == "balanced"
         examples = builder(tokenizer, **kwargs)
 
-        # Build paired corruption examples for SVA + IOI.
+        # Paired corruption examples (families that define one).
         corrupted: list[CT.Example] = []
         for ex in examples:
-            c = CT.build_corruption(ex, tokenizer)
+            c = corrupt_fn(ex, tokenizer)
             if c is not None:
                 corrupted.append(c)
 
@@ -143,6 +170,8 @@ def main() -> None:
         json.dumps(
             {
                 "model": args.model,
+                "task_set": args.task_set,
+                "subject_rc_attractor": args.subject_rc_attractor,
                 "rng_seed": args.rng_seed,
                 "n_max_per_family": args.n_max_per_family,
                 "norm_match": W_U is not None,

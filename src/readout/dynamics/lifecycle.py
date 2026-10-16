@@ -1,6 +1,6 @@
 """Rule-based lifecycle profile taxonomy for crosscoder feature trajectories.
 
-Single source of truth for the paper's profile taxonomy (Section 5.2), which
+Single source of truth for the paper's profile taxonomy (Section 4.1, Appendix E), which
 is also hand-typeset as ``tab:lifecycle-profile-rules``: the refined ruleset
 implemented by :func:`classify_profiles_refined` assigns each active feature's
 peak-normalized trajectory to one of the five profiles in
@@ -16,6 +16,7 @@ from __future__ import annotations
 import numpy as np
 
 # Trajectory-summary definitions shared by every ruleset.
+ACTIVE_NORM_THR = 0.01  # peak decoder norm above which a feature counts as active
 ALIVE_THR = 0.50  # normalized level counting as "alive"
 EARLY_TAU = 0.35  # tau <= EARLY_TAU is the early window
 LATE_TAU = 0.65  # tau >= LATE_TAU is the late window
@@ -150,3 +151,28 @@ def classify_profiles_refined(
     )
     profile[late_emerge] = "late_emerge"
     return {"profile": profile, **stats}
+
+
+def profile_fractions(
+    norms: np.ndarray,
+    steps: np.ndarray,
+    *,
+    active_thr: float = ACTIVE_NORM_THR,
+) -> dict[str, float | int]:
+    """Refined-profile fractions of the active features of one dictionary.
+
+    norms: (K, D) decoder norms over ``steps``. Features whose peak norm exceeds
+    ``active_thr`` are peak-normalized and round-tripped through float16, the
+    storage dtype of the selected-trajectory cache the paper's fractions were
+    computed from (the published fractions depend on this rounding). Returns the
+    fraction per :data:`PROFILE_ORDER` entry, ``n_active`` and the median peak step.
+    """
+    norms = np.asarray(norms, dtype=np.float32)
+    peak = norms.max(axis=0)
+    active = peak > active_thr
+    traj = (norms[:, active] / peak[active]).astype(np.float16).astype(np.float32)  # (K, n_active)
+    stats = classify_profiles_refined(traj, np.asarray(steps))
+    out: dict[str, float | int] = {name: float((stats["profile"] == name).mean()) for name in PROFILE_ORDER}
+    out["n_active"] = int(active.sum())
+    out["median_peak_step"] = float(np.median(stats["peak_step"]))
+    return out

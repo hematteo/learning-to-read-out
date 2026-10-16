@@ -26,6 +26,7 @@ swapping in the early-window readout produces most of the behavioral effect.
 - Temporal patch grid:    `uv run python experiments/causal/temporal_localization_patching/scripts/temporal_patch_grid.py`
 - Aligned swap grid:      `uv run python experiments/causal/temporal_localization_patching/scripts/run_aligned_swap_grid.py`
 - Step-1k feature rescue: `uv run python experiments/causal/temporal_localization_patching/scripts/run_step1000_feature_rescue.py`
+- Pythia eval corpus (optional; reproduces the released `evaluation/eval-corpus/eval_tokens.pt` token-for-token from the 2023-11-01 Wikipedia dumps): `uv run python experiments/causal/temporal_localization_patching/scripts/build_eval_corpus_pythia.py --output results/experiments/causal/temporal_localization_patching/eval_tokens_pythia.pt`
 
 ## Inputs (SSD canonical paths)
 - `${UM_SSD_ROOT}/hf_release/parameter-trajectory-crosscoders/pythia-1b/W_U/cross-snapshot-32/d24576/seed0.safetensors`
@@ -39,6 +40,7 @@ tree from these metrics. Per `--out-dir`, the scripts persist:
 - `temporal_patch_metrics.py` (CLI driver over `readout.dynamics.temporal_patch`) -> `manifest.json`, `subsets.json`, `summary.csv`, `selectivity.csv`, `paired_vs_random.csv`, `raw.pt`
 - `run_aligned_swap_grid.py` -> `manifest.json`, per-cell JSON shards, aggregated `summary.csv`
 - `run_step1000_feature_rescue.py` -> `manifest.json`, per-cell JSON shards, aggregated `rescue_summary.csv`
+- `build_eval_corpus_pythia.py` -> `--output` token file (`ids`, `scripts`, `languages`, counts) and `--text-output` raw `dict[lang, str]`
 
 ## Layout
 | path | role |

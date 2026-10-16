@@ -11,10 +11,13 @@ compares its activation-rate geometry against the canonical OLMo-2-7B run.
 
 | Paper label | Metric file | Producing script |
 |---|---|---|
-| fig:app-olmo-window-metric-grid | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_metric_grid.csv` (with `.json`/`.pt` sidecars) | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
-| fig:app-olmo-window-population | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_population_lifecycle_diagnostics_*.csv` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
+| `fig:app-olmo-window-population` (Fig. E.3) | `figures/olmo_matched_checkpoint_window/olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv` (+ `.pt`) | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
+| `sec:app-olmo-checkpoint-window-control` (Appendix E.3 text: early-decaying shares 0.02% late-start, 24.1% selected, 25.4% selected restricted to steps ≥ 256; late-start and OLMo-2-7B activation-rate decayer and early-dominant shares) | `figures/olmo_matched_checkpoint_window/late_start_profile_fractions.csv`, `figures/olmo_matched_checkpoint_window/comparison_summary.csv` | `experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py` |
 
-See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
+The script also writes an activation-rate metric grid
+(`olmo_matched_checkpoint_window_metric_grid.{csv,pt}`), decoder-norm heatmap,
+wishbone PCA, and profile-composition sidecars that are not in the camera-ready
+paper. See [`docs/REPRODUCE.md`](../../../docs/REPRODUCE.md) for the full figure → metric map.
 
 ## Claim
 
@@ -54,8 +57,12 @@ Settings of record for the paper-facing Pythia-1B run are in
 use `--device mps` and a smaller pilot width first (e.g.
 `--model EleutherAI/pythia-160m`).
 
-Then build the appendix metric grid and population-lifecycle diagnostics that
-back the figures:
+Then build the population-lifecycle diagnostics, the profile shares of Appendix
+E.3 (selected, selected restricted to steps ≥ 256 without refitting, and
+late-start Pythia-1B dictionaries, under the refined rules of
+`tab:lifecycle-profile-rules`), and the activation-rate comparison. Run the
+lifecycle experiment's `plot_normalized_trajectories.py` first; it writes the
+decoder-norm caches read here:
 
 ```bash
 uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/build_late_start_vs_olmo_figures.py
@@ -71,15 +78,18 @@ uv run python experiments/ablations/olmo_matched_checkpoint_window/scripts/build
   — precomputed firing-rate blob (keys `rates`, optional `norms`, `steps`) for
   the trained late-start crosscoder, read by `build_late_start_vs_olmo_figures.py`;
   derive it from the trained checkpoint with `scripts/extract/extract_rates.py`.
-- `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/olmo2_7b_d32768_decoder_norms.npy`
-  — cross-experiment dependency: the OLMo-2-7B decoder-norm cache built by the
-  lifecycle experiment
+- `figures/feature_lifecycle_trajectories/section52_lifecycle/cache/{olmo2_7b_d32768,pythia1b_d24576}_decoder_norms.npy`
+  — cross-experiment data dependency: the OLMo-2-7B and selected Pythia-1B
+  decoder-norm caches built by the lifecycle experiment
   (`experiments/lifecycle/feature_lifecycle_trajectories/scripts/plot_normalized_trajectories.py`);
   run that script first if the cache is missing.
 
 ## Outputs
 
 - Metric sidecars (CSV / JSON / `.pt`) under
-  `figures/olmo_matched_checkpoint_window/`.
+  `figures/olmo_matched_checkpoint_window/`, including
+  `late_start_profile_fractions.csv` (refined-profile fractions, active count, and
+  median peak step for the three Pythia-1B dictionaries) and `comparison_summary.csv`
+  (late-start and OLMo-2-7B activation-rate decayer and early-dominant shares).
 - Trained late-start crosscoder and intermediate artifacts under
   `results/experiments/olmo_matched_checkpoint_window/`.

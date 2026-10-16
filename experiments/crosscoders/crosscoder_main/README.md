@@ -12,7 +12,7 @@ analyses each live in their own claim-anchored experiment.
 | Paper label | Metric file | Producing script |
 |---|---|---|
 | `fig:main-multimodel-validation` | `derived/appendix_validation/` + `derived/main_1b/` sidecars (canonical table: `derived/aggregates/analysis_table.manifest.json`) | `experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py` |
-| `fig:app-fidelity-curves` | `derived/appendix_validation/persnap_fidelity.csv` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_persnap_fidelity.py` |
+| `fig:app-fidelity-curves` (Fig. D.4, App. D.2) | `derived/appendix_validation/readout_functional_fidelity/{pythia-160m_d8192,pythia-1b_d24576,pythia-6.9b_d32768}_seed0/readout_functional_fidelity.csv` (panels: `matrix_ev`, `logit_r2`, `kl_native_to_recon`, `top1_agreement`; D.2 text: `delta_nll`); the D.2 token-stratified check is `derived/appendix_validation/readout_functional_fidelity/pythia-1b_d24576_seed0/strata/strata_summary.csv` | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity.py`, `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/readout_functional_fidelity_strata.py` |
 | `fig:app-pca-static` | `derived/appendix_validation/` baseline EV metrics | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_pca_static.py` |
 | `fig:app-concat-pca` | `derived/appendix_validation/` baseline EV metrics | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_concat_pca.py` |
 | `fig:app-endpoint-linear` | `derived/appendix_validation/` baseline EV metrics | `experiments/crosscoders/crosscoder_main/scripts/appendix_validation/baselines/eval_endpoint_linear.py` |
@@ -57,6 +57,20 @@ Scripts run from the repo root and bootstrap it onto `sys.path`, so file form wo
 These all compute and persist metrics; none render figures:
 - Canonical analysis table: `uv run python experiments/crosscoders/crosscoder_main/scripts/aggregates/build_analysis_table.py`
 - Per-snapshot fidelity: `uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_persnap_fidelity.py`
+- Next-token fidelity of the reconstructed readout (`fig:app-fidelity-curves`, App. D.2). Prerequisite: pre-readout hidden-state caches of the first 32 eval-corpus sequences for all 32 steps, e.g. `uv run python scripts/extract/build_hln_cache.py --model pythia-1b --steps all --eval-tokens "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders/evaluation/eval-corpus/eval_tokens.pt" --out-dir "$UM_SSD_ROOT/derived/readout_edit_timing_pythia1b" --save-dtype fp32` (paper caches: fp32 for 160M/1B, the bf16 default for 6.9B). Then, per curve:
+  ```bash
+  F=experiments/crosscoders/crosscoder_main/scripts/appendix_validation
+  uv run python $F/readout_functional_fidelity.py --model pythia-160m --d-sae 8192 --seed 0 --steps all \
+      --hln-dir "$UM_SSD_ROOT/derived/readout_edit_timing"
+  uv run python $F/readout_functional_fidelity.py --model pythia-1b --d-sae 24576 --seed 0 --steps all \
+      --snapshot-dtype bf16 --hln-dir "$UM_SSD_ROOT/derived/readout_edit_timing_pythia1b"
+  uv run python $F/readout_functional_fidelity.py --model pythia-6.9b --d-sae 32768 --seed 0 --steps all \
+      --snapshot-dtype bf16 --hln-dir "$UM_SSD_ROOT/derived/readout_edit_timing_pythia69b" \
+      --ckpt "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders/pythia-6.9b/W_U/cross-snapshot-32/d32768/seed0-sparse.safetensors"
+  uv run python $F/readout_functional_fidelity_strata.py --model pythia-1b --d-sae 24576 --seed 0 --steps all \
+      --snapshot-dtype bf16 --hln-dir "$UM_SSD_ROOT/derived/readout_edit_timing_pythia1b"
+  ```
+  Outputs land in `derived/appendix_validation/readout_functional_fidelity/<model>_d<d_sae>_seed0/` (`readout_functional_fidelity.csv`, per-step `shards/`, metadata; the strata audit adds `strata/strata_summary.csv`). The 160M curve is the narrower d=8192 fit, not the selected d=24576 dictionary (Fig. D.4 caption). 1B and 6.9B hold the full 32-snapshot stack plus the crosscoder in memory (~25 GB for 1B), so run them on a large-memory host; the 160M curve runs on a laptop CPU in ~15 min.
 - Per-snapshot instrument-validation evals: `uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/eval_per_snap.py`
 - Full checkpoint inventory (`tab:full-inventory`): `uv run python experiments/crosscoders/crosscoder_main/scripts/appendix_validation/recompute_quality.py --ckpt-root "$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders" --snap-dir "$UM_SSD_ROOT/snapshots" --out-csv experiments/crosscoders/crosscoder_main/derived/appendix_validation/full_inventory.csv`
 - Lambda-sweep EV/L0 (`fig:app-norm-pareto*`): same command with `--filter lambda-sweep` and `--out-csv experiments/crosscoders/crosscoder_main/derived/appendix_validation/lambda_sweep.csv` (restricts the sweep to the `pythia-160m/W_U/lambda-sweep/` release checkpoints)

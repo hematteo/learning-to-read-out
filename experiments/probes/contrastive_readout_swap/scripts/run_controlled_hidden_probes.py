@@ -28,12 +28,13 @@ import pandas as pd
 import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
-from sklearn.model_selection import GroupKFold, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from readout.core.model_specs import DEFAULT_STEPS_32 as PYTHIA_STEPS_32  # noqa: E402
 from readout.core.paths import repo_root  # noqa: E402
+from readout.probes.availability_expression import group_kfold_splits
 
 REPO = repo_root()
 
@@ -230,9 +231,8 @@ def prompt_token_matrix(examples: list[dict], *, mode: str) -> tuple[np.ndarray,
 def split_indices(spec: ProbeSpec, *, n_splits: int, seed: int) -> list[tuple[np.ndarray, np.ndarray]]:
     if spec.groups is not None:
         n_group = len(set(spec.groups.tolist()))
-        n_splits = min(n_splits, n_group)
-        splitter = GroupKFold(n_splits=n_splits)
-        return list(splitter.split(np.zeros(len(spec.y)), spec.y, groups=spec.groups))
+        # sklearn GroupKFold with platform-independent tie order (see group_kfold_splits).
+        return group_kfold_splits(spec.groups, min(n_splits, n_group))
 
     class_counts = np.bincount(spec.y)
     min_class_count = int(class_counts[class_counts > 0].min())

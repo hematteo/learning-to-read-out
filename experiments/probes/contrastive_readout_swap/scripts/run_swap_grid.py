@@ -195,6 +195,13 @@ def main() -> None:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--dtype", choices=["fp32", "bf16", "fp16"], default="fp32")
     ap.add_argument(
+        "--wu-round",
+        choices=["none", "bf16"],
+        default="none",
+        help="Round each W_U snapshot to this precision before scoring. The published "
+        "Pythia-6.9B trajectory (Figure 4 left, Figure G.1) scored bf16-extracted snapshots.",
+    )
+    ap.add_argument(
         "--save-per-example",
         action="store_true",
         help="Write per-example margins/y_plus/y_minus to a sidecar shards/<cell>.pt; "
@@ -244,6 +251,7 @@ def main() -> None:
         "use_corrupt": args.use_corrupt,
         "use_random_distractors": args.use_random_distractors,
         "save_per_example": args.save_per_example,
+        "wu_round": args.wu_round,
         "git_commit": git_commit(),
     }
     atomic_write_json(args.out_dir / "manifest.json", manifest)
@@ -298,7 +306,8 @@ def main() -> None:
 
     def get_W_U(step: int) -> torch.Tensor:
         if step not in W_U_cache:
-            W_U_cache[step] = _load_W_U(model_hf, step)
+            W = _load_W_U(model_hf, step)
+            W_U_cache[step] = W.bfloat16().float() if args.wu_round == "bf16" else W  # (V, d)
             if len(W_U_cache) > 6:  # bound cache
                 old = next(iter(W_U_cache))
                 if old != step:

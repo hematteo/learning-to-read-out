@@ -19,13 +19,17 @@ Procedure mirrors `wu_probes.probe_balanced_accuracy`: a single stratified
 train split to pick best C, refit best-C model on full train, report
 held-out test balanced accuracy. The selection bias that would come from
 picking C on the same folds used to report accuracy is avoided.
+
+Passing ``groups`` (one integer group id per vocabulary row, e.g. a lemma id)
+switches both the outer split and the inner C-selection CV to
+``StratifiedGroupKFold``, so no group has rows on both sides of any split.
 """
 
 from __future__ import annotations
 
 import numpy as np
 import torch
-from sklearn.model_selection import StratifiedKFold, StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold, StratifiedShuffleSplit
 
 
 def _build_splits(
@@ -43,12 +47,34 @@ def _build_splits(
     return train_idx, test_idx, inner
 
 
+def _build_group_splits(
+    y_np: np.ndarray, groups: np.ndarray, n_folds: int, seed: int, test_size: float = 1.0 / 3.0
+) -> tuple[np.ndarray, np.ndarray, list[tuple[np.ndarray, np.ndarray]]]:
+    """Group-aware ``_build_splits``: no group straddles train/test or any inner fold.
+
+    Outer: ``StratifiedGroupKFold(round(1 / test_size))`` with fold 0 as the
+    test split. Inner: ``StratifiedGroupKFold(n_folds)`` on the train split.
+    """
+    n_outer = int(round(1.0 / test_size))
+    if abs(1.0 / n_outer - test_size) > 1e-9:
+        raise ValueError(f"grouped splits need test_size = 1/k, got {test_size}")
+    outer = StratifiedGroupKFold(n_splits=n_outer, shuffle=True, random_state=seed)
+    train_idx, test_idx = next(outer.split(np.zeros(len(y_np)), y_np, groups))
+    skf = StratifiedGroupKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+    inner = [
+        (train_idx[tr], train_idx[va])
+        for tr, va in skf.split(np.zeros(len(train_idx)), y_np[train_idx], groups[train_idx])
+    ]
+    return train_idx, test_idx, inner
+
+
 def _pack_concept_folds(
     V: int,
     concepts: dict[str, set[int]],
     n_folds: int,
     seed: int,
     test_size: float = 1.0 / 3.0,
+    groups: np.ndarray | None = None,
 ) -> tuple[
     np.ndarray,  # inner_train_mask (N, n_folds, V)
     np.ndarray,  # inner_val_mask   (N, n_folds, V)
@@ -63,6 +89,7 @@ def _pack_concept_folds(
 
     Outer: single stratified 2/3–1/3 train/test split.
     Inner: n_folds stratified CV on the train split, used only for C selection.
+    ``groups`` (V,) makes both group-aware (see ``_build_group_splits``).
 
     Sample weights implement sklearn's ``class_weight='balanced'`` on each
     training subset; test / val subsets use raw counts (balanced accuracy is
@@ -88,7 +115,12 @@ def _pack_concept_folds(
         n_neg = V - n_pos
         if n_pos < min_per_class or n_neg < min_per_class:
             continue
-        train_idx, test_idx, inner = _build_splits(y_c.astype(np.int64), n_folds, seed, test_size=test_size)
+        if groups is None:
+            train_idx, test_idx, inner = _build_splits(y_c.astype(np.int64), n_folds, seed, test_size=test_size)
+        else:
+            train_idx, test_idx, inner = _build_group_splits(
+                y_c.astype(np.int64), groups, n_folds, seed, test_size=test_size
+            )
         outer_train_mask[ci, train_idx] = 1.0
         outer_test_mask[ci, test_idx] = 1.0
         # Outer balanced sample weights on the train split.
@@ -126,6 +158,17 @@ def _pack_concept_folds(
         y_mat,
         valid,
     )
+
+
+def pack_concept_folds(
+    V: int,
+    concepts: dict[str, set[int]],
+    n_folds: int = 3,
+    seed: int = 0,
+    groups: np.ndarray | None = None,
+) -> tuple:
+    """Public entry for the fold masks consumed by ``probe_balanced_accuracy_batched(folds=...)``."""
+    return _pack_concept_folds(V, concepts, n_folds, seed, groups=groups)
 
 
 def _fit_lr_batched(
@@ -213,12 +256,16 @@ def probe_balanced_accuracy_batched(
     seed: int = 0,
     device: str | None = None,
     max_iter: int = 100,
+    groups: np.ndarray | None = None,
+    folds: tuple | None = None,
 ) -> dict[str, dict]:
     """Fit concept probes for ALL concepts in one batched GPU op.
 
     For each concept the best C is picked by mean inner-CV balanced accuracy
     on the train split; held-out test balanced accuracy is reported at the
-    selected C.
+    selected C. ``groups`` (V,) selects group-aware splits; ``folds`` reuses a
+    precomputed :func:`pack_concept_folds` result (splits depend only on the
+    labels, groups and seed, so callers probing many snapshots build it once).
     """
     if device is None:
         if torch.cuda.is_available():
@@ -241,7 +288,7 @@ def probe_balanced_accuracy_batched(
         outer_train_sw_np,
         y_np,
         valid_np,
-    ) = _pack_concept_folds(V, concepts, n_folds, seed)
+    ) = folds if folds is not None else _pack_concept_folds(V, concepts, n_folds, seed, groups=groups)
 
     X = W_U.detach().to(device=device, dtype=torch.float32).contiguous()
     if not torch.isfinite(X).all():

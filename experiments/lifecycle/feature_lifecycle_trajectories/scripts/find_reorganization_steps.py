@@ -10,7 +10,9 @@ instruments.  It improves on a raw adjacent-checkpoint peak search by:
   - keeping total decoder-norm mass growth separate from structural change;
   - integrating adjacent changes over fixed-width log-training windows;
   - selecting windows where the enriched metrics co-occur above a circular-shift null; and
-  - bootstrapping features to report uncertainty over the selected window.
+  - bootstrapping features to report uncertainty over the selected window,
+    including how many resamples select each window
+    (tab:app-reorganization-window-stats).
 
 Outputs are written to results/experiments/lifecycle/feature_lifecycle_trajectories
 with CSV and .pt sidecars so the figure can be audited without re-running the
@@ -18,6 +20,8 @@ full pipeline.
 """
 
 from __future__ import annotations
+
+from collections import Counter
 
 import numpy as np
 import torch
@@ -421,6 +425,33 @@ def add_bootstrap_intervals(summary_rows: list[dict[str, object]], bootstrap_row
         row["bootstrap_end_p95"] = int(round(np.percentile(ends, 95)))
 
 
+def bootstrap_window_counts(
+    summary_rows: list[dict[str, object]], bootstrap_rows: list[dict[str, object]]
+) -> list[dict[str, object]]:
+    """Resamples selecting each window per model; the selected window's row comes first."""
+    rows: list[dict[str, object]] = []
+    for summary in summary_rows:
+        chosen = (int(summary["primary_start_step"]), int(summary["primary_end_step"]))
+        counts = Counter(
+            (int(r["start_step"]), int(r["end_step"])) for r in bootstrap_rows if r["model"] == summary["model"]
+        )
+        n_bootstraps = sum(counts.values())
+        others = sorted((w for w in counts if w != chosen), key=lambda w: (-counts[w], w))
+        for window in (chosen, *others):
+            rows.append(
+                {
+                    "model": summary["model"],
+                    "label": summary["label"],
+                    "start_step": window[0],
+                    "end_step": window[1],
+                    "selected_window": window == chosen,
+                    "n_resamples": counts[window],
+                    "n_bootstraps": n_bootstraps,
+                }
+            )
+    return rows
+
+
 def main() -> None:
     log_run_provenance()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -484,6 +515,10 @@ def main() -> None:
     write_csv(OUT / "reorganization_window_metrics_selected.csv", window_rows)
     write_csv(OUT / "reorganization_window_summary_selected.csv", summary_rows)
     write_csv(OUT / "reorganization_bootstrap_selected.csv", bootstrap_rows)
+    write_csv(
+        OUT / "reorganization_window_bootstrap_counts_selected.csv",
+        bootstrap_window_counts(summary_rows, bootstrap_rows),
+    )
     torch.save(tensor_sidecar, OUT / "reorganization_window_metrics_selected.pt")
 
 
