@@ -1,6 +1,7 @@
 # Learning to Read Out: Unembedding Dynamics in Language Model Pretraining
 
 [![NeurIPS 2026](https://img.shields.io/badge/NeurIPS-2026-4b44ce.svg)](#citation)
+[![arXiv](https://img.shields.io/badge/arXiv-2610.21025-b31b1b.svg)](https://arxiv.org/abs/2610.21025)
 [![Paper](https://img.shields.io/badge/Paper-OpenReview-8c1b13.svg)](https://openreview.net/forum?id=FlkhJrDVyI)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-dictionaries%20%26%20checkpoints-yellow.svg)](https://huggingface.co/hematteo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -11,7 +12,8 @@ Unembedding Dynamics in Language Model Pretraining** (NeurIPS 2026), by Matteo
 He, William F. Shen, Alex Iacob, Andrej Jovanovic, Xinchi Qiu, and Nicholas D.
 Lane.
 
-[Paper](https://openreview.net/forum?id=FlkhJrDVyI) ·
+[arXiv](https://arxiv.org/abs/2610.21025) ·
+[OpenReview](https://openreview.net/forum?id=FlkhJrDVyI) ·
 [Project page](https://learning-to-read-out.pages.dev) ·
 [Feature atlas](https://learning-to-read-out.pages.dev/atlas/)
 
@@ -191,6 +193,9 @@ A companion repository, [`sparse-readout-prism`](https://github.com/hematteo/spa
                and Qiu, Xinchi and Lane, Nicholas D.},
   booktitle = {Advances in Neural Information Processing Systems},
   year      = {2026},
+  eprint    = {2610.21025},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
 }
 ```
 

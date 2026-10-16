@@ -23,8 +23,8 @@ authors:
     family-names: Lane
     affiliation: "University of Cambridge & Flower Labs"
 license: MIT
-version: "0.1.0"
-date-released: "2026-06-12"
+version: "1.0.0"
+date-released: "2026-10-16"
 repository-code: "https://github.com/hematteo/learning-to-read-out"
 preferred-citation:
   type: conference-paper
@@ -53,3 +53,10 @@ preferred-citation:
   conference:
     name: "NeurIPS 2026"
   year: 2026
+  identifiers:
+    - type: doi
+      value: "10.48550/arXiv.2610.21025"
+      description: "arXiv preprint"
+    - type: url
+      value: "https://arxiv.org/abs/2610.21025"
+      description: "arXiv abstract page"

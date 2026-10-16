@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "learning-to-read-out"
-version = "0.1.0"
+version = "1.0.0"
 description = "Learning to Read Out: trajectory crosscoders on the unembedding matrix across pretraining checkpoints"
 readme = "README.md"
 license = "MIT"
