@@ -1,7 +1,6 @@
 """Lifecycle, rotation, and CUSUM metrics for the developmental-dynamics paper.
 
-Operational definitions are locked to a fixed `metric_version` (see `provenance.py`).
-This module is the single source of truth for them; phase scripts call into
+This module is the single source of truth for them; analysis scripts call into
 here and never re-derive metrics ad hoc.
 """
 
