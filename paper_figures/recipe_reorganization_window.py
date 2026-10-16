@@ -4,6 +4,7 @@ Norm turnover (mean |delta rho_f|) and decoder rotation (mean 1 - cos) between a
 condition's seed-0 trajectory crosscoder (data/recipe_reorg_window_seed0.csv), at the geometric midpoint of each pair.
 """
 
+import _style
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
@@ -17,12 +18,7 @@ COND_SHORT = {
     "wu_lr_4x": "wu_lr 4x",
     "warmup_short": "warmup_short (1x)",
 }
-COND_COLOR = {
-    "wu_lr_0p25": "#1f77b4",
-    "baseline": "#2ca02c",
-    "wu_lr_4x": "#d62728",
-    "warmup_short": "#9467bd",
-}
+COND_COLOR = {**dict(zip(["wu_lr_0p25", "baseline", "wu_lr_4x"], _style.BLUE_RAMP)), "warmup_short": _style.ORANGE}
 STEP_TICKS = [1, 16, 256, 4096]
 STEP_TICKLABELS = ["1", "16", "256", "4096"]
 

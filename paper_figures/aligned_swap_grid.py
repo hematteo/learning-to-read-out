@@ -5,6 +5,7 @@ the swapped-in readout (data/aligned_swap_summary_1b.csv). "none" (raw swap) equ
 drawn dashed underneath it.
 """
 
+import _style as style
 import matplotlib.pyplot as plt
 import pandas as pd
 from _common import DATA, out_path
@@ -13,10 +14,10 @@ H_EVALS = [256, 512, 1000, 2000, 143000]
 ALIGNMENTS = ["none", "mean", "scale", "row_norm", "procrustes"]
 COLORS = {
     "none": "#444444",
-    "mean": "#1f77b4",
-    "scale": "#ff7f0e",
-    "row_norm": "#2ca02c",
-    "procrustes": "#d62728",
+    "mean": style.BLUE,
+    "scale": style.ORANGE,
+    "row_norm": style.TEAL,
+    "procrustes": style.PLUM,
 }
 TICKS = [0, 10, 1000, 100000]
 TICKLABELS = ["0", "10", "1k", "100k"]

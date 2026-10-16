@@ -5,12 +5,13 @@ checkpoints. Middle: the same for k = 5, 20, 50 up to step 9k. Right: mean best 
 vectors between adjacent checkpoints. Inputs: data/dense_subspace_metrics.csv, data/dense_sv_stability.csv.
 """
 
+import _style as style
 import matplotlib.pyplot as plt
 import pandas as pd
 from _common import DATA, out_path
 
 ORDER = ["pythia-160m", "pythia-1b", "pythia-6.9b"]
-MODEL_COLORS = {"pythia-160m": "#2ca02c", "pythia-1b": "#1f77b4", "pythia-6.9b": "#d62728"}
+MODEL_COLORS = {"pythia-160m": style.MODEL["160m"], "pythia-1b": style.MODEL["1b"], "pythia-6.9b": style.MODEL["6.9b"]}
 MODEL_LINESTYLES = {"pythia-160m": "-", "pythia-1b": "--", "pythia-6.9b": "-."}
 MODEL_LABELS = {"pythia-160m": "Pythia-160M", "pythia-1b": "Pythia-1B", "pythia-6.9b": "Pythia-6.9B"}
 

@@ -4,6 +4,7 @@ One panel per language: NLL gain of swapping in the readout of checkpoint s over
 states of three checkpoints (data/language_swap_summary.csv).
 """
 
+import _style as style
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ from _common import DATA, out_path
 LANG_ORDER = ["en", "ru", "zh", "ja", "th", "ar", "hi", "ko", "bn"]
 LANG_NAMES = ["English", "Russian", "Chinese", "Japanese", "Thai", "Arabic", "Hindi", "Korean", "Bengali"]
 H_STEPS = [256, 512, 1000]
-COLORS = ["#3977b7", "#d8712b", "#389269"]
+COLORS = [style.BLUE, style.ORANGE, style.TEAL]
 STYLES = [("o", "-"), ("s", "--"), ("^", ":")]
 YLIM = (-2.5, 2.8)
 

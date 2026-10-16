@@ -4,6 +4,7 @@ Profiles are assigned by the paper's refined ruleset (readout.dynamics.lifecycle
 tab:lifecycle-profile-rules) from the peak-normalized float16 trajectories in data/lifecycle_<run>.npz.
 """
 
+import _style as style
 import matplotlib.pyplot as plt
 import numpy as np
 from _common import DATA, out_path
@@ -16,13 +17,7 @@ RUNS = [
     ("pythia69b_d32768", "Pythia-6.9B", (1, 1000, 14000, 143000)),
     ("olmo2_7b_d32768", "OLMo-2-7B", (150, 1000, 14000, 928000)),
 ]
-PROFILE_COLORS = {
-    "early_decay": "#3366AA",
-    "late_emerge": "#CC6677",
-    "persistent": "#228833",
-    "transitional": "#EE7733",
-    "mixed": "#888888",
-}
+PROFILE_COLORS = {**style.PROFILE, "transitional": style.TEAL, "mixed": style.CONTROL}
 
 
 def fmt_step(step: int) -> str:

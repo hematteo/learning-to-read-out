@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 OUT = ROOT / "out"
 
-# lifecycle_profile_composition.py imports the profile rules from readout.dynamics.lifecycle (numpy only);
-# this lets it run without installing the package.
+# The two lifecycle scripts import the profile rules from readout.dynamics.lifecycle (numpy only);
+# this lets them run without installing the package.
 SRC = ROOT.parent / "src"
 if str(SRC) not in sys.path:
     sys.path.append(str(SRC))

@@ -1,5 +1,5 @@
-family,h_step,alignment,probe_acc_1d,native_readout_acc
-sva,143000,none,1.0,1.0
-sva_across_pp,143000,none,1.0,0.9715
-sva_object_rc,143000,none,1.0,0.905
-sva_subject_rc,143000,none,1.0,0.7541666666666667
+family,h_step,alignment,n,probe_acc_1d,native_readout_acc
+sva,143000,none,320,1.0,1.0
+sva_across_pp,143000,none,2000,1.0,0.9715
+sva_object_rc,143000,none,1200,1.0,0.905
+sva_subject_rc,143000,none,1200,1.0,0.7541666666666667

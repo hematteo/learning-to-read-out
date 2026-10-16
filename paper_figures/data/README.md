@@ -13,12 +13,13 @@ no release script writes it.
 | `lifecycle_pythia1b_d24576.npz` | 0.99 MB | same two | as above | as above |
 | `lifecycle_pythia69b_d32768.npz` | 0.89 MB | same two | as above | as above |
 | `lifecycle_olmo2_7b_d32768.npz` | 1.61 MB | same two | as above | as above |
+| `reorganization_window_metrics_selected.csv` | 6.9 KB | `fig:main-selected-normalized-trajectories` (bottom row) | half-decade windows of the four selected dictionaries; columns `model`, `window_center_step`, `structural_score_z`, `structural_score_null_p` (4 of 22) | `reproduce/lifecycle/find_reorganization_steps.py` (`reorganization_window_metrics_selected.csv`) |
 | `wordnet_matched_controls_160m.csv` | 79 KB | `fig:main-wordnet-matched-controls` | 8 of 18 columns | `reproduce/lexical/run_wordnet_matched_controls.py` (`wordnet_matched_control_summary_160m.csv`) |
-| `sva_hidden_probe_trajectory_69b.csv` | 1.5 KB | `fig:main-sva-availability-expression` (left, probe) | rows `family = sva`, `feature_source = hidden` | `reproduce/availability/run_controlled_hidden_probes.py` (`main_claim_controlled_hidden_probe_trajectory.csv`) |
-| `sva_native_swept_transcribed_69b.csv` | 1.3 KB | `fig:main-sva-availability-expression` (left, native and best swept) | transcribed from the plotted series of an earlier version of the figure; no run output exists | none. **Transcribed values, not run output**; the underlying run output is unavailable (see below) |
-| `availability_probe_summary_69b.csv` | 0.2 KB | `fig:main-sva-availability-expression` (right) | the four SVA families at step 143000, alignment `none`; columns `family`, `h_step`, `alignment`, `probe_acc_1d`, `native_readout_acc` | `reproduce/availability/run_availability_probes.py` (`probe_summary.csv`) |
-| `recipe_lifecycle_multiseed.csv` | 0.3 KB | `fig:main-recipe-dose-response` (left) | 4 of 17 columns | `reproduce/recipe_control/aggregate_seed_replication.py` (`lifecycle_multiseed_table.csv`, after `train_control_crosscoder.py` and `analyze_lifecycle.py` for seeds 0 to 2) |
-| `recipe_val_loss.csv` | 2.0 KB | `fig:main-recipe-dose-response` (right) | columns `step`, `tokens`, `val_loss`, stacked with a `condition` column | `reproduce/recipe_control/train_control.py` (`<run>/metrics.csv`, one file per condition) |
+| `sva_hidden_probe_trajectory_69b.csv` | 1.5 KB | `fig:main-sva-availability-expression` (a, probe) | rows `family = sva`, `feature_source = hidden` | `reproduce/availability/run_controlled_hidden_probes.py` (`main_claim_controlled_hidden_probe_trajectory.csv`) |
+| `sva_native_swept_transcribed_69b.csv` | 1.3 KB | `fig:main-sva-availability-expression` (a, native and best swept) | transcribed from the plotted series of an earlier version of the figure; no run output exists | none. **Transcribed values, not run output**; the underlying run output is unavailable (see below) |
+| `availability_probe_summary_69b.csv` | 0.2 KB | `fig:main-sva-availability-expression` (b) | the four SVA families at step 143000, alignment `none`; columns `family`, `h_step`, `alignment`, `n`, `probe_acc_1d`, `native_readout_acc` | `reproduce/availability/run_availability_probes.py` (`probe_summary.csv`) |
+| `recipe_lifecycle_multiseed.csv` | 0.3 KB | `fig:main-recipe-dose-response` (a) | 4 of 17 columns | `reproduce/recipe_control/aggregate_seed_replication.py` (`lifecycle_multiseed_table.csv`, after `train_control_crosscoder.py` and `analyze_lifecycle.py` for seeds 0 to 2) |
+| `recipe_val_loss.csv` | 2.0 KB | `fig:main-recipe-dose-response` (b) | columns `step`, `tokens`, `val_loss`, stacked with a `condition` column | `reproduce/recipe_control/train_control.py` (`<run>/metrics.csv`, one file per condition) |
 | `recipe_reorg_window_seed0.csv` | 3.7 KB | `fig:app-recipe-control-reorg` | per-checkpoint reorganization curves computed from the seed-0 recipe-control crosscoders | `reproduce/recipe_control/analyze_lifecycle.py --seed 0` (`lifecycle_seed0/reorg_window.csv`; same columns plus `step_mid`, `tau_mid`; it averages over active features, which here are all 8192, and agrees to within 1e-6) |
 | `language_swap_summary.csv` | 48 KB | `fig:app-readout-swap-languages` | the nine languages (not the token-weighted `all` rows); hidden steps 256, 512, 1000; readout steps from 128; 7 of 12 columns | `reproduce/readout_swaps/run_language_stratified_swap.py` (`summary.csv`) |
 | `aligned_swap_summary_1b.csv` | 28 KB | `fig:app-aligned-readout-swap` | 4 of 15 columns | `reproduce/readout_swaps/run_aligned_swap_grid.py` (`summary.csv`) |
@@ -37,9 +38,8 @@ Each `lifecycle_<run>.npz` reduces the `(32, d_sae)` float32 decoder-norm matrix
 crosscoder (norm of each feature's decoder row at each of the 32 checkpoints) to four arrays. With `peak = norms.max(0)` and the active features `sel = peak > 0.01` (every feature in all four runs):
 
 - `steps`, int64 `(32,)`: checkpoint steps.
-- `traj`, float16 `(32, n_active)`: `norms[:, sel] / peak[sel]`. The profile-composition figure classifies these
-  float16 values, as the paper's renderer did; the trajectory figure draws them where the paper used float32,
-  which changes the rasterized line image by at most a few gray levels.
+- `traj`, float16 `(32, n_active)`: `norms[:, sel] / peak[sel]`. Both lifecycle figures classify and draw these
+  float16 values, as the paper's renderers did.
 - `peak_idx`, uint8 `(n_active,)`: `norms[:, sel].argmax(0)`, taken from the float32 norms.
 - `mass`, float32 `(32,)`: `norms[:, sel].sum(1)`.
 
@@ -47,9 +47,10 @@ No figure script reads `peak_idx` or `mass`; they back a population diagnostic t
 
 ## Transcribed series
 
-`sva_native_swept_transcribed_69b.csv` holds the native-readout and best-swept-readout contrast accuracies of the
-Figure 4 left panel. They were transcribed from the plotted series of the original figure; the run output behind
+`sva_native_swept_transcribed_69b.csv` holds the native-readout and best-swept-readout contrast accuracies of
+Figure 4 (a). They were transcribed from the plotted series of the original figure; the run output behind
 them is unavailable, so they cannot be regenerated. `x_display` is the recovered horizontal plot coordinate of each
 step on that figure's axis (0 at step 0, then 53.35 units per decade from 16.06 at step 1). The probe series of the
-same panel is run output (`sva_hidden_probe_trajectory_69b.csv`) and agrees with the values recovered from the
-original figure to within 5e-5.
+same panel is run output (`sva_hidden_probe_trajectory_69b.csv`) and agrees to within 5e-5 with the values recovered
+from the original figure, which the paper's renderer draws; this moves the antialiased edge of the probe line by a
+few gray levels and changes nothing else.

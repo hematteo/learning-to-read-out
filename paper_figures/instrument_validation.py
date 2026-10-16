@@ -8,20 +8,18 @@ data/large_dictionary_per_snapshot.csv.
 
 import csv
 
+import _style as style
 import matplotlib.pyplot as plt
 import numpy as np
 from _common import DATA, out_path
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 
-C_160M = "#8ecae6"
-C_1B = "#2f5aa8"
-C_69B = "#d04a3a"
-C_OLMO = "#348b42"
-C_DENSE = "#a04d44"
+C_160M, C_1B, C_69B, C_OLMO = (style.MODEL[k] for k in ["160m", "1b", "6.9b", "olmo"])
+C_DENSE = style.MODEL["6.9b"]
 C_BASE = "#9b9b9b"
-C_CROSS = "#3366cc"
-C_SAE = "#ff5a4f"
+C_CROSS = style.MODEL["160m"]
+C_SAE = "#5A5A5A"
 PANEL_ASPECT = 3 / 4
 
 

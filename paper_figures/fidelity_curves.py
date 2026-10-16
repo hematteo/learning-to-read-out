@@ -4,15 +4,16 @@ Matrix EV, logit R^2, KL(native || reconstructed) and top-1 agreement on held-ou
 Pythia dictionaries (data/fidelity_curves.csv).
 """
 
+import _style as style
 import matplotlib.pyplot as plt
 import pandas as pd
 from _common import DATA, out_path
 from matplotlib.ticker import MultipleLocator
 
 MODELS = [
-    ("160m", "Pythia-160M d=8192", "C0"),
-    ("1b", "Pythia-1B d=24576", "C1"),
-    ("69b", "Pythia-6.9B d=32768", "C2"),
+    ("160m", "Pythia-160M d=8192", style.MODEL["160m"]),
+    ("1b", "Pythia-1B d=24576", style.MODEL["1b"]),
+    ("69b", "Pythia-6.9B d=32768", style.MODEL["6.9b"]),
 ]
 PANELS = [
     ("matrix_ev", "matrix EV"),
