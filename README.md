@@ -14,8 +14,8 @@ Lane.
 
 [arXiv](https://arxiv.org/abs/2610.21025) ·
 [OpenReview](https://openreview.net/forum?id=FlkhJrDVyI) ·
-[Project page](https://learning-to-read-out.pages.dev) ·
-[Feature atlas](https://learning-to-read-out.pages.dev/atlas/)
+[Project page](https://matteohe.com/learning-to-read-out/) ·
+[Feature atlas](https://matteohe.com/learning-to-read-out/atlas/)
 
 <p align="center">
   <img src="docs/assets/overview.png" alt="Overview: three measurements at one fixed hidden state (native readout, readout swap, linear probe), and parameter-trajectory crosscoding of readout rows across checkpoints" width="95%">
