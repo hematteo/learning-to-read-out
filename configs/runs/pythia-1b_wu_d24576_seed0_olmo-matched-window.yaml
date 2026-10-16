@@ -85,5 +85,5 @@ source: >
   pythia1b_wu_late_start32_dsae24576_seed0.pt (lr=5e-5, batch_size=1024,
   n_epochs=300, amp_dtype=bf16, lambda=0.3, tanh_stretch=1.0,
   init_threshold=0.1);
-  docs/REPRODUCE.md, Appendix E (late-start 32-step schedule, d_sae 24576);
+  docs/REPRODUCE.md, Appendix D (late-start 32-step schedule, d_sae 24576);
   the paper's checkpoint-window control (late-start Pythia-1B).

@@ -5,7 +5,7 @@ all WordNet lexicographer files are built first, then categories are either
 probed or reported as skipped based only on token support.
 
 ``--split row`` (default, the published probe) splits token rows with
-StratifiedShuffleSplit. ``--split lemma`` (Appendix F, lemma-grouped splits)
+StratifiedShuffleSplit. ``--split lemma`` (Appendix E, lemma-grouped splits)
 groups every vocabulary row by ``decode(id).strip().lower()`` so all variants of
 one lemma (" dog", "Dog", "DOG", ...) fall on one side of the outer split and
 of every inner C-selection fold; everything else is unchanged. Both splits
@@ -554,7 +554,7 @@ def parse_args() -> argparse.Namespace:
         choices=["row", "lemma"],
         default="row",
         help="row: published StratifiedShuffleSplit over token rows; lemma: StratifiedGroupKFold "
-        "grouped by decode(id).strip().lower() (Appendix F lemma-grouped check).",
+        "grouped by decode(id).strip().lower() (Appendix E lemma-grouped check).",
     )
     parser.add_argument("--max-iter", type=int, default=80)
     parser.add_argument("--min-word-len", type=int, default=3)

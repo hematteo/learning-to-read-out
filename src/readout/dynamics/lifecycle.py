@@ -1,6 +1,6 @@
 """Rule-based lifecycle profile taxonomy for crosscoder feature trajectories.
 
-Single source of truth for the paper's profile taxonomy (Section 4.1, Appendix E), which
+Single source of truth for the paper's profile taxonomy (Section 4.1, Appendix D), which
 is also hand-typeset as ``tab:lifecycle-profile-rules``: the refined ruleset
 implemented by :func:`classify_profiles_refined` assigns each active feature's
 peak-normalized trajectory to one of the five profiles in

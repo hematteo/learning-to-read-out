@@ -1,4 +1,4 @@
-"""Population-level lifecycle diagnostics (fig:app-selected-population-lifecycle-diagnostics).
+"""Population-level lifecycle diagnostics (the aggregate timing statistics of Appendix D.2).
 
 Separates when active features peak from where decoder-norm mass lives over
 training, for the four selected dictionaries:
@@ -7,7 +7,7 @@ training, for the four selected dictionaries:
   - row B: total decoder-norm mass over active features per step, normalized
     by its maximum within each model.
 
-It also writes the two statistics the Appendix E text quotes for the Pythia
+It also writes the two statistics the Appendix D.2 text quotes for the Pythia
 dictionaries: the fraction of active features peaking inside the 512-1.6k
 reorganization window, and the mean relative decoder norm rho_f(t) of the
 features that peak by step 128.

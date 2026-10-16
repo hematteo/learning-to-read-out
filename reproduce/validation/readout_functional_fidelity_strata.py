@@ -1,4 +1,4 @@
-"""Token-stratified fidelity audit of the reconstructed W_U readout (Appendix D.2 prose).
+"""Token-stratified fidelity audit of the reconstructed W_U readout (Appendix C.2 prose).
 
 The aggregate fidelity numbers of readout_functional_fidelity.py (matrix EV,
 logit R^2, KL, delta NLL) can hide whether reconstruction quality is uniform
@@ -22,7 +22,7 @@ Outputs (resume-safe per step):
   <out-dir>/strata_summary.csv
   <out-dir>/strata_metadata.json  bin names per scheme + provenance
 
-Usage (the Appendix D.2 check, Pythia-1B d=24576 seed 0):
+Usage (the Appendix C.2 check, Pythia-1B d=24576 seed 0):
   uv run python reproduce/validation/readout_functional_fidelity_strata.py \\
       --model pythia-1b --d-sae 24576 --seed 0 --steps all --snapshot-dtype bf16 \\
       --hln-dir "$UM_SSD_ROOT/derived/readout_edit_timing_pythia1b"

@@ -21,15 +21,14 @@ Outputs (under ``--out-dir``; no figures are rendered here):
                                  fig:main-recipe-dose-response inputs)
   lifecycle_summary.csv          the same summary, one row per condition
   median_trajectories.csv        median / IQR of rho over active features per checkpoint
-                                 (fig:app-recipe-control-median)
   peak_step_population.csv       fraction of active features peaking at each checkpoint and
-                                 total decoder norm mass (fig:app-recipe-control-peakstep)
+                                 total decoder norm mass
   reorg_window.csv               norm turnover and decoder rotation per adjacent pair
                                  (fig:app-recipe-control-reorg)
   feature_lifecycles_<cond>.csv  per-feature profile / peak / birth / lifespan
   feature_trajectories.pt        per-condition rho (K, D), decoder norms, peak steps,
                                  profiles, the seeded 500-feature display sample, and
-                                 firing rates (fig:app-recipe-control-trajectories)
+                                 firing rates
 """
 
 from __future__ import annotations

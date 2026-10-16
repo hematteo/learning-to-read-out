@@ -133,7 +133,7 @@ def ensure_geometry_cache(run: Run) -> tuple[Path, Path]:
         raise FileNotFoundError(
             f"{rotation_path.name} / {cos_terminal_path.name} missing and the released "
             f"crosscoder checkpoint to derive them from is unavailable ({ckpt_path}); "
-            "see docs/REPRODUCE.md (Appendix E inputs)"
+            "see docs/REPRODUCE.md (Lifecycle)"
         )
     from readout.crosscoder.checkpoints import load_checkpoint
 

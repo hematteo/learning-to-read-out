@@ -216,7 +216,7 @@ def validation_rows(reference_dir: Path) -> list[dict[str, object]]:
         win = window_summary(run.key, run.label, norms, rotation, rates, cos_terminal, run.steps)
         ref = ref_win[run.key]
         row: dict[str, object] = {"model": run.key}
-        for name in ("early_decay", "persistent", "late_emerge"):  # Table E.3 column order
+        for name in ("early_decay", "persistent", "late_emerge"):  # Table D.3 column order
             row[name] = round(prof[name], 4)
             row[f"reference_{name}"] = round(ref_prof[(run.key, name)], 4)
         row["window"] = f"{win['window_start']}-{win['window_end']}"

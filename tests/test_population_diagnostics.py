@@ -1,7 +1,7 @@
 """Population lifecycle diagnostics and bootstrap window counts (feature_lifecycle_trajectories).
 
 build_population_diagnostics.summarize_run backs
-fig:app-selected-population-lifecycle-diagnostics; find_reorganization_steps.bootstrap_window_counts
+the Appendix D.2 timing statistics; find_reorganization_steps.bootstrap_window_counts
 backs the resample columns of tab:app-reorganization-window-stats. Both scripts are loaded
 with their scripts dir on ``sys.path``. CPU only, no data.
 """

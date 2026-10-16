@@ -1,4 +1,4 @@
-"""Task registry for the availability/expression panel (paper Section 4.3, Appendix G).
+"""Task registry for the availability/expression panel (paper Section 4.3, Appendix F).
 
 ``AVAILABILITY_TASK_BUILDERS`` maps the 20 panel families to their builders, and
 ``build_availability_corruption`` is the panel's counterfactual pairing. Built with
