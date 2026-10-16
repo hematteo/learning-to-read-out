@@ -7,7 +7,7 @@ Three levels, from cheapest to most expensive; run every command from the reposi
    and checkpoints under `UM_SSD_ROOT` and write metrics (CSV, JSON, `.pt`, no figures) under the gitignored
    `results/<section>/`. The larger models need a GPU.
 3. **Retrain** the dictionaries ([Training the dictionaries](#training-the-dictionaries)) or the 31M runs
-   ([Recipe control](#recipe-control-section-45-appendix-i)).
+   ([Recipe control](#recipe-control-section-45-appendix-h)).
 
 ## Setup
 
@@ -39,8 +39,8 @@ $UM_SSD_ROOT/
   snapshots/<model>/<slug>_step<N>_wu.pt          W_U snapshots; <slug> = HF id with / replaced by _
   hf_release/parameter-trajectory-crosscoders/    released dictionaries and evaluation corpus
   derived/aggregates/, derived/rates/             aggregates and activation rates
-  derived/readout_edit_timing*/hLN_step<t>.pt     hidden-state caches of the fidelity check (App. D)
-  readout_edit_timing*/hLN_step<t>.pt             hidden-state caches of the readout swap grids (App. H)
+  derived/readout_edit_timing*/hLN_step<t>.pt     hidden-state caches of the fidelity check (App. C)
+  readout_edit_timing*/hLN_step<t>.pt             hidden-state caches of the readout swap grids (App. G)
   pile_slice/, runs/<condition>/                  recipe-control token slices and 31M checkpoints
 ```
 
@@ -53,9 +53,9 @@ are `DEFAULT_STEPS_32` (Pythia) and `OLMO_STEPS_32` (OLMo-2-7B, no step 0) in `s
 |---|---|---|---|
 | Pythia 160M, 1B, 6.9B | `EleutherAI/pythia-{160m,1b,6.9b}` | Apache-2.0 | snapshots, hidden states |
 | OLMo-2-1124-7B | `allenai/OLMo-2-1124-7B` | Apache-2.0 | the OLMo-2-7B dictionary |
-| WordNet 3.0 | Princeton WordNet, through NLTK | WordNet 3.0 license | Figure 3, Appendix F |
+| WordNet 3.0 | Princeton WordNet, through NLTK | WordNet 3.0 license | Figure 3, Appendix E |
 | Wikipedia slices | Wikimedia 2023-11-01 dumps | CC BY-SA 4.0 / GFDL | the evaluation corpus |
-| BLiMP | `nyu-mll/blimp` | see its dataset card | availability suite (Figure 4, Appendix G) |
+| BLiMP | `nyu-mll/blimp` | see its dataset card | availability suite (Figure 4, Appendix F) |
 | Function-vector word lists | `github.com/ericwtodd/function_vectors`, `dataset_files/abstractive/` | MIT | availability suite |
 | GPT-NeoX-20B tokenizer, Pile | `EleutherAI/gpt-neox-20b`, `EleutherAI/pile-standard-pythia-preshuffled` (prefix) | Apache-2.0, MIT | retraining the 31M runs |
 
@@ -84,44 +84,42 @@ script that regenerates it.
 | 3 | `fig:main-wordnet-matched-controls` | `wordnet_controls.py` |
 | 4 | `fig:main-sva-availability-expression` | `sva_availability.py` |
 | 5 | `fig:main-recipe-dose-response` | `recipe_dose_response.py` |
-| D.1 | `fig:main-multimodel-validation` | `instrument_validation.py` |
-| D.4 | `fig:app-fidelity-curves` | `fidelity_curves.py` |
-| D.9 | `fig:app-dense-reorg-pythia` | `dense_reorganization_timing.py` |
-| E.1 | `fig:app-lifecycle-profile-composition` | `lifecycle_profile_composition.py` |
-| E.2 | `fig:app-selected-population-lifecycle-diagnostics` | `lifecycle_population_diagnostics.py` |
-| G.2 | `fig:app-ae-capacity` | `probe_fits.py` |
-| H.2 | `fig:app-readout-swap-english-aggregate` | `readout_swap_languages.py` (`readout_swap_aggregate.pdf`) |
-| H.3 | `fig:app-readout-swap-languages` | `readout_swap_languages.py` (`readout_swap_languages.pdf`) |
-| H.4 | `fig:app-aligned-readout-swap` | `aligned_swap_grid.py` |
-| I.2 | `fig:app-recipe-control-reorg` | `recipe_reorganization_window.py` |
+| C.1 | `fig:main-multimodel-validation` | `instrument_validation.py` |
+| C.3 | `fig:app-fidelity-curves` | `fidelity_curves.py` |
+| C.6 | `fig:app-dense-reorg-pythia` | `dense_reorganization_timing.py` |
+| D.1 | `fig:app-lifecycle-profile-composition` | `lifecycle_profile_composition.py` |
+| G.2 | `fig:app-readout-swap-languages` | `readout_swap_languages.py` (`readout_swap_languages.pdf`) |
+| G.3 | `fig:app-aligned-readout-swap` | `aligned_swap_grid.py` |
+| H.1 | `fig:app-recipe-control-reorg` | `recipe_reorganization_window.py` |
 
 With matplotlib 3.10 (the `figures` extra), every page matches the paper's PDF pixel for pixel at 60 and 150 dpi,
 except Figure 2, whose float16 trajectories shift rasterized lines by a few gray levels.
 
-## Lifecycle (Section 4.1, Appendix E)
+## Lifecycle (Section 4.1, Appendix D)
 
-Figure 2, the reorganization windows of Section 4.1, Figures E.1 to E.4, and Tables E.2 and E.3. CPU only.
+Figure 2, the reorganization windows of Section 4.1, Figures D.1 and D.2, Tables D.2 and D.3, and the timing
+statistics of Appendix D.2. CPU only.
 
 ```bash
 uv run python reproduce/lifecycle/compute_normalized_trajectories.py      # 1. Figure 2; caches in results/lifecycle/cache/
-uv run python reproduce/lifecycle/compute_lifecycle_profile_composition.py # 2. Figure E.1
-uv run python reproduce/lifecycle/build_population_diagnostics.py          # 3. Figure E.2
+uv run python reproduce/lifecycle/compute_lifecycle_profile_composition.py # 2. Figure D.1
+uv run python reproduce/lifecycle/build_population_diagnostics.py          # 3. Appendix D.2 statistics
 uv run python reproduce/lifecycle/find_reorganization_steps.py             # 4. windows, nulls, bootstrap
 uv run python reproduce/lifecycle/lifecycle_stability.py --stage all \
-    --out-dir results/lifecycle/lifecycle_stability            # 5. Table E.3; its validate stage needs 2 and 4
+    --out-dir results/lifecycle/lifecycle_stability            # 5. Table D.3; its validate stage needs 2 and 4
 ```
 
 | Paper item | Output, under `results/lifecycle/` |
 |---|---|
 | Figure 2 (`fig:main-selected-normalized-trajectories`) | `selected_decoder_norm_trajectories{,_full}.{csv,pt}`, `normalized_trajectories.csv` |
-| Figure E.1 (`fig:app-lifecycle-profile-composition`) | `selected_lifecycle_profile_composition_refined_{summary,features}.csv` |
-| Figure E.2 (`fig:app-selected-population-lifecycle-diagnostics`) | `selected_population_lifecycle_diagnostics_{peak_counts,norm_mass,window_peaks,early_peak_decay}.csv` |
-| Section 4.1 windows, Table E.2, Figure E.4 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | `reorganization_window_{metrics,summary,bootstrap_counts}_selected.csv` |
-| Table E.3 (`tab:app-lifecycle-stability`) | `lifecycle_stability/*.csv` (selected Pythia-6.9B: row `pythia69b_d32768` of `validation.csv`) |
+| Figure D.1 (`fig:app-lifecycle-profile-composition`) | `selected_lifecycle_profile_composition_refined_{summary,features}.csv` |
+| Appendix D.2 statistics (peaks inside the window, decay of early-peaking features, decoder norm mass) | `selected_population_lifecycle_diagnostics_{peak_counts,norm_mass,window_peaks,early_peak_decay}.csv` |
+| Section 4.1 windows, Table D.2, Figure D.2 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | `reorganization_window_{metrics,summary,bootstrap_counts}_selected.csv` |
+| Table D.3 (`tab:app-lifecycle-stability`) | `lifecycle_stability/*.csv` (selected Pythia-6.9B: row `pythia69b_d32768` of `validation.csv`) |
 
 Step 4 reads curated Pythia-6.9B and OLMo-2-7B rates that are not shipped ([Known deviations](#known-deviations)).
 
-**Late-start control** (`sec:app-olmo-checkpoint-window-control`, Figure E.3, `fig:app-olmo-window-population`):
+**Late-start control** (Appendix D.3, `sec:app-olmo-checkpoint-window-control`):
 a Pythia-1B dictionary on a 32-checkpoint schedule starting at step 256, as OLMo-2-7B's starts at 150.
 
 ```bash
@@ -133,14 +131,15 @@ uv run python reproduce/lifecycle/train_late_start.py --d-sae 24576 --n-epochs 3
 uv run python reproduce/lifecycle/compute_late_start_vs_olmo.py
 ```
 
-Outputs, under `results/lifecycle/olmo_window/`: `olmo_matched_checkpoint_window_population_lifecycle_diagnostics_{peak_counts,norm_mass}.csv`
-(Figure E.3), `late_start_profile_fractions.csv` (shares in the text), `comparison_summary.csv`.
+Outputs, under `results/lifecycle/olmo_window/`: `late_start_profile_fractions.csv` (profile shares),
+`comparison_summary.csv` (activation-rate shares of the late-start and OLMo-2-7B dictionaries), and
+`comparison_feature_scores.csv` (per-feature peak steps).
 
-## Lexical (Section 4.2, Appendix F)
+## Lexical (Section 4.2, Appendix E)
 
-Figure 3, Figures F.1 and F.2, Table F.1 (`fig:app-wordnet-supersense-probes-160m-inventory`,
-`fig:app-wordnet-supersense-probes-1b`, `tab:app-wordnet-supersense-1b`), and the lemma-grouped split
-(`sec:app-wordnet-lemma-split`). CPU is enough (`--device cpu`).
+Figure 3, Figure E.1 (`fig:app-wordnet-supersense-probes-160m-inventory`), the Pythia-1B replication of
+Appendix E.5, and the lemma-grouped split of Appendix E.6 (`sec:app-wordnet-lemma-split`). CPU is enough
+(`--device cpu`).
 
 ```bash
 P=reproduce/lexical/run_wordnet_supersense_probe.py
@@ -157,18 +156,18 @@ done; done
 | Paper item | Output, under `results/lexical/` |
 |---|---|
 | Figure 3 (`fig:main-wordnet-matched-controls`) | `wordnet_matched_controls_160m/wordnet_matched_control_summary_160m.csv` |
-| Figure F.1, separability counts | `wordnet_supersense_160m/wordnet_supersense_probe_trajectory_160m.csv` |
-| Figure F.2, Table F.1, Pythia-1B onsets | `wordnet_supersense_1b/wordnet_supersense_probe_{trajectory,pos_summary}_1b.csv` |
-| Lemma-split comparison | `final_acc`, `emergence_step`, `max_gain_pair` of `wordnet_supersense_probe_summary_<suffix>.csv`, `_lemma` vs row directory |
+| Figure E.1, onset and largest-gain counts | `wordnet_supersense_160m/wordnet_supersense_probe_trajectory_160m.csv` |
+| Appendix E.5, Pythia-1B onsets | `wordnet_supersense_1b/wordnet_supersense_probe_{trajectory,pos_summary}_1b.csv` |
+| Appendix E.6, lemma-split comparison | `final_acc`, `emergence_step`, `max_gain_pair` of `wordnet_supersense_probe_summary_<suffix>.csv`, `_lemma` vs row directory |
 
 Directories gain `_lemma` and `_seed<N>` (non-zero seed). The leakage count is the sum of
 `n_test_pos_with_train_sibling` over the sum of `n_test_positive` in the row split's
 `wordnet_supersense_split_stats_<suffix>.csv`. The matched nulls were not rerun under the lemma split.
 
-## Availability (Section 4.3, Appendix G, Figure 1)
+## Availability (Section 4.3, Appendix F, Figure 1)
 
-Figure 4, Figure G.1, Figures G.2 and G.3, Tables G.2 to G.4, the terminal-readout accuracies of
-`sec:app-terminal-swap-alignment`, and the margins of Figure 1. Step 1 also feeds Section 4.4. Needs a GPU.
+Figure 4, Figures F.1 and F.2, Tables F.2 to F.4, the terminal-readout accuracies of Appendix G.4
+(`sec:app-terminal-swap-alignment`), and the margins of Figure 1. Step 1 also feeds Section 4.4. Needs a GPU.
 
 ```bash
 # 1. Pythia-1B localization inventories and swap grid (add --save-per-example for the Figure 1 margins)
@@ -210,7 +209,7 @@ uv run python reproduce/availability/run_availability_probes.py \
     --datasets-dir $OUT/datasets/pythia-6.9b --families $FAMS --swept-steps $STEPS --group-split \
     --device cuda --out-dir $OUT/run_pythia-6.9b/probes
 
-# 4. Pythia-1B columns of Table G.2: agreement run (attractor always mismatched) and breadth run
+# 4. Pythia-1B column of Table F.2 and rows of Table F.4: agreement run (attractor always mismatched) and breadth run
 AGREE="sva sva_across_pp sva_subject_rc sva_object_rc ioi_role_balanced copy_control fixed_token_control"
 BREADTH="blimp_det_noun_agreement blimp_anaphor_agreement blimp_npi fv_antonym fv_country_capital fv_en_fr \
   fv_present_past induction numeric_gt_v2 numeric_lt_v2 numeric_tf_v2 relational_facts relational_facts_balanced"
@@ -239,10 +238,10 @@ uv run python reproduce/availability/run_availability_probes.py \
 |---|---|---|
 | Figure 4 left (`fig:main-sva-availability-expression`), probe | 2 | `run_pythia-6.9b_probe_trajectory/controlled/probe_trajectory_69b.csv` (`probe_name = sva_number_lemma_grouped`, `feature_source = hidden`) |
 | Figure 4 left, native and best swept readout | 2 | `run_pythia-6.9b_probe_trajectory/summary.csv` (native: `s_step = h_step`; best swept: [Known deviations](#known-deviations)) |
-| Figure G.1 (`fig:app-contrastive-readout-lag`) | 2 | the same two files, families `sva` and `ioi_role_balanced` |
+| Figure F.1 (`fig:app-contrastive-readout-lag`) | 2 | the same two files, families `sva` and `ioi_role_balanced` |
 | Figure 4 right | 3 | `availability/run_pythia-6.9b/probes/probe_summary.csv` (`h_step = 143000`, `probe_acc_1d`, `native_readout_acc`, the four `sva*` families) |
-| Figures G.2, G.3, Tables G.2 to G.4 (`fig:app-ae-capacity`, `fig:app-ae-grid`, `tab:app-ae-binary`, `tab:app-ae-openvocab`, `tab:app-ae-early`) | 3, 4 | `availability/run_<run>/probes/probe_summary.csv` |
-| `sec:app-terminal-swap-alignment` accuracies | 1 | `run0_pythia1b/summary.csv` (`h_step = 1000`, `s_step = 143000`, per alignment) |
+| Figure F.2, Tables F.2 to F.4 (`fig:app-ae-grid`, `tab:app-ae-binary`, `tab:app-ae-openvocab`, `tab:app-ae-early`) | 3, 4 | `availability/run_<run>/probes/probe_summary.csv` |
+| Appendix G.4 terminal-readout accuracies (`sec:app-terminal-swap-alignment`) | 1 | `run0_pythia1b/summary.csv` (`h_step = 1000`, `s_step = 143000`, per alignment) |
 | Figure 1 (`fig:overview`) margins | 1 | `run0_pythia1b/shards/sva__a-none__h1000__s<s>.pt` (`margins`, `margins_native`, `y_plus`, `y_minus`; `s` = 1000, 143000) |
 
 Notes: step 1 filters answer pairs on terminal row norms (needs the step-143000 `W_U` snapshot); steps 3 and 4
@@ -251,10 +250,10 @@ need `nyu-mll/blimp` and the four function-vector files in `$FV_DATA_DIR`. Nativ
 `LN_s` and `W_U^s`. `run_availability_probes.py` resumes per cell and reproduces sklearn's `GroupKFold` with the
 x86-64 NumPy tie order, so folds match on every platform, including arm64.
 
-## Localization (Section 4.4, Appendix H)
+## Localization (Section 4.4, Appendix G)
 
-Section 4.4 and Table H.2 (`tab:app-contrastive-localisation-ledger`). Run
-[availability](#availability-section-43-appendix-g-figure-1) step 1 first. Needs a GPU.
+Section 4.4 and Table G.2 (`tab:app-contrastive-localisation-ledger`). Run
+[availability](#availability-section-43-appendix-f-figure-1) step 1 first. Needs a GPU.
 
 ```bash
 # Rank features by attribution on half the items; ablate or keep the top K on the other half
@@ -262,7 +261,7 @@ uv run python reproduce/localization/run_feature_attribution.py --model pythia-1
     --datasets-dir results/availability/datasets/pythia-1b --hidden-dir results/availability/run0_pythia1b/hidden \
     --snapshot-step 143000 --h-step 1000 --rank-by pos --K 8 16 32 64 128 256 --split-frac 0.5 --split-seed 0 \
     --out-dir results/localization/run0_pythia1b_s143000_h1000_pos
-# Hidden-projection columns of Table H.2 (same held-out half)
+# Hidden-projection columns of Table G.2 (same held-out half)
 uv run python reproduce/localization/run_converse_intervention.py --model pythia-1b \
     --datasets-dir results/availability/datasets/pythia-1b --hidden-dir results/availability/run0_pythia1b/hidden \
     --attribution-dir results/localization/run0_pythia1b_s143000_h1000_pos \
@@ -272,16 +271,16 @@ uv run python reproduce/localization/run_converse_intervention.py --model pythia
 
 | Paper item | Output, under `results/localization/` |
 |---|---|
-| Section 4.4; Table H.2 *recon*, *ablate*, *preserve-only*, *sign* | `run0_pythia1b_s143000_h1000_pos/shards/<family>__h1000__s143000.json`, `per_K["8"]`: `summary_{recon,ablate_top,ablate_ctrl_sign_matched,preserve_top,preserve_ctrl_sign_matched}.accuracy`; original readout `summary_native_s` |
-| Table H.2 *orig.* (greater-than, IOI, relational facts) | the `none`, h=1000, s=143000 cell of `results/availability/run0_pythia1b/summary.csv` |
-| Table H.2 *hidden projection* | `converse_pythia1b_s143000_h1000_pos/<family>__h1000__s143000.json`: `baseline.native_t.accuracy`, `per_K["8"].summary_proj_native_t.accuracy` |
+| Section 4.4; Table G.2 *recon*, *ablate*, *preserve-only*, *sign* | `run0_pythia1b_s143000_h1000_pos/shards/<family>__h1000__s143000.json`, `per_K["8"]`: `summary_{recon,ablate_top,ablate_ctrl_sign_matched,preserve_top,preserve_ctrl_sign_matched}.accuracy`; original readout `summary_native_s` |
+| Table G.2 *orig.* (greater-than, IOI, relational facts) | the `none`, h=1000, s=143000 cell of `results/availability/run0_pythia1b/summary.csv` |
+| Table G.2 *hidden projection* | `converse_pythia1b_s143000_h1000_pos/<family>__h1000__s143000.json`: `baseline.native_t.accuracy`, `per_K["8"].summary_proj_native_t.accuracy` |
 
 The families are `sva`, `numeric_gt`, `ioi`, `relational_facts`. A family whose attribution `.json`/`.pt` shard
 pair exists is skipped. The release scores a different held-out half than the paper ([Known deviations](#known-deviations)).
 
-## Recipe control (Section 4.5, Appendix I)
+## Recipe control (Section 4.5, Appendix H)
 
-Figure 5, the geometry, swap, and probe numbers of Section 4.5, and Appendix I (Figures I.1 to I.5, Table I.1):
+Figure 5, the geometry, swap, and probe numbers of Section 4.5, and Appendix H (Figures H.1 to H.4, Table H.1):
 four 31M Pythia-architecture runs that differ only in the `W_U` learning-rate multiplier or a shorter warmup.
 Steps 2 and 3 can be replaced by the `hematteo/readout-recipe-control` download.
 
@@ -335,45 +334,46 @@ uv run python reproduce/recipe_control/run_expression_lag.py \
 |---|---|
 | Figure 5 left (`fig:main-recipe-dose-response`) | `lifecycle_multiseed_table.csv` |
 | Figure 5 right | `${UM_SSD_ROOT}/runs/<condition>/metrics.csv` (validation loss) |
-| Figure I.1, Table I.1, Figure I.2 (`fig:app-recipe-control-trajectories`, `tab:app-recipe-control-summary`, `fig:app-recipe-control-reorg`) | `lifecycle_seed0/{feature_trajectories.pt,lifecycle_summary.csv,reorg_window.csv}` |
-| Figures I.3, I.4, I.5 (`fig:app-recipe-control-geometry`, `fig:app-recipe-control-basin`, `fig:app-recipe-control-explag`) | `readout_geometry_pythia.csv`, `trajectory/trajectory_swap_all.csv`, `expression_lag/expression_lag.csv` |
+| Table H.1, Figure H.1 (`tab:app-recipe-control-summary`, `fig:app-recipe-control-reorg`) | `lifecycle_seed0/{lifecycle_summary.csv,reorg_window.csv}` |
+| Figures H.2, H.3, H.4 (`fig:app-recipe-control-geometry`, `fig:app-recipe-control-basin`, `fig:app-recipe-control-explag`) | `readout_geometry_pythia.csv`, `trajectory/trajectory_swap_all.csv`, `expression_lag/expression_lag.csv` |
 
 Notes: one A40 per pretraining run, about 21 h; it resumes from `latest.pt`, and `--max-hours` stops it cleanly.
 Each run keeps 16 checkpoints; the analysis scripts map requested steps to the nearest one on disk. CPU smoke
 test of step 4: add `--device cpu --expansion-factor 0.5 --n-epochs 2 --batch-size 4096 --conditions baseline`.
 Steps 9 and 10 run on CPU at reduced size, e.g. `--eval-tokens 8192 --seq-len 256 --device cpu`.
 
-## Readout swaps (Appendix H)
+## Readout swaps (Appendix G)
 
-Figure H.1 (`fig:app-readout-swap-nll-kl-grid`), the late-checkpoint anomaly (`sec:app-late-checkpoint-anomaly`),
-the Pythia-160M replication, Table H.1 (`tab:app-readout-swap-languages`), and Figures H.2 to H.4.
+Figure G.1 (`fig:app-readout-swap-nll-kl-grid`), the late-checkpoint anomaly of Appendix G.3
+(`sec:app-late-checkpoint-anomaly`), the Pythia-160M replication, Table G.1 (`tab:app-readout-swap-languages`),
+and Figures G.2 and G.3.
 
 ```bash
 # Optional: rebuild the evaluation corpus token for token from the 2023-11-01 Wikipedia dumps (network)
 uv run python reproduce/readout_swaps/build_eval_corpus_pythia.py --output results/readout_swaps/eval_tokens_pythia.pt
-# Pythia-1B swap grid (Figure H.1); also the parity reference of the per-language run
+# Pythia-1B swap grid (Figure G.1); also the parity reference of the per-language run
 uv run python reproduce/readout_swaps/temporal_patch_grid.py \
     --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 \
     --out-dir results/readout_swaps/temporal_patch_grid/pythia-1b_seed0
 # Pythia-160M replication (default --h-eval-steps 256 512 1000 2000 143000)
 uv run python reproduce/readout_swaps/temporal_patch_grid.py \
     --model pythia-160m --seed 0 --out-dir results/readout_swaps/temporal_patch_grid/pythia-160m_seed0
-# Per-language grid (Table H.1, Figures H.2, H.3; resumable)
+# Per-language grid (Table G.1, Figure G.2; resumable)
 uv run python reproduce/readout_swaps/run_language_stratified_swap.py \
     --model pythia-1b --seed 0 --h-eval-steps 256 512 1000 2000 3000 14000 47000 143000 \
     --block-tokens 256 --bootstrap-reps 2000 --bootstrap-seed 0 \
     --out-dir results/readout_swaps/languages/pythia-1b_seed0 \
     --reference-summary results/readout_swaps/temporal_patch_grid/pythia-1b_seed0/summary_global.csv
-# Aligned swaps (Figure H.4); read the Figure H.4 item of Known deviations first
+# Aligned swaps (Figure G.3); read the Figure G.3 item of Known deviations first
 uv run python reproduce/readout_swaps/run_aligned_swap_grid.py --model pythia-1b --out-dir results/readout_swaps/aligned_swap_grid
 ```
 
 | Paper item | Output, under `results/readout_swaps/` |
 |---|---|
-| Figure H.1, Pythia-160M replication | `temporal_patch_grid/pythia-{1b,160m}_seed0/summary_global.csv` |
-| Table H.1 | `languages/pythia-1b_seed0/`: `summary.csv` (interval at `s*`), `argmin_summary.csv`, `manifest.json` (target counts) |
-| Figures H.2, H.3 (`fig:app-readout-swap-english-aggregate`, `fig:app-readout-swap-languages`) | `languages/pythia-1b_seed0/summary.csv` (`language` = `all`, `en`, per language), `english_only_summary.csv` |
-| Figure H.4 (`fig:app-aligned-readout-swap`) | `aligned_swap_grid/summary.csv` |
+| Figure G.1, Pythia-160M replication | `temporal_patch_grid/pythia-{1b,160m}_seed0/summary_global.csv` |
+| Table G.1 | `languages/pythia-1b_seed0/`: `summary.csv` (interval at `s*`), `argmin_summary.csv`, `manifest.json` (target counts) |
+| Figure G.2 (`fig:app-readout-swap-languages`), English comparison of Appendix G.2 | `languages/pythia-1b_seed0/summary.csv` (`language` = `all`, `en`, per language), `english_only_summary.csv` |
+| Figure G.3 (`fig:app-aligned-readout-swap`) | `aligned_swap_grid/summary.csv` |
 
 Notes: the per-language gain is `-delta_nll` with interval `[-delta_nll_ci_high, -delta_nll_ci_low]`; the `all`
 stratum must match the reference grid within 1e-5 nats (`reference_parity.json`). Hidden states are cached
@@ -381,9 +381,9 @@ under `${UM_SSD_ROOT}/readout_edit_timing_pythia1b/` (1B) and `${UM_SSD_ROOT}/re
 written on a cache miss. Without the snapshot mirror, add `--readout-cache-dir <scratch>/readouts`;
 `--hln-cache-dir <scratch>/hln --delete-hln-cache-after-step` keeps the hidden-state caches on local scratch.
 
-## Validation (Appendix D)
+## Validation (Appendix C)
 
-Figures D.1 to D.11 and Table D.1 (`sec:app-instrument-validation`).
+Figures C.1 to C.8 and Table C.1 (`sec:app-instrument-validation`).
 
 ```bash
 REL="$UM_SSD_ROOT/hf_release/parameter-trajectory-crosscoders"
@@ -437,20 +437,20 @@ uv run python reproduce/validation/compute_cc_vs_persnap_gap.py
 
 | Paper item | Output, under `results/validation/` |
 |---|---|
-| Figure D.1 (`fig:main-multimodel-validation`) A, Table D.1 (`tab:full-inventory`), Figures D.5, D.11 (`fig:app-instrument-pareto`, `fig:app-lambda-sweep`) | `appendix_validation/full_inventory.csv`, `appendix_validation/lambda_sweep.csv` |
-| Figure D.1 B, C | `appendix_validation/persnap_fidelity.csv` (Pythia-160M), `main_1b/persnap_1b_d<d_sae>_seed0.csv` (Pythia-1B); Pythia-6.9B and OLMo-2-7B curated |
-| Figure D.6 (`fig:app-snapshot-fidelity`) | `appendix_validation/persnap_fidelity.csv` (released per-snapshot SAEs) |
-| Figures D.2, D.3 (`fig:app-mean-direction-preprocessing`, `fig:app-mean-direction-spectral-gap`) | `dense/mean_direction_metrics.csv` |
-| Figure D.4 (`fig:app-fidelity-curves`), stratified check | `appendix_validation/readout_functional_fidelity/<model>_d<d_sae>_seed0/readout_functional_fidelity.csv`, `strata/strata_summary.csv` |
-| Figures D.7, D.8 (`fig:app-pca-static`, `fig:app-concat-pca`) | `appendix_validation/{pca_static,concat_pca}.csv` |
-| Figure D.9 (`fig:app-dense-reorg-pythia`) | `dense/dense_reorganization/{subspace_metrics,sv_stability}.csv` |
-| Figure D.10 (`fig:app-heldout-checkpoints-1b`), Pythia-160M text | `heldout/<model>/heldout_ev.csv` |
+| Figure C.1 (`fig:main-multimodel-validation`) A, Table C.1 (`tab:full-inventory`), Figure C.8 (`fig:app-lambda-sweep`) | `appendix_validation/full_inventory.csv`, `appendix_validation/lambda_sweep.csv` |
+| Figure C.1 B, C | `appendix_validation/persnap_fidelity.csv` (Pythia-160M), `main_1b/persnap_1b_d<d_sae>_seed0.csv` (Pythia-1B); Pythia-6.9B and OLMo-2-7B curated |
+| Figure C.4 (`fig:app-snapshot-fidelity`) | `appendix_validation/persnap_fidelity.csv` (released per-snapshot SAEs) |
+| Figure C.2 (`fig:app-mean-direction-preprocessing`), spectral-gap check of Appendix C.1 | `dense/mean_direction_metrics.csv` |
+| Figure C.3 (`fig:app-fidelity-curves`), token-stratified check of Appendix C.2 | `appendix_validation/readout_functional_fidelity/<model>_d<d_sae>_seed0/readout_functional_fidelity.csv`, `strata/strata_summary.csv` |
+| Figure C.5 (`fig:app-pca-static`), concatenated PCA of Appendix C.4 | `appendix_validation/{pca_static,concat_pca}.csv` |
+| Figure C.6 (`fig:app-dense-reorg-pythia`) | `dense/dense_reorganization/{subspace_metrics,sv_stability}.csv` |
+| Figure C.7 (`fig:app-heldout-checkpoints-1b`), Pythia-160M numbers of Appendix C.5 | `heldout/<model>/heldout_ev.csv` |
 
 The paper's concatenated PCA uses 45 Pythia-160M, 32 Pythia-1B and OLMo-2-7B, and 15 Pythia-6.9B checkpoints.
 
 ## Training the dictionaries
 
-Each `configs/runs/<id>.yaml` records one dictionary's hyperparameters (Table C.2,
+Each `configs/runs/<id>.yaml` records one dictionary's hyperparameters (Table B.2,
 `tab:repro-dictionary-hparams`) and its `reported:` EV and L0. Nothing loads these files: pass each field as the
 flag of the same name. CLI defaults that differ from the published values: `--n-epochs 20`, `--batch-size 2048`,
 `--input-preprocess none`, `--l1-warmup-fraction 0.0`, `--tanh-stretch 4.0`. Where records disagree, the
@@ -477,8 +477,7 @@ uv run python scripts/extract/extract_we_pythia.py --model EleutherAI/pythia-160
 
 `--cache-dir` defaults to `$UM_SSD_ROOT/snapshots/pythia-160m` (or `WU_CACHE_DIR`) for every `--model`; point it
 at `$UM_SSD_ROOT/snapshots/<model>` for the others. Pythia-6.9B and OLMo-2-7B train head-parallel over four GPUs
-with `scripts/train/train_distributed.py`. `scripts/train/train_arch_sweep.py` trains the architecture variants
-of Figure D.5 and Table D.1; `scripts/extract/extract_rates.py` computes per-snapshot firing rates.
+with `scripts/train/train_distributed.py`. `scripts/extract/extract_rates.py` computes per-snapshot firing rates.
 
 ### OLMo-2-7B
 
@@ -495,39 +494,39 @@ uv run torchrun --nproc-per-node=4 --nnodes=1 scripts/train/train_distributed.py
     --output "$UM_SSD_ROOT/runs/olmo/cc_olmo27b_dsae32768_seed0.pt"
 ```
 
-Then rerun the [lifecycle](#lifecycle-section-41-appendix-e) commands. The OLMo-2-7B EV, L0, and activation
+Then rerun the [lifecycle](#lifecycle-section-41-appendix-d) commands. The OLMo-2-7B EV, L0, and activation
 rates the paper uses are the curated `large_evals/` files ([Known deviations](#known-deviations)).
 
 ## Known deviations
 
-- **Section 4.4 and Table H.2.** The release seeds the localization split and the matched controls separately
+- **Section 4.4 and Table G.2.** The release seeds the localization split and the matched controls separately
   for each task, and builds the simple SVA items in interleaved order. The paper's run drew both from one
   sequential generator, so the release scores a different held-out half and its values differ from the paper's.
   (The swap-grid accuracies of availability step 1 do not depend on item order.)
 - **Figure 4, left panel.** The native and best swept series have no surviving run output. `paper_figures/`
   ships them as values transcribed from the original figure; the probe series is run output.
-- **Figures 4 (left) and G.1, best swept readout.** No release script computes the best swept readout of the
+- **Figures 4 (left) and F.1, best swept readout.** No release script computes the best swept readout of the
   trajectories (`B_env`, the maximum over readouts per task and hidden-state checkpoint, excluding the native
   and terminal readouts; `sec:app-evaluation-details`). Take the maximum accuracy over the `alignment = none`
   rows of `run_pythia-6.9b_probe_trajectory/summary.csv` whose `s_step` is neither `h_step` nor 143000.
-- **Figure D.1, Table D.1, and the curated `large_evals/` files.** The Pythia-6.9B and OLMo-2-7B rows and their
+- **Figure C.1, Table C.1, and the curated `large_evals/` files.** The Pythia-6.9B and OLMo-2-7B rows and their
   per-checkpoint curves come from evaluation files that no release script regenerates; `recompute_quality.py`
   recomputes their aggregate EV and L0. The same curated files, under
   `results/validation/appendix_validation/large_evals/` and not shipped, supply the Pythia-6.9B and OLMo-2-7B
-  activation rates that `find_reorganization_steps.py` (Figure E.4, Table E.2, and the windows quoted in
-  Section 4.1) and `compute_late_start_vs_olmo.py` (Figure E.3) read.
-- **Figure E.3.** No release script writes the late-start firing-rate file that `compute_late_start_vs_olmo.py`
+  activation rates that `find_reorganization_steps.py` (Figure D.2, Table D.2, and the windows quoted in
+  Section 4.1) and `compute_late_start_vs_olmo.py` (Appendix D.3) read.
+- **Late-start control (Appendix D.3).** No release script writes the late-start firing-rate file that `compute_late_start_vs_olmo.py`
   reads. `scripts/extract/extract_rates.py` computes the rates but saves them under
   `rates_per_seed[<checkpoint stem>]`, while the comparison reads a top-level `rates` key, so the tensor has to
   be stored under `rates` together with `steps`.
-- **Figure H.4.** The paper's aligned swap grid scores the first 32 sequences (16,352 targets). Build
+- **Figure G.3.** The paper's aligned swap grid scores the first 32 sequences (16,352 targets). Build
   32-sequence caches with `scripts/extract/build_hln_cache.py --max-seqs 32` before running
   `run_aligned_swap_grid.py`; without them the script scores the full corpus. `run_aligned_swap_grid.py` has no
   cache-directory option: it reads `${UM_SSD_ROOT}/readout_edit_timing_pythia1b/`, where `temporal_patch_grid.py`
   and `run_language_stratified_swap.py` keep their full-corpus caches, and `build_hln_cache.py` skips any step
   whose `hLN_step<t>.pt` already exists there. For the same reason, its `summary.csv` is not a valid parity
   reference for the per-language run.
-- **Appendix G on CPU.** The label-shuffle and random-label nulls can differ from the published values by about
+- **Appendix F on CPU.** The label-shuffle and random-label nulls can differ from the published values by about
   one item, and the full-vocabulary mean ranks by near-tie flips (rank-1 rates agree).
 - **OLMo-2-7B optimizer.** `tab:repro-dictionary-hparams` lists SparseAdam for OLMo-2-7B, while the
   [training command](#olmo-2-7b) passes `--optimizer adam` and the settings of record record `adam`; the
@@ -537,11 +536,10 @@ rates the paper uses are the curated `large_evals/` files ([Known deviations](#k
 
 Drawn or typeset by hand in the paper source; the numbers they quote come from the commands above.
 
-- Schematics: Figure 1 (`fig:overview`; margins from [availability](#availability-section-43-appendix-g-figure-1)
-  step 1) and Figure B.1 (`fig:method-cross-snapshot-schematic`).
+- Schematics: Figure 1 (`fig:overview`; margins from [availability](#availability-section-43-appendix-f-figure-1)
+  step 1) and Figure A.1 (`fig:method-cross-snapshot-schematic`).
 - Tables 1 (`tab:task-protocol`; task registries `src/readout/probes/contrastive_tasks.py` and
-  `src/readout/probes/availability_tasks.py`), 2 (`tab:method-comparison`), A.1 to A.3
-  (`tab:app-terminology-glossary`, `tab:app-claim-tests`, `tab:app-design-rationale`), B.1
-  (`tab:evaluation-controls`), C.1 (`tab:checkpoint-suite-comparison`), C.3 (`tab:compute-resources`), E.1
-  (`tab:lifecycle-profile-rules`; rules in `classify_profiles_refined`, `src/readout/dynamics/lifecycle.py`), and
-  G.1 (`tab:app-task-construction`; templates in `readout.probes.availability_tasks` and sibling modules).
+  `src/readout/probes/availability_tasks.py`), A.1 (`tab:evaluation-controls`), B.1
+  (`tab:checkpoint-suite-comparison`), B.3 (`tab:compute-resources`), D.1 (`tab:lifecycle-profile-rules`; rules
+  in `classify_profiles_refined`, `src/readout/dynamics/lifecycle.py`), F.1 (`tab:app-task-construction`;
+  templates in `readout.probes.availability_tasks` and sibling modules), and I.1 (`tab:method-comparison`).
