@@ -97,7 +97,7 @@ def train_one_snapshot(
         device=device,
         seed=seed,
         log_every=log_every,
-        amp_dtype=None,  # fp32 only — bf16+tanh-STE diverges (HANDOFF hazard #3)
+        amp_dtype=None,  # fp32 only: bf16 with the tanh straight-through estimator diverges
         use_sparse_adam=False,
         init_encoder_with_decoder_transpose_factor=decoder_transpose_init,
         l1_warmup_fraction=0.1,

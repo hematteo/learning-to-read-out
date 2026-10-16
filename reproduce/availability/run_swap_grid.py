@@ -198,8 +198,7 @@ def main() -> None:
         "--save-per-example",
         action="store_true",
         help="Write per-example margins/y_plus/y_minus to a sidecar shards/<cell>.pt; "
-        "the JSON shard stays aggregate-only. Required for Step 4 (availability probes) "
-        "and Step 6 (held-out best-s + paired bootstrap).",
+        "the JSON shard stays aggregate-only. Needed for the Figure 1 margins.",
     )
     ap.add_argument(
         "--out-dir",

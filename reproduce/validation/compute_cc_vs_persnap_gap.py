@@ -149,7 +149,7 @@ def main() -> int:
         default=None,
         help=(
             "Directory containing wu_sae_dsae8192_step*.pt. Default = "
-            "<release-root>/cluster_results/t1_3_per_snap_sae/20260428T230005Z_job28571218/"
+            "<release-root>/hf_release/parameter-trajectory-crosscoders/pythia-160m/W_U/per-snapshot-saes/d8192"
         ),
     )
     args = ap.parse_args()

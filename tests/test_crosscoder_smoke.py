@@ -1,4 +1,4 @@
-"""Smoke load test for crosscoder checkpoints (paper plan §6, §10).
+"""Smoke load test for crosscoder checkpoints.
 
 Builds a tiny crosscoder on the fly, saves it in the same format as
 ``src/readout/crosscoder/wu_adapter.py``, reloads it, and exercises the load
@@ -34,7 +34,7 @@ def tiny_checkpoint(tmp_path_factory) -> Path:
     snaps = torch.randn(K, V, D_MODEL)
 
     metrics = quick_quality(cc, snaps, batch_size=32, device="cpu")
-    # dead_rate is part of paper §6 post-eval; wu_adapter doesn't yet write it,
+    # dead_rate is part of the post-training evaluation; wu_adapter doesn't write it,
     # but the manifest writer expects it under quality["dead_rate"].
     with torch.no_grad():
         l0_per = (cc.encode(cc.prepare_input({hp: snaps[i] for i, hp in enumerate(cc.cfg.hook_points)})[0])).reshape(
