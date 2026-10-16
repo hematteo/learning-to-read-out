@@ -51,13 +51,8 @@ class Run:
     rates_path: Path
     steps: np.ndarray
     xticks: tuple[int, ...]
-    slug: str | None = None  # output stem for wishbone sidecars; defaults to key
     rates_key: str | None = None  # entry in a rates_per_seed blob; None -> first
     geometry_key: str | None = None  # geometry cache key; None -> key
-
-    def __post_init__(self) -> None:
-        if self.slug is None:
-            object.__setattr__(self, "slug", self.key)
 
 
 def geometry_cache_key(run: Run) -> str:
