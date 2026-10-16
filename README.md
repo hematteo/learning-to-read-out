@@ -1,6 +1,7 @@
 # Learning to Read Out: Unembedding Dynamics in Language Model Pretraining
 
 [![NeurIPS 2026](https://img.shields.io/badge/NeurIPS-2026-4b44ce.svg)](#citation)
+[![Paper](https://img.shields.io/badge/Paper-OpenReview-8c1b13.svg)](https://openreview.net/forum?id=FlkhJrDVyI)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-dictionaries%20%26%20checkpoints-yellow.svg)](https://huggingface.co/hematteo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![ci](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml/badge.svg)](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml)
@@ -10,15 +11,21 @@ Unembedding Dynamics in Language Model Pretraining** (NeurIPS 2026), by Matteo
 He, William F. Shen, Alex Iacob, Andrej Jovanovic, Xinchi Qiu, and Nicholas D.
 Lane.
 
+[Paper](https://openreview.net/forum?id=FlkhJrDVyI) ·
+[Project page](https://learning-to-read-out.pages.dev) ·
+[Feature atlas](https://learning-to-read-out.pages.dev/atlas/)
+
 <p align="center">
   <img src="docs/assets/overview.png" alt="Overview: three measurements at one fixed hidden state (native readout, readout swap, linear probe), and parameter-trajectory crosscoding of readout rows across checkpoints" width="95%">
 </p>
 
 Whether a model predicts the right token depends on two learned components: the
 final hidden state and the unembedding matrix `W_U` (the *readout*) that maps it to
-logits. We find that several task distinctions become **available**, decodable by
-a linear probe from the hidden state, before the model's own readout **natively
-expresses** them. To separate the two components we introduce
+logits. We show that hidden states can encode a task distinction, such as subject
+number in subject–verb agreement, before the model's own readout natively expresses
+it. A distinction is **available** once a linear probe can decode it from the
+hidden state, and **natively expressed** once the model's own readout prefers the
+correct answer. To track the readout directly we introduce
 **parameter-trajectory crosscoding**, which fits one sparse dictionary to the
 trajectory every vocabulary row of `W_U` traces across checkpoints. We combine it
 with readout swaps (decoding one checkpoint's hidden state with another
@@ -97,7 +104,7 @@ public Pythia checkpoints:
 
 | Notebook | What it shows |
 |---|---|
-| [`01_availability_expression_lag.ipynb`](notebooks/01_availability_expression_lag.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/01_availability_expression_lag.ipynb) | Hidden states encode a task distinction before the native readout expresses it (readout swaps on Pythia-160M) |
+| [`01_availability_expression_lag.ipynb`](notebooks/01_availability_expression_lag.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/01_availability_expression_lag.ipynb) | Readout swaps on Pythia-160M: the same hidden states scored by their own and by later readouts |
 | [`02_wu_trajectory_crosscoders.ipynb`](notebooks/02_wu_trajectory_crosscoders.ipynb) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hematteo/learning-to-read-out/blob/main/notebooks/02_wu_trajectory_crosscoders.ipynb) | A trajectory crosscoder on a toy and on real Pythia-160M snapshots, with feature lifecycles |
 
 To run them locally: `uv run --extra figures --with jupyterlab jupyter lab notebooks/`.
@@ -107,7 +114,7 @@ To run them locally: `uv run --extra figures --with jupyterlab jupyter lab noteb
 | Repository | Contents |
 |---|---|
 | [`hematteo/parameter-trajectory-crosscoders`](https://huggingface.co/hematteo/parameter-trajectory-crosscoders) | Trained trajectory crosscoders (Pythia-160M, 1B, 6.9B; OLMo-2-7B) with training sidecars, aggregates, activation rates, attribution artifacts, and held-out evaluation tokens |
-| [`hematteo/readout-recipe-control`](https://huggingface.co/hematteo/readout-recipe-control) | The controlled 31M pretraining runs (readout learning rate 0.25×, 1×, 4×, and a shorter warmup; also a long-warmup run the paper does not use) |
+| [`hematteo/readout-recipe-control`](https://huggingface.co/hematteo/readout-recipe-control) | The controlled 31M pretraining runs (readout learning rate 0.25×, 1×, 4×, and a shorter warmup; also a long-warmup run the paper leaves out of the comparison) |
 | [`datasets/hematteo/wu-crosscoder-snapshots`](https://huggingface.co/datasets/hematteo/wu-crosscoder-snapshots) | Pre-extracted `W_U` snapshot stacks |
 
 ```bash
@@ -135,12 +142,12 @@ the known deviations from the paper's runs.
 
 | Finding | Result |
 |---|---|
-| The dictionaries are faithful | Explained variance 0.808–0.920 across Pythia-160M, 1B, 6.9B and OLMo-2-7B; 1.17–2.26% of features active per row and checkpoint; no dead features |
-| The readout reorganizes early | The reorganization score peaks between steps 512 and 1.6k in all three Pythia models (0.4–1.1% of training); p = 0.005 at 160M and 1B, p = 0.04 at 6.9B against circular-shift nulls; 20 of 21 dictionary fits select the same window |
-| Lexical structure forms in that window | Pythia-160M readout rows separate all 35 WordNet categories by step 1000 (median balanced accuracy 0.499 → 0.874), beyond matched-random and shuffled-label controls |
-| Availability precedes native expression | On Pythia-6.9B subject–verb agreement, a probe nears ceiling by step 512 while native expression is at chance; across a subject relative clause, native accuracy is still 0.75 at the end of training while the probe stays at ceiling |
-| A few features carry task margins | Ablating 8 selected features drops Pythia-1B SVA accuracy from 0.900 to 0.487 (matched controls stay ≥ 0.900); greater-than drops from 0.512 to 0.084 |
-| Readout learning rate sets the timing | In 31M runs, each 4× increase in the readout learning rate halves the median feature peak step (128 → 64 → 32, in every fit); final validation losses agree within 0.06 nats |
+| The dictionaries reconstruct the readout | Explained variance 0.808–0.920 across Pythia-160M, 1B, 6.9B and OLMo-2-7B; 1.17–2.26% of features active per row and checkpoint; no dead features |
+| The readout reorganizes early | The reorganization score peaks between steps 512 and 1.6k in all three Pythia models (0.4–1.1% of training); p = 0.005 at 160M and 1B, p = 0.04 at 6.9B against circular-shift nulls; 20 of 21 Pythia dictionary fits select the same window |
+| Lexical structure emerges before and during that window | In Pythia-160M, all 35 WordNet categories become decodable from the readout rows by step 1000, when all 35 also exceed the matched-random and shuffled-label nulls; median balanced accuracy rises from 0.499 at initialization to 0.874 at the final checkpoint |
+| Hidden states encode subject number before the readout expresses it | On Pythia-6.9B subject–verb agreement, a linear probe nears ceiling by step 512 while native expression and the best swept intermediate readout are still at chance; across a subject relative clause, native accuracy is 0.75 at the final checkpoint with the probe at ceiling |
+| Eight features carry the agreement margin | Decoding Pythia-1B step-1000 states with the reconstructed final readout, ablating the 8 top-attribution features lowers SVA accuracy from 0.900 to 0.487, keeping only them gives 0.938, and ablating 8 matched random features leaves 0.931 |
+| Readout learning rate shifts the timing | In 31M runs, raising the readout learning rate multiplier from 0.25× to 1× to 4× moves the median feature peak step from 128 to 64 to 32 in every fit, one checkpoint per fourfold increase; final validation losses agree within 0.06 nats |
 
 ## Repository layout
 
