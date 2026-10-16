@@ -204,7 +204,7 @@ def swap_cell_metrics(
     Returns ``{n_tokens, nll, nll_native, delta_nll, ppl, kl_to_native, top1,
     top1_native, top1_agreement, centered_logit_r2}`` (nats/token). With
     ``h_native is None`` this is the same kernel as
-    ``run_aligned_swap_grid.cell_metrics`` (temporal_localization_patching);
+    ``run_aligned_swap_grid.cell_metrics`` (``reproduce/readout_swaps/``);
     ``h_native`` lets a variant score a swap whose native reference uses a
     different hidden state (e.g. grafting ``W_U`` together with another
     checkpoint's final LayerNorm while the native path keeps the body's own).

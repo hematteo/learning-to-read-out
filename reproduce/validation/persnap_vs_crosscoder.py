@@ -1,9 +1,9 @@
-"""Per-snapshot SAE recovery vs Run 3 crosscoder recovery.
+"""Per-snapshot SAE recovery vs crosscoder recovery (Pythia-160M, d_sae=8192).
 
 Loads:
   - 32 persnap JumpReLU SAEs (one per Ge step) trained by
-    scripts/train_persnap_saes.py
-  - Run 3 seed 0 crosscoder (the 32-snap d_sae=8192 result)
+    reproduce/validation/train_persnap_saes.py
+  - the released Pythia-160M d_sae=8192 seed-0 crosscoder (32 snapshots)
 
 Computes per-snapshot reconstruction recovery R = 1 - MSE / Var(x) on the
 matched center_scale-preprocessed W_U rows for both the persnap SAEs and
@@ -172,7 +172,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if not args.crosscoder.exists():
-        raise FileNotFoundError(f"Run 3 seed 0 crosscoder not found at {args.crosscoder}")
+        raise FileNotFoundError(f"Pythia-160M d_sae=8192 seed-0 crosscoder not found at {args.crosscoder}")
 
     print(f"Device: {DEV}")
     cc = crosscoder_persnap_recovery(args.crosscoder)

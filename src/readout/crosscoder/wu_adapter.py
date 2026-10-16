@@ -123,7 +123,7 @@ def build_crosscoder(
     """Build a llamascopium Crosscoder with optional head-parallel sharding.
 
     When ``device_mesh`` is None (default), the crosscoder is constructed as
-    a regular non-distributed model — same path Run 3 / Run 5 used. When a
+    a regular non-distributed model, the path of the single-process Pythia fits. When a
     DeviceMesh is provided, weights are constructed as DTensors sharded
     along the n_heads axis and forward/backward are head-parallel via
     All-Reduce on the shared pre-activation (Ge §A.3).
@@ -295,8 +295,8 @@ def train(
     noise_std=0.0,
     init_encoder_with_decoder_transpose_factor=1.0,
     l1_warmup_fraction=0.0,  # fraction of total steps for linear L1 coefficient warmup
-    lr_warmup_fraction=0.0,  # Ge §A.4 specifies 0.10; 0 = constant LR (Run 3 default)
-    lr_decay_fraction=0.0,  # Ge §A.4 specifies 0.20; 0 = no decay (Run 3 default)
+    lr_warmup_fraction=0.0,  # Ge §A.4 specifies 0.10; 0 = constant LR (single-process Pythia fits)
+    lr_decay_fraction=0.0,  # Ge §A.4 specifies 0.20; 0 = no decay (single-process Pythia fits)
     auxk_coefficient=0.0,  # Gao et al. 2024 auxk loss weight (0 = disabled, 1/32 recommended)
     auxk_k=512,  # number of dead latents to use for residual reconstruction
     dead_window_steps=100,  # a latent is "dead" if it hasn't fired in this many steps
@@ -705,7 +705,8 @@ def main():
         "--lr-warmup-fraction",
         type=float,
         default=0.0,
-        help="Linear LR warmup fraction. Ge §A.4 specifies 0.10. Default 0 = constant LR (Run 3).",
+        help="Linear LR warmup fraction. Ge §A.4 specifies 0.10. Default 0 = constant LR, as in the "
+        "single-process Pythia fits.",
     )
     parser.add_argument(
         "--lr-decay-fraction",

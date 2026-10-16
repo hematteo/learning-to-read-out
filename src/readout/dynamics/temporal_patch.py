@@ -1,8 +1,7 @@
 """Shared helpers for readout swaps and readout feature edits.
 
-Used by the readout swap grids (temporal_localization_patching,
-language_stratified_readout_swap), the sparse feature tests, and several
-validation scripts. It provides the evaluation corpus and its token labels,
+Used by the readout swap grids (``reproduce/readout_swaps/``), the WordNet
+matched controls, and several validation scripts. It provides the evaluation corpus and its token labels,
 per-checkpoint caches of final hidden states, proto-token concept families
 (punctuation, digits, function words, and others), and the snapshot-local
 pieces of a trajectory crosscoder.

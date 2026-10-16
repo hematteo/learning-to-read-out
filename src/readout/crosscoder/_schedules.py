@@ -13,7 +13,7 @@ def lr_multiplier(
 
     Returns a multiplier in [0, 1] applied to each param group's initial_lr.
     Default of warmup_frac=decay_frac=0 yields constant LR (preserves
-    backward-compat behaviour for Pythia Run 3 / Run 5 launches).
+    behaviour of the single-process Pythia fits).
     """
     warmup_steps = int(warmup_frac * total_steps)
     decay_steps = int(decay_frac * total_steps)

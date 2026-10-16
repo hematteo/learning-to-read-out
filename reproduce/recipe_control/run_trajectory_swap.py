@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Within-trajectory readout swap grid for each recipe-control condition.
 
-The published-model protocol (``temporal_localization_patching/run_aligned_swap_grid.py``)
+The published-model protocol (``reproduce/readout_swaps/run_aligned_swap_grid.py``)
 applied per arm: fix the post-final-LN hidden states from checkpoint h_t and decode
 them through every training-time readout W_U^(s) of the same arm, recording
 next-token NLL, KL-to-native, top-1 agreement, and centered-logit R^2 on the held-out

@@ -92,17 +92,17 @@ def main(argv=None):
         "--sae-log",
         type=Path,
         default=DEFAULT_SAE_LOG,
-        help="T1.3 per-snap SAE train.log to scrape EV/L0 from (cluster artifact).",
+        help="Per-snapshot SAE train.log to scrape EV/L0 from (a training-run artifact).",
     )
     parser.add_argument(
         "--cc-ckpt",
         type=Path,
         default=DEFAULT_CC_CKPT,
-        help="Crosscoder checkpoint to per-snapshot-eval (T4.6 seed0 d24576 by default).",
+        help="Crosscoder checkpoint to per-snapshot-eval (default: the selected Pythia-160M d24576 seed 0).",
     )
     args = parser.parse_args(argv)
 
-    # Read T1.3 per-snap SAE EV from log
+    # Read the per-snapshot SAE EV from the log
     pat = re.compile(r"\[step\s+(\d+)\]\s+EV=([\d.]+)\s+L0=([\d.]+)")
     seen = {}
     with open(args.sae_log) as fh:
@@ -114,9 +114,9 @@ def main(argv=None):
     sae_steps = np.array(sorted(seen))
     sae_ev = np.array([seen[s][0] for s in sae_steps])
     sae_l0 = np.array([seen[s][1] for s in sae_steps])
-    print(f"T1.3 per-snap SAEs: {len(sae_steps)} snapshots, EV {sae_ev.min():.3f}-{sae_ev.max():.3f}")
+    print(f"Per-snapshot SAEs: {len(sae_steps)} snapshots, EV {sae_ev.min():.3f}-{sae_ev.max():.3f}")
 
-    # Crosscoder eval — T4.6 seed 0 at d=24576 (160M W_U) by default
+    # Crosscoder eval: the selected Pythia-160M W_U d=24576 seed 0 by default
     cc_path = args.cc_ckpt
     print(f"Evaluating {cc_path.name}")
     cc_steps, cc_ev = per_snapshot_eval(cc_path)

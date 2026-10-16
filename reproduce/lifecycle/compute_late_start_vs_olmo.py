@@ -150,7 +150,7 @@ def _active_traj_relative(rates: np.ndarray, norms: np.ndarray | None) -> tuple[
 
 
 def _summarize(traj_rel: np.ndarray, steps: np.ndarray) -> dict:
-    """Same metric definitions as analyze_late_start_decay.py / OLMo handoff numbers."""
+    """Activation-rate shares of Appendix D.3 (early-peaking decayers, early-dominant score)."""
     peak_idx = traj_rel.argmax(axis=1)
     final = traj_rel[:, -1]
     early_mask = steps <= EARLY_CUTOFF_STEP

@@ -3,7 +3,7 @@
 # scripts/train/train_crosscoder.py / train_distributed.py CLI flags.
 # Documentation/record only; not auto-loaded. See docs/REPRODUCE.md.
 #
-# PROVENANCE NOTE. The run of record is the 2026-05-02 vast.ai run whose
+# PROVENANCE NOTE. The run of record is the 2026-05-02 run on a rented GPU node whose
 # checkpoint (cc_olmo27b_dsae32768_seed0.pt) was converted into the released
 # sidecar olmo-2-7b/W_U/cross-snapshot-32/d32768/seed0.config.json. Its training
 # log ends at "[epoch 299 step 29400]", i.e. 300 epochs of 98 steps, which fixes
@@ -11,7 +11,7 @@
 # table (29,400 optimizer steps) agrees. docs/REPRODUCE.md gives the torchrun
 # command with these settings. Optimizer caveat:
 # the checkpoint's embedded training dict records `adam` (written from the
-# run's CLI args by train_distributed.py), while the vast.ai launcher of the
+# run's CLI args by train_distributed.py), while the launch script of the
 # time passed `--optimizer sparse_adam` and the log does not name the
 # optimizer; no copy of the trainer from before 2026-05-05 survives to rule out
 # a recording bug, so `adam` is recorded as the checkpoint has it.

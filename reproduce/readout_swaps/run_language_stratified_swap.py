@@ -1,7 +1,7 @@
 """Language-stratified fixed-hidden-state readout swaps.
 
 Repeats the raw (alignment ``none``) readout-swap grid of
-``temporal_localization_patching`` while retaining per-language and
+``temporal_patch_grid.py`` while retaining per-language and
 consecutive-block sufficient statistics. The statistics support paired
 bootstrap intervals and row-wise argmin probabilities without saving
 token-by-vocabulary logits.

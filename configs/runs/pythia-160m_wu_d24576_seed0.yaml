@@ -10,7 +10,7 @@ d_sae: 24576              # expansion_factor 32.0 at d_model=768 (24576 / 768)
 expansion_factor: 32.0
 n_snapshots: 32           # cross-snapshot-32 (readout.core.model_specs.DEFAULT_STEPS_32)
 
-# Optimizer / schedule (shared Pythia W_U recipe; "Run 3")
+# Optimizer / schedule (the W_U recipe shared by the single-process Pythia fits)
 batch_size: 1024
 lr: 5.0e-5
 n_epochs: 300

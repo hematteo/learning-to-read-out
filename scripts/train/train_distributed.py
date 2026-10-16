@@ -235,7 +235,7 @@ def main() -> int:
     #   - If smoke passes: 4-GPU production at d_SAE=32768.
     #   - If init_encoder_with_decoder_transpose fails on DTensor copy_, fall
     #     back to constructing W_E without the transpose-init (factor=0) and
-    #     accept the EV cost (Run 2 baseline was EV ~0.39 without transpose-init
+    #     accept the EV cost (an earlier fit reached EV ~0.39 without transpose-init
     #     vs ~0.78 with; degraded but trainable).
     if rank == 0:
         print(

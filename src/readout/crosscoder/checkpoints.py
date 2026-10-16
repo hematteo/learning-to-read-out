@@ -48,7 +48,7 @@ def unwrap_ckpt(ck: dict) -> dict:
 
     Newer 1B checkpoints (d=16384, d=24576) store metadata as
     ``ck = {'state_dict': ..., 'config': {steps, model_name, preprocess_mode, ...}}``.
-    Older checkpoints (160M Run 3, 1B d=8192) store the same fields at the top
+    Older checkpoints (Pythia-160M d=8192, Pythia-1B d=8192) store the same fields at the top
     level and ``ck['config']`` is the inner crosscoder config (sae_type,
     d_model, etc.). The new-format wrapper is detected by the presence of
     metadata keys (``steps`` / ``model_name``) inside ``ck['config']`` AND

@@ -1,12 +1,12 @@
 """Per-snapshot JumpReLU SAEs on Pythia-160M W_U (per-snapshot SAE baseline).
 
 Trains 32 single-snapshot SAEs at d_sae=8192, one per Ge-exact training step,
-mirroring the Run 3 crosscoder hyperparameters as closely as possible
+mirroring the hyperparameters of the Pythia-160M d_sae=8192 crosscoder as closely as possible
 (JumpReLU + tanh-quad sparsity per Ge eq. 9, decoder-norm-aware threshold,
 fp32, decoder-transpose encoder init, center_scale persnap preprocessing).
 
 A "single-snapshot SAE" here is a llamascopium Crosscoder with K=1 hook
-points: this gives bit-perfect parity with Run 3's loss/init/optimizer
+points: this gives bit-perfect parity with that crosscoder's loss/init/optimizer
 plumbing, so the persnap-vs-crosscoder comparison is apples-to-apples.
 
 Outputs:
@@ -40,7 +40,7 @@ def require_external_ssd(path: Path) -> None:
     mount = ssd_root()
     if str(path).startswith(str(mount)) and not mount.exists():
         raise RuntimeError(
-            f"External SSD {mount} is not mounted. Attach the drive (T1.3 requires persistent storage at {path})."
+            f"Storage root {mount} does not exist; set UM_SSD_ROOT (the per-snapshot SAEs are written to {path})."
         )
 
 
@@ -179,7 +179,7 @@ def main() -> int:
         "--tanh-stretch",
         type=float,
         default=1.0,
-        help="Matches Run 3 tanh_stretch_coefficient=1.0 exactly.",
+        help="Matches the crosscoder's tanh_stretch_coefficient=1.0 exactly.",
     )
     parser.add_argument("--jumprelu-lr-factor", type=float, default=0.1)
     parser.add_argument("--init-threshold", type=float, default=0.1)
@@ -247,7 +247,7 @@ def main() -> int:
         summary.append(info)
 
     total = time.perf_counter() - t_total
-    print(f"\n=== T1.3 done: {len(summary)} snapshots in {total / 60:.1f} min ===")
+    print(f"\n=== per-snapshot SAEs done: {len(summary)} snapshots in {total / 60:.1f} min ===")
     for info in summary:
         if info.get("skipped"):
             print(f"  step {info['step']:>7}: skipped ({info['path']})")
