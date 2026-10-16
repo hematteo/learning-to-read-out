@@ -1,7 +1,7 @@
-"""Language-stratified readout swap, Pythia-1B (fig:app-readout-swap-english-aggregate, fig:app-readout-swap-languages).
+"""Language-stratified readout swap, Pythia-1B (fig:app-readout-swap-languages).
 
-Draws two figures: the token-weighted aggregate next to English only (readout_swap_aggregate.pdf), and one
-panel per language (readout_swap_languages.pdf).
+One panel per language: NLL gain of swapping in the readout of checkpoint s over the native readout, for hidden
+states of three checkpoints (data/language_swap_summary.csv).
 """
 
 import matplotlib.pyplot as plt
@@ -75,27 +75,6 @@ def main():
     )
     fig.subplots_adjust(left=0.1, right=0.99, top=0.95, bottom=0.15, hspace=0.45, wspace=0.12)
     out = out_path("readout_swap_languages")
-    fig.savefig(out, bbox_inches="tight")
-    plt.close(fig)
-    print(f"wrote {out}")
-
-    fig, axes = plt.subplots(1, 2, figsize=(5.5, 2.3), sharex=True, sharey=True)
-    for ax, lang, title in zip(axes, ["all", "en"], ["Token-weighted aggregate, nine languages", "English only"]):
-        swap_panel(ax, d, lang, title)
-        ax.set_xlabel("readout checkpoint $s$", fontsize=7.5)
-    axes[0].set_ylabel("NLL gain over native (nats)", fontsize=7.5)
-    fig.legend(
-        *axes[0].get_legend_handles_labels(),
-        loc="lower center",
-        ncol=3,
-        frameon=False,
-        fontsize=7.5,
-        title="hidden state checkpoint",
-        title_fontsize=7.5,
-        bbox_to_anchor=(0.5, -0.02),
-    )
-    fig.subplots_adjust(left=0.1, right=0.99, top=0.88, bottom=0.42, wspace=0.1)
-    out = out_path("readout_swap_aggregate")
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {out}")

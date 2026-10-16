@@ -13,10 +13,8 @@ SCRIPTS = [
     "fidelity_curves.py",
     "dense_reorganization_timing.py",
     "lifecycle_profile_composition.py",
-    "lifecycle_population_diagnostics.py",
     "readout_swap_languages.py",
     "aligned_swap_grid.py",
-    "probe_fits.py",
     "recipe_reorganization_window.py",
 ]
 
