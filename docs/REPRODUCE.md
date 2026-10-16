@@ -2,7 +2,7 @@
 
 Three levels, from cheapest to most expensive; run every command from the repository root.
 
-1. **Redraw the figures**: `make figures` redraws 14 data figures from the 4.9 MB in `paper_figures/data/` (CPU, about 30 s).
+1. **Redraw the figures**: `make figures` redraws the paper's 11 data figures from the 4.9 MB in `paper_figures/data/` (CPU, about 30 s).
 2. **Recompute from the released artifacts**: the scripts in `reproduce/<section>/` read the released dictionaries
    and checkpoints under `UM_SSD_ROOT` and write metrics (CSV, JSON, `.pt`, no figures) under the gitignored
    `results/<section>/`. The larger models need a GPU.
@@ -88,12 +88,13 @@ script that regenerates it.
 | C.3 | `fig:app-fidelity-curves` | `fidelity_curves.py` |
 | C.6 | `fig:app-dense-reorg-pythia` | `dense_reorganization_timing.py` |
 | D.1 | `fig:app-lifecycle-profile-composition` | `lifecycle_profile_composition.py` |
-| G.2 | `fig:app-readout-swap-languages` | `readout_swap_languages.py` (`readout_swap_languages.pdf`) |
+| G.2 | `fig:app-readout-swap-languages` | `readout_swap_languages.py` |
 | G.3 | `fig:app-aligned-readout-swap` | `aligned_swap_grid.py` |
 | H.1 | `fig:app-recipe-control-reorg` | `recipe_reorganization_window.py` |
 
-With matplotlib 3.10 (the `figures` extra), every page matches the paper's PDF pixel for pixel at 60 and 150 dpi,
-except Figure 2, whose float16 trajectories shift rasterized lines by a few gray levels.
+With matplotlib 3.10 (the `figures` extra), every page has the paper PDF's size and matches it pixel for pixel at 100
+and 300 dpi, except Figure 4 (a), whose probe line comes from run output within 5e-5 of the paper's values and
+differs by a few gray levels at line edges.
 
 ## Lifecycle (Section 4.1, Appendix D)
 
@@ -114,7 +115,7 @@ uv run python reproduce/lifecycle/lifecycle_stability.py --stage all \
 | Figure 2 (`fig:main-selected-normalized-trajectories`) | `selected_decoder_norm_trajectories{,_full}.{csv,pt}`, `normalized_trajectories.csv` |
 | Figure D.1 (`fig:app-lifecycle-profile-composition`) | `selected_lifecycle_profile_composition_refined_{summary,features}.csv` |
 | Appendix D.2 statistics (peaks inside the window, decay of early-peaking features, decoder norm mass) | `selected_population_lifecycle_diagnostics_{peak_counts,norm_mass,window_peaks,early_peak_decay}.csv` |
-| Section 4.1 windows, Table D.2, Figure D.2 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | `reorganization_window_{metrics,summary,bootstrap_counts}_selected.csv` |
+| Section 4.1 windows, Figure 2 (bottom), Table D.2, Figure D.2 (`tab:app-reorganization-window-stats`, `fig:app-reorganization-window-metrics`) | `reorganization_window_{metrics,summary,bootstrap_counts}_selected.csv` |
 | Table D.3 (`tab:app-lifecycle-stability`) | `lifecycle_stability/*.csv` (selected Pythia-6.9B: row `pythia69b_d32768` of `validation.csv`) |
 
 Step 4 reads curated Pythia-6.9B and OLMo-2-7B rates that are not shipped ([Known deviations](#known-deviations)).
@@ -236,10 +237,10 @@ uv run python reproduce/availability/run_availability_probes.py \
 
 | Paper item | Step | Output, under `results/availability/` |
 |---|---|---|
-| Figure 4 left (`fig:main-sva-availability-expression`), probe | 2 | `run_pythia-6.9b_probe_trajectory/controlled/probe_trajectory_69b.csv` (`probe_name = sva_number_lemma_grouped`, `feature_source = hidden`) |
-| Figure 4 left, native and best swept readout | 2 | `run_pythia-6.9b_probe_trajectory/summary.csv` (native: `s_step = h_step`; best swept: [Known deviations](#known-deviations)) |
+| Figure 4 (a) (`fig:main-sva-availability-expression`), probe | 2 | `run_pythia-6.9b_probe_trajectory/controlled/probe_trajectory_69b.csv` (`probe_name = sva_number_lemma_grouped`, `feature_source = hidden`) |
+| Figure 4 (a), native and best swept readout | 2 | `run_pythia-6.9b_probe_trajectory/summary.csv` (native: `s_step = h_step`; best swept: [Known deviations](#known-deviations)) |
 | Figure F.1 (`fig:app-contrastive-readout-lag`) | 2 | the same two files, families `sva` and `ioi_role_balanced` |
-| Figure 4 right | 3 | `availability/run_pythia-6.9b/probes/probe_summary.csv` (`h_step = 143000`, `probe_acc_1d`, `native_readout_acc`, the four `sva*` families) |
+| Figure 4 (b) | 3 | `availability/run_pythia-6.9b/probes/probe_summary.csv` (`h_step = 143000`, `probe_acc_1d`, `native_readout_acc`, the four `sva*` families) |
 | Figure F.2, Tables F.2 to F.4 (`fig:app-ae-grid`, `tab:app-ae-binary`, `tab:app-ae-openvocab`, `tab:app-ae-early`) | 3, 4 | `availability/run_<run>/probes/probe_summary.csv` |
 | Appendix G.4 terminal-readout accuracies (`sec:app-terminal-swap-alignment`) | 1 | `run0_pythia1b/summary.csv` (`h_step = 1000`, `s_step = 143000`, per alignment) |
 | Figure 1 (`fig:overview`) margins | 1 | `run0_pythia1b/shards/sva__a-none__h1000__s<s>.pt` (`margins`, `margins_native`, `y_plus`, `y_minus`; `s` = 1000, 143000) |
@@ -332,8 +333,8 @@ uv run python reproduce/recipe_control/run_expression_lag.py \
 
 | Paper item | Output, under `results/recipe_control/` unless stated |
 |---|---|
-| Figure 5 left (`fig:main-recipe-dose-response`) | `lifecycle_multiseed_table.csv` |
-| Figure 5 right | `${UM_SSD_ROOT}/runs/<condition>/metrics.csv` (validation loss) |
+| Figure 5 (a) (`fig:main-recipe-dose-response`) | `lifecycle_multiseed_table.csv` |
+| Figure 5 (b) | `${UM_SSD_ROOT}/runs/<condition>/metrics.csv` (validation loss) |
 | Table H.1, Figure H.1 (`tab:app-recipe-control-summary`, `fig:app-recipe-control-reorg`) | `lifecycle_seed0/{lifecycle_summary.csv,reorg_window.csv}` |
 | Figures H.2, H.3, H.4 (`fig:app-recipe-control-geometry`, `fig:app-recipe-control-basin`, `fig:app-recipe-control-explag`) | `readout_geometry_pythia.csv`, `trajectory/trajectory_swap_all.csv`, `expression_lag/expression_lag.csv` |
 
@@ -504,9 +505,9 @@ rates the paper uses are the curated `large_evals/` files ([Known deviations](#k
   for each task, and builds the simple SVA items in interleaved order. The paper's run drew both from one
   sequential generator, so the release scores a different held-out half and its values differ from the paper's.
   (The swap-grid accuracies of availability step 1 do not depend on item order.)
-- **Figure 4, left panel.** The native and best swept series have no surviving run output. `paper_figures/`
+- **Figure 4 (a).** The native and best swept series have no surviving run output. `paper_figures/`
   ships them as values transcribed from the original figure; the probe series is run output.
-- **Figures 4 (left) and F.1, best swept readout.** No release script computes the best swept readout of the
+- **Figures 4 (a) and F.1, best swept readout.** No release script computes the best swept readout of the
   trajectories (`B_env`, the maximum over readouts per task and hidden-state checkpoint, excluding the native
   and terminal readouts; `sec:app-evaluation-details`). Take the maximum accuracy over the `alignment = none`
   rows of `run_pythia-6.9b_probe_trajectory/summary.csv` whose `s_step` is neither `h_step` nor 143000.

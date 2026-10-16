@@ -192,7 +192,7 @@ def main() -> None:
         choices=["none", "bf16"],
         default="none",
         help="Round each W_U snapshot to this precision before scoring. The published "
-        "Pythia-6.9B trajectory (Figure 4 left, Figure F.1) scored bf16-extracted snapshots.",
+        "Pythia-6.9B trajectory (Figure 4 (a), Figure F.1) scored bf16-extracted snapshots.",
     )
     ap.add_argument(
         "--save-per-example",

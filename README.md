@@ -130,7 +130,7 @@ three levels:
 
 1. **Redraw the figures** with `make figures` (CPU, about 30 s) from the 4.9 MB of
    data in [`paper_figures/data/`](paper_figures/data/README.md). This covers
-   Figures 2 to 5 and ten appendix figures.
+   Figures 2 to 5 and seven appendix figures (C.1, C.3, C.6, D.1, G.2, G.3, H.1).
 2. **Recompute that data** from the released dictionaries and checkpoints with the
    analysis scripts in `reproduce/`, one folder per paper section.
 3. **Retrain** the dictionaries (`scripts/train/train_crosscoder.py`) or the 31M runs.

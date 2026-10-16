@@ -1,4 +1,4 @@
-"""Availability vs expression per (family, checkpoint): the probe summary behind Figure 4 (right) and Appendix F.
+"""Availability vs expression per (family, checkpoint): the probe summary behind Figure 4 (b) and Appendix F.
 
 For every family with a dataset and cached hidden states, and every cached
 checkpoint, writes one row of ``readout.probes.availability_expression`` metrics:
