@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the associated paper."
 type: software
-title: "learning-to-read-out (W_U trajectory crosscoders)"
+title: "Learning to Read Out: Unembedding Dynamics in Language Model Pretraining (code)"
 authors:
   - given-names: Matteo
     family-names: He
