@@ -1,8 +1,6 @@
 """Shared LR schedule helpers for crosscoder training.
 
-Single source of truth for the warmup+decay multiplier used by both the
-production W_U trainer (``wu_adapter``) and the architecture-sweep trainer
-(``crosscoder_arch_sweep``).
+The warmup+decay multiplier used by the W_U trainer (``wu_adapter``).
 """
 
 
