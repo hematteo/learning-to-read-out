@@ -378,8 +378,9 @@ uv run python reproduce/readout_swaps/run_aligned_swap_grid.py --model pythia-1b
 Notes: the per-language gain is `-delta_nll` with interval `[-delta_nll_ci_high, -delta_nll_ci_low]`; the `all`
 stratum must match the reference grid within 1e-5 nats (`reference_parity.json`). Hidden states are cached
 under `${UM_SSD_ROOT}/readout_edit_timing_pythia1b/` (1B) and `${UM_SSD_ROOT}/readout_edit_timing/` (160M),
-written on a cache miss. Without the snapshot mirror, add `--readout-cache-dir <scratch>/readouts`;
-`--hln-cache-dir <scratch>/hln --delete-hln-cache-after-step` keeps the hidden-state caches on local scratch.
+written on a cache miss. Only `run_language_stratified_swap.py` takes cache options: without the snapshot mirror,
+add `--readout-cache-dir <scratch>/readouts`, and `--hln-cache-dir <scratch>/hln --delete-hln-cache-after-step`
+keeps its hidden-state caches on local scratch.
 
 ## Validation (Appendix C)
 
