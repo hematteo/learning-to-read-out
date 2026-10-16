@@ -19,88 +19,24 @@ __pycache__/
 checkpoints/
 outputs/
 wandb/
-# Default UM_SSD_ROOT output root (W_U snapshots, releases) — see src/readout/core/paths.py
+# Default UM_SSD_ROOT output root (W_U snapshots, releases); see src/readout/core/paths.py
 local_snapshots/
 snapshots/
 hf_release/
 
-# OS
-.DS_Store
-
-# LaTeX intermediates (keep .tex and .pdf, drop the rest)
-*.aux
-*.log
-*.out
-*.toc
-*.fdb_latexmk
-*.fls
-*.synctex.gz
-*.bbl
-*.blg
-*.fff
-*.lof
-*.lot
-*.nav
-*.snm
-*.vrb
-*.idx
-*.ind
-*.ilg
-*.glo
-*.gls
-*.acn
-*.acr
-*.alg
-*.xdv
-texput.log
-
-# Backup files
-*.bak
-
-# Underscore-prefix dirs are conventionally agent-skip / non-publishable
-**/_derived/
-**/_scratch/
-_logs/
-
-# Large outputs
+# Analysis outputs (reproduce/ scripts write under results/)
 results/
 cache/
-
-# LaTeX build output (artifacts live under paper/build/)
-paper/build/
-
-# Stale assets kept locally, not in version control (dir or symlink)
-_archive
-
-# Overleaf round-trip exports (live in papers/ instead)
-overleaf_main_report_*/
-overleaf_main_report_*.zip
-paper_overleaf_upload/
-paper_overleaf_upload*.zip
-
-# Dated paper PDF snapshots — keep only paper/main.pdf in version control
-paper/main-*.pdf
-*.ptc
-
-# Internal handoff notes — keep local, not for public distribution
-docs/internal/
-
-# Editor
-.vscode/
-.idea/
-*.swp
-
-# IDE / agent assistant files
-.claude/
-
-# Local Netlify folder
-.netlify
-
-# The paper and internal reports are not part of the code release.
-/paper/
-/reports/
-/docs/reports/
 *.parquet
+*.log
 
 # Redrawn paper figures (paper_figures/make_all.py)
 paper_figures/out/
+
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.bak
+.claude/
