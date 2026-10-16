@@ -1,4 +1,4 @@
-"""Loader / IO helpers specific to the Appendix-B baseline experiments.
+"""Loader / IO helpers specific to the baseline experiments of Appendix C.
 
 Generic model specs, step schedules, and snapshot helpers live in
 ``readout.core.model_specs``; this module only carries the appendix-specific
