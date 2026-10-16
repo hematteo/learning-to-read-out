@@ -1,14 +1,18 @@
-"""Compute late-start Pythia-1B vs OLMo-2-7B activation-rate diagnostics.
+"""Late-start Pythia-1B vs OLMo-2-7B lifecycle comparison (Appendix D.3).
 
-Computes and persists metrics comparing the new Pythia-1B "late-start" W_U
-crosscoder (trained on a 32-step schedule starting at step 256) against the
-canonical OLMo-2-7B W_U crosscoder. Tests whether OLMo's missing decayer
-branch is explainable as a checkpointing artifact: if Pythia trained on a
-similarly late-starting schedule shows the same near-zero decayer pattern,
-then the absence in OLMo is plausibly about checkpoint coverage, not the model.
+Compares the Pythia-1B "late-start" W_U crosscoder (trained on a 32-step
+schedule starting at step 256) with the OLMo-2-7B W_U crosscoder. Tests whether
+OLMo's missing early-decaying features are explainable as a checkpointing
+artifact: if Pythia fitted on a similarly late-starting schedule shows the same
+near-zero share, the absence in OLMo is plausibly about checkpoint coverage,
+not the model.
 
-Outputs (CSV / JSON / .pt metric sidecars) under
-results/lifecycle/olmo_window/.
+Outputs, under results/lifecycle/olmo_window/:
+  comparison_summary.csv          activation-rate shares (decayers, early-dominant)
+  comparison_feature_scores.csv   per-feature peak step, early-minus-late score, final level
+  late_start_profile_fractions.csv  rule-based profile shares of the selected and
+                                    late-start Pythia-1B dictionaries
+  manifest.json                   inputs, git commit, summaries, decay definitions
 """
 
 from __future__ import annotations
@@ -24,12 +28,7 @@ import torch
 from readout.core.model_specs import DEFAULT_STEPS_32
 from readout.core.paths import repo_root
 from readout.core.repro import git_commit
-from readout.dynamics.lifecycle import (
-    PROFILE_LABELS,
-    PROFILE_ORDER,
-    classify_profiles_refined,
-    profile_fractions,
-)
+from readout.dynamics.lifecycle import profile_fractions
 
 REPO = repo_root()
 PYTHIA_LATE_START_STEPS = np.asarray(
@@ -75,7 +74,7 @@ EARLY_CUTOFF_STEP = 1000
 LATE_CUTOFF_STEP = 14000  # first "late" step for the early-minus-late contrast
 DECAY_FRAC_THR = 0.5  # final < 0.5 * peak
 
-# Written verbatim into the plot payload and the manifest.
+# Written verbatim into the manifest.
 DECAY_DEFINITION = {
     "decayer_mask": f"peak_idx <= last_index_with_step<={EARLY_CUTOFF_STEP} AND final_rel < {DECAY_FRAC_THR}",
     "early_dominant_mask": (
@@ -177,414 +176,6 @@ def _write_csv(path: Path, header: list[str], rows: list[list]) -> None:
         w = csv.writer(f)
         w.writerow(header)
         w.writerows(rows)
-
-
-def _short_label(label: str) -> str:
-    return label.replace(" (this work)", "")
-
-
-def _normalize_by_peak(values: np.ndarray) -> np.ndarray:
-    peak = np.clip(np.nanmax(values, axis=0, keepdims=True), 1e-12, None)
-    return values / peak
-
-
-def _build_metric_payload(runs: tuple[Run, ...]) -> dict[str, dict]:
-    metric_payload: dict[str, dict] = {}
-    for run in runs:
-        rates, norms, steps = _load_rates(run)
-        if norms is None:
-            raise ValueError(f"{run.key}: decoder norms are required")
-        active = norms.max(axis=0) > ACTIVE_NORM_THR
-        rates_active = rates[:, active]
-        norms_active = norms[:, active]
-        norm_rel = _normalize_by_peak(norms_active)
-        rate_rel = _normalize_by_peak(rates_active)
-        norm_peak_idx = norm_rel.argmax(axis=0)
-        metric_payload[run.key] = {
-            "label": _short_label(run.label),
-            "steps": steps,
-            "active_feature_idx": np.flatnonzero(active),
-            "norms_active": norms_active,
-            "rates_active": rates_active,
-            "decoder_norm_peak_idx": norm_peak_idx,
-            "decoder_norm_peak_step": steps[norm_peak_idx],
-            "norm_rel": norm_rel,
-            "rate_rel": rate_rel,
-        }
-    return metric_payload
-
-
-def _write_metric_grid_summary(path: Path, payload: dict[str, dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "run",
-                "metric",
-                "step",
-                "n_features",
-                "median",
-                "q10",
-                "q25",
-                "q75",
-                "q90",
-            ]
-        )
-        for run_key, run_payload in payload.items():
-            steps = run_payload["steps"]
-            for metric in ("norm_rel", "rate_rel"):
-                values = run_payload[metric]
-                for i, step in enumerate(steps):
-                    row = values[i]
-                    writer.writerow(
-                        [
-                            run_key,
-                            metric,
-                            int(step),
-                            int(np.isfinite(row).sum()),
-                            float(np.nanmedian(row)),
-                            float(np.nanquantile(row, 0.10)),
-                            float(np.nanquantile(row, 0.25)),
-                            float(np.nanquantile(row, 0.75)),
-                            float(np.nanquantile(row, 0.90)),
-                        ]
-                    )
-
-
-def _save_metric_grid_sidecars(base: Path, payload: dict[str, dict]) -> None:
-    _write_metric_grid_summary(base.with_suffix(".csv"), payload)
-    torch.save(
-        {
-            run_key: {
-                "label": run_payload["label"],
-                "steps": torch.as_tensor(run_payload["steps"], dtype=torch.int64),
-                "active_feature_idx": torch.as_tensor(run_payload["active_feature_idx"], dtype=torch.int64),
-                "decoder_norm_peak_idx": torch.as_tensor(run_payload["decoder_norm_peak_idx"], dtype=torch.int64),
-                "decoder_norm_peak_step": torch.as_tensor(run_payload["decoder_norm_peak_step"], dtype=torch.int64),
-                "norm_rel": torch.from_numpy(run_payload["norm_rel"].astype(np.float32)),
-                "rate_rel": torch.from_numpy(run_payload["rate_rel"].astype(np.float32)),
-            }
-            for run_key, run_payload in payload.items()
-        },
-        base.with_suffix(".pt"),
-    )
-
-
-def compute_appendix_metric_grid(
-    payload: dict[str, dict],
-    out_dirs: tuple[Path, ...],
-) -> None:
-    """Appendix-style lifecycle grid metrics (selected_lifecycle_metric_diagnostics)."""
-    for out_dir in out_dirs:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        base = out_dir / "olmo_matched_checkpoint_window_metric_grid"
-        _save_metric_grid_sidecars(base, payload)
-        print(f"  -> {base.with_suffix('.csv')}")
-
-
-def compute_population_lifecycle_diagnostics(
-    payload: dict[str, dict],
-    out_dirs: tuple[Path, ...],
-) -> None:
-    peak_rows: list[list] = []
-    mass_rows: list[list] = []
-    sidecar: dict[str, dict] = {}
-
-    for run_key, run_payload in payload.items():
-        steps = run_payload["steps"]
-        peak_step = run_payload["decoder_norm_peak_step"]
-        unique_steps, counts = np.unique(peak_step, return_counts=True)
-        fractions = counts / counts.sum()
-        norms_active = run_payload["norms_active"]
-        total_mass = norms_active.sum(axis=1)
-        mean_mass = norms_active.mean(axis=1)
-        normed_mass = total_mass / np.clip(total_mass.max(), 1e-12, None)
-
-        for step, fraction, count in zip(unique_steps, fractions, counts, strict=True):
-            peak_rows.append([run_key, int(step), int(count), float(fraction), int(counts.sum())])
-        for step, total, mean, mass in zip(steps, total_mass, mean_mass, normed_mass, strict=True):
-            mass_rows.append(
-                [
-                    run_key,
-                    int(step),
-                    float(total),
-                    float(mean),
-                    float(mass),
-                    int(norms_active.shape[1]),
-                ]
-            )
-        sidecar[run_key] = {
-            "steps": torch.as_tensor(steps, dtype=torch.int64),
-            "active_feature_idx": torch.as_tensor(run_payload["active_feature_idx"], dtype=torch.int64),
-            "decoder_norm_peak_step": torch.as_tensor(peak_step, dtype=torch.int64),
-            "unique_peak_steps": torch.as_tensor(unique_steps, dtype=torch.int64),
-            "peak_step_count_fraction": torch.from_numpy(fractions.astype(np.float32)),
-            "total_decoder_norm_mass": torch.from_numpy(total_mass.astype(np.float32)),
-            "mean_decoder_norm_active_feature": torch.from_numpy(mean_mass.astype(np.float32)),
-            "mass_normalized_to_model_max": torch.from_numpy(normed_mass.astype(np.float32)),
-        }
-
-    for out_dir in out_dirs:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        base = out_dir / "olmo_matched_checkpoint_window_population_lifecycle_diagnostics"
-        _write_csv(
-            base.with_name(base.name + "_peak_counts.csv"),
-            [
-                "run",
-                "step",
-                "feature_count",
-                "feature_count_fraction",
-                "n_active_features",
-            ],
-            peak_rows,
-        )
-        _write_csv(
-            base.with_name(base.name + "_norm_mass.csv"),
-            [
-                "run",
-                "step",
-                "total_decoder_norm_mass",
-                "mean_decoder_norm_active_feature",
-                "mass_normalized_to_model_max",
-                "n_active_features",
-            ],
-            mass_rows,
-        )
-        torch.save(sidecar, base.with_suffix(".pt"))
-        print(f"  -> {base.with_suffix('.pt')}")
-
-
-def _heatmap_coordinates(run_payload: dict) -> dict[str, np.ndarray]:
-    norms = run_payload["norms_active"]
-    steps = run_payload["steps"]
-    log_steps = np.log1p(steps.astype(np.float64))
-    denom = norms.sum(axis=0)
-    centroid = (log_steps[:, None] * norms).sum(axis=0) / np.clip(denom, 1e-12, None)
-    spread = np.sqrt(
-        (((log_steps[:, None] - centroid[None, :]) ** 2) * norms).sum(axis=0) / np.clip(denom, 1e-12, None)
-    )
-    peak_idx = run_payload["decoder_norm_peak_idx"]
-    order = np.lexsort((centroid, spread, peak_idx))
-    return {
-        "order": order.astype(np.int32),
-        "centroid_step": np.expm1(centroid).astype(np.float32),
-        "centroid_log_step": centroid.astype(np.float32),
-        "spread_log_step": spread.astype(np.float32),
-        "peak_idx": peak_idx.astype(np.int16),
-        "peak_step": run_payload["steps"][peak_idx].astype(np.int64),
-        "normalized_sorted": run_payload["norm_rel"][:, order].T.astype(np.float32),
-    }
-
-
-def compute_decoder_norm_heatmaps(
-    payload: dict[str, dict],
-    out_dirs: tuple[Path, ...],
-) -> None:
-    heatmap_payload: dict[str, dict] = {}
-    summary_rows: list[list] = []
-    feature_rows: list[list] = []
-
-    for run_key, run_payload in payload.items():
-        coords = _heatmap_coordinates(run_payload)
-        heatmap_payload[run_key] = {
-            "steps": torch.as_tensor(run_payload["steps"], dtype=torch.int64),
-            "active_feature_idx": torch.as_tensor(run_payload["active_feature_idx"], dtype=torch.int64),
-            "order": torch.as_tensor(coords["order"], dtype=torch.int64),
-            "centroid_step": torch.from_numpy(coords["centroid_step"].astype(np.float32)),
-            "centroid_log_step": torch.from_numpy(coords["centroid_log_step"].astype(np.float32)),
-            "spread_log_step": torch.from_numpy(coords["spread_log_step"].astype(np.float32)),
-            "peak_step": torch.as_tensor(coords["peak_step"], dtype=torch.int64),
-            "peak_idx": torch.as_tensor(coords["peak_idx"], dtype=torch.int64),
-        }
-        active_count = int(run_payload["active_feature_idx"].size)
-        summary_rows.append(
-            [
-                run_key,
-                active_count,
-                float(np.median(coords["centroid_step"])),
-                float(np.quantile(coords["centroid_step"], 0.25)),
-                float(np.quantile(coords["centroid_step"], 0.75)),
-                float(np.median(coords["spread_log_step"])),
-            ]
-        )
-        for rank, idx in enumerate(coords["order"]):
-            feature = int(run_payload["active_feature_idx"][idx])
-            feature_rows.append(
-                [
-                    run_key,
-                    feature,
-                    int(rank),
-                    float(coords["centroid_step"][idx]),
-                    float(coords["centroid_log_step"][idx]),
-                    float(coords["spread_log_step"][idx]),
-                    int(coords["peak_step"][idx]),
-                    int(coords["peak_idx"][idx]),
-                ]
-            )
-
-    for out_dir in out_dirs:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        base = out_dir / "olmo_matched_checkpoint_window_decoder_norm_heatmaps"
-        _write_csv(
-            base.with_name(base.name + "_summary.csv"),
-            [
-                "run",
-                "n_active_features",
-                "median_centroid_step",
-                "q25_centroid_step",
-                "q75_centroid_step",
-                "median_spread_log_step",
-            ],
-            summary_rows,
-        )
-        _write_csv(
-            base.with_name(base.name + "_rows.csv"),
-            [
-                "run",
-                "feature",
-                "heatmap_rank",
-                "centroid_step",
-                "centroid_log_step",
-                "spread_log_step",
-                "peak_step",
-                "peak_idx",
-            ],
-            feature_rows,
-        )
-        torch.save(heatmap_payload, base.with_suffix(".pt"))
-        print(f"  -> {base.with_suffix('.pt')}")
-
-
-def _pca_scores(traj_rel: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    centered = traj_rel - traj_rel.mean(axis=0, keepdims=True)
-    _, singular_values, vt = np.linalg.svd(centered, full_matrices=False)
-    scores = centered @ vt.T
-    explained = singular_values**2 / np.clip(np.sum(singular_values**2), 1e-12, None)
-    return scores, explained
-
-
-def compute_wishbone_density_grid(
-    payload: dict[str, dict],
-    out_dirs: tuple[Path, ...],
-) -> None:
-    pca_payload: dict[str, dict] = {}
-
-    for run_key, run_payload in payload.items():
-        scores, explained = _pca_scores(run_payload["rate_rel"].T)
-        pca_payload[run_key] = {
-            "scores": torch.from_numpy(scores.astype(np.float32)),
-            "explained_variance_ratio": torch.from_numpy(explained.astype(np.float32)),
-            "steps": torch.as_tensor(run_payload["steps"], dtype=torch.int64),
-            "active_feature_idx": torch.as_tensor(run_payload["active_feature_idx"], dtype=torch.int64),
-        }
-
-    summary_rows = [
-        [
-            run_key,
-            payload[run_key]["label"],
-            int(payload[run_key]["active_feature_idx"].size),
-            float(pca_payload[run_key]["explained_variance_ratio"][0]),
-            float(pca_payload[run_key]["explained_variance_ratio"][1]),
-            float(pca_payload[run_key]["explained_variance_ratio"][2]),
-        ]
-        for run_key in payload
-    ]
-    # A byte-identical twin used to also be written under
-    # "..._wishbone_plain_hexbin_grid_viridis"; both figure variants read this
-    # single payload now.
-    for out_dir in out_dirs:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        base = out_dir / "olmo_matched_checkpoint_window_wishbone_pca_density_grid_viridis"
-        _write_csv(
-            base.with_name(base.name + "_summary.csv"),
-            ["run", "label", "n_active", "pc1_var", "pc2_var", "pc3_var"],
-            summary_rows,
-        )
-        torch.save(pca_payload, base.with_suffix(".pt"))
-        print(f"  -> {base.with_suffix('.pt')}")
-
-
-def compute_lifecycle_profile_composition(
-    payload: dict[str, dict],
-    out_dirs: tuple[Path, ...],
-) -> None:
-    stats_by_run = {
-        run_key: classify_profiles_refined(run_payload["norm_rel"], run_payload["steps"])
-        for run_key, run_payload in payload.items()
-    }
-    summary_rows: list[list] = []
-    feature_rows: list[list] = []
-    sidecar: dict[str, dict] = {}
-    for run_key, run_payload in payload.items():
-        stats = stats_by_run[run_key]
-        n = stats["profile"].size
-        for profile_name in PROFILE_ORDER:
-            count = int((stats["profile"] == profile_name).sum())
-            summary_rows.append([run_key, profile_name, PROFILE_LABELS[profile_name], count, count / n])
-        for i, feature in enumerate(run_payload["active_feature_idx"]):
-            feature_rows.append(
-                [
-                    run_key,
-                    int(feature),
-                    str(stats["profile"][i]),
-                    int(stats["peak_step"][i]),
-                    int(stats["birth_step"][i]),
-                    int(stats["death_step"][i]),
-                    float(stats["peak_tau"][i]),
-                    float(stats["support_span_tau"][i]),
-                    float(stats["alive_fraction"][i]),
-                    float(stats["early_level"][i]),
-                    float(stats["late_level"][i]),
-                    float(stats["mid_peak"][i]),
-                    float(stats["mid_mean"][i]),
-                    float(stats["trajectory_range"][i]),
-                ]
-            )
-        sidecar[run_key] = {
-            "steps": torch.as_tensor(run_payload["steps"], dtype=torch.int64),
-            "active_feature_idx": torch.as_tensor(run_payload["active_feature_idx"], dtype=torch.int64),
-            "profile_order": PROFILE_ORDER,
-            "profile": list(map(str, stats["profile"])),
-            # birth_tau/death_tau are lifecycle-experiment extras of the shared
-            # classifier; excluded to keep this sidecar's schema unchanged.
-            **{
-                key: torch.as_tensor(value)
-                for key, value in stats.items()
-                if key not in ("profile", "birth_tau", "death_tau")
-            },
-        }
-
-    for out_dir in out_dirs:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        base = out_dir / "olmo_matched_checkpoint_window_lifecycle_profile_composition"
-        _write_csv(
-            base.with_name(base.name + "_summary.csv"),
-            ["run", "profile", "label", "count", "fraction"],
-            summary_rows,
-        )
-        _write_csv(
-            base.with_name(base.name + "_features.csv"),
-            [
-                "run",
-                "feature",
-                "profile",
-                "peak_step",
-                "birth_step",
-                "death_step",
-                "peak_tau",
-                "support_span_tau",
-                "alive_fraction",
-                "early_level",
-                "late_level",
-                "mid_peak",
-                "mid_mean",
-                "trajectory_range",
-            ],
-            feature_rows,
-        )
-        torch.save(sidecar, base.with_suffix(".pt"))
-        print(f"  -> {base.with_suffix('.pt')}")
 
 
 def compute_late_start_profile_fractions(
@@ -697,39 +288,8 @@ def main() -> int:
         feature_score_rows,
     )
 
-    # Metric sidecars — one shared load/normalize pass for all five builders.
-    metric_payload = _build_metric_payload((PYTHIA_1B_LS, OLMO_2_7B))
-    compute_appendix_metric_grid(metric_payload, (fig_dir,))
-    compute_population_lifecycle_diagnostics(metric_payload, (fig_dir,))
-    compute_decoder_norm_heatmaps(metric_payload, (fig_dir,))
-    compute_wishbone_density_grid(metric_payload, (fig_dir,))
-    compute_lifecycle_profile_composition(metric_payload, (fig_dir,))
     _, late_norms, late_steps = _load_rates(PYTHIA_1B_LS)
     compute_late_start_profile_fractions(late_norms, late_steps, (fig_dir,))
-
-    # PCA wishbone for the new 1B late-start run only (canonical lifecycle plot)
-    pca_scores, pca_explained = _pca_scores(runs_loaded[0][1])
-    torch.save(
-        {
-            "runs": {
-                run.key: {
-                    "label": run.label,
-                    "steps": torch.as_tensor(steps, dtype=torch.int64),
-                    "traj_rel": torch.from_numpy(traj_rel.astype(np.float32)),
-                    "peak_idx": torch.as_tensor(s["peak_idx"], dtype=torch.int64),
-                    "early_minus_late": torch.from_numpy(s["early_minus_late"].astype(np.float32)),
-                    "final_rel": torch.from_numpy(s["final_rel"].astype(np.float32)),
-                }
-                for (run, traj_rel, steps), (_, s) in zip(runs_loaded, summaries, strict=True)
-            },
-            "pythia1b_late_start_pca": {
-                "scores": torch.from_numpy(pca_scores.astype(np.float32)),
-                "explained_variance_ratio": torch.from_numpy(pca_explained.astype(np.float32)),
-            },
-            "decay_definition": DECAY_DEFINITION,
-        },
-        fig_dir / "appendix_style_plot_payload.pt",
-    )
 
     # Manifest
     manifest = {
@@ -745,7 +305,7 @@ def main() -> int:
         "decay_definition": DECAY_DEFINITION,
     }
     (fig_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    print(f"Wrote CSV + .pt sidecars + manifest to {fig_dir}")
+    print(f"Wrote CSVs + manifest to {fig_dir}")
     return 0
 
 
