@@ -253,9 +253,8 @@ x86-64 NumPy tie order, so folds match on every platform, including arm64.
 
 ## Localization (Section 4.4, Appendix H)
 
-Section 4.4, Table H.2 (`tab:app-contrastive-localisation-ledger`), and Figures H.5 and H.6
-(`fig:app-sparse-feature-causal-curves`, `fig:app-sparse-feature-causal-specificity-k32`). Run
-[availability](#availability-section-43-appendix-g-figure-1) step 1 first. Needs a GPU, except the aggregation.
+Section 4.4 and Table H.2 (`tab:app-contrastive-localisation-ledger`). Run
+[availability](#availability-section-43-appendix-g-figure-1) step 1 first. Needs a GPU.
 
 ```bash
 # Rank features by attribution on half the items; ablate or keep the top K on the other half
@@ -269,18 +268,6 @@ uv run python reproduce/localization/run_converse_intervention.py --model pythia
     --attribution-dir results/localization/run0_pythia1b_s143000_h1000_pos \
     --snapshot-step 143000 --h-step 1000 --K 8 16 32 64 128 256 \
     --out-dir results/localization/converse_pythia1b_s143000_h1000_pos
-# Figures H.5, H.6: four token groups at the step-1000 and step-143000 readouts
-for c in non_latin_scripts punctuation digits function_words; do
-  uv run python reproduce/localization/run_1b_pilot.py \
-    --concept $c --snapshot-step 1000 --rank-h-step 1000 --eval-h-steps 512 1000 \
-    --score-mode positive --out-dir results/localization/causal_tests/1b_${c}_step1000_positive
-  uv run python reproduce/localization/run_1b_pilot.py \
-    --concept $c --snapshot-step 143000 --rank-h-step 143000 --eval-h-steps 143000 \
-    --score-mode positive --out-dir results/localization/causal_tests/1b_${c}_step143000_positive
-done
-uv run python reproduce/localization/run_specificity_from_pilots.py --snapshot-step 1000 --h-step 1000
-uv run python reproduce/localization/run_specificity_from_pilots.py --snapshot-step 143000 --h-step 143000
-uv run python reproduce/localization/aggregate_causal_tests.py   # CPU, seconds
 ```
 
 | Paper item | Output, under `results/localization/` |
@@ -288,7 +275,6 @@ uv run python reproduce/localization/aggregate_causal_tests.py   # CPU, seconds
 | Section 4.4; Table H.2 *recon*, *ablate*, *preserve-only*, *sign* | `run0_pythia1b_s143000_h1000_pos/shards/<family>__h1000__s143000.json`, `per_K["8"]`: `summary_{recon,ablate_top,ablate_ctrl_sign_matched,preserve_top,preserve_ctrl_sign_matched}.accuracy`; original readout `summary_native_s` |
 | Table H.2 *orig.* (greater-than, IOI, relational facts) | the `none`, h=1000, s=143000 cell of `results/availability/run0_pythia1b/summary.csv` |
 | Table H.2 *hidden projection* | `converse_pythia1b_s143000_h1000_pos/<family>__h1000__s143000.json`: `baseline.native_t.accuracy`, `per_K["8"].summary_proj_native_t.accuracy` |
-| Figures H.5, H.6 | `causal_tests/family_expansion_summary.csv`; `causal_tests/specificity_step<step>_h<step>/control_corrected_drop_k32.csv` |
 
 The families are `sva`, `numeric_gt`, `ioi`, `relational_facts`. A family whose attribution `.json`/`.pt` shard
 pair exists is skipped. The release scores a different held-out half than the paper ([Known deviations](#known-deviations)).
