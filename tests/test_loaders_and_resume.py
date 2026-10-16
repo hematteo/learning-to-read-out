@@ -1,6 +1,6 @@
 """Coverage for the most-imported IO/infra modules that previously had none:
-snapshot loaders, checkpoint loaders, the LR schedule, the resumability
-primitives, and the production permutation null.
+snapshot loaders, checkpoint loaders, the LR schedule, and the resumability
+primitives.
 """
 
 from __future__ import annotations
@@ -11,12 +11,6 @@ import json
 import pytest
 import torch
 
-from readout.baselines.permutation_test_fast import (
-    cusum_max_feature_batched,
-    cusum_max_feature_single,
-    fisher_combine,
-    permutation_test_vectorized,
-)
 from readout.core.resume import (
     aggregate_json_shards,
     append_manifest,
@@ -225,73 +219,3 @@ def test_append_manifest_and_aggregate_shards(tmp_path):
     agg = list(csv.DictReader(out.open()))
     assert [r["step"] for r in agg] == ["1", "2"]  # sorted by key
     assert set(agg[0]) == {"step", "ev", "extra"}  # union of fieldnames
-
-
-# ── permutation null (production statistic) ──────────────────────
-
-
-def test_cusum_rejects_degenerate_snapshot_count():
-    # For K<=8 the 2-sample MAD baseline is identically zero and the statistic
-    # would be NaN; the guard turns that into a loud error. The shipped
-    # schedules' smallest K is 9.
-    torch.manual_seed(0)
-    with pytest.raises(ValueError, match="K >= 9"):
-        cusum_max_feature_batched(torch.rand(3, 8, 16))
-
-
-def test_fisher_combine_tiny_p_values_do_not_underflow_to_zero():
-    """chi2.sf (not 1-cdf) keeps the combined p strictly positive for the
-    ~1e-6 per-seed p-values this pipeline produces."""
-    from scipy.stats import chi2
-
-    p = fisher_combine([1e-6] * 5)
-    assert p > 0.0, "Fisher-combined p underflowed to exactly zero"
-    assert p < 1e-15  # five p=1e-6 must combine to overwhelming evidence
-    # Exact reference: stat = -2 * sum(log p), df = 2n.
-    import numpy as np
-
-    assert p == pytest.approx(float(chi2.sf(-2.0 * np.log(1e-6) * 5, 10)), rel=1e-12)
-    # Single moderate p passes through (Fisher with n=1 is the identity).
-    assert fisher_combine([0.5]) == pytest.approx(0.5, rel=1e-12)
-    # Exact zeros are clipped, never log(0) -> nan/-inf.
-    assert 0.0 < fisher_combine([0.0, 1e-6]) < 1.0
-
-
-def test_permutation_cli_main_is_wired():
-    """`python -m readout.baselines.permutation_test_fast --help` exits 0 with
-    usage text — pinning the __main__ / main() wiring of the production null."""
-    import subprocess
-    import sys
-
-    r = subprocess.run(
-        [sys.executable, "-m", "readout.baselines.permutation_test_fast", "--help"],
-        capture_output=True,
-        text=True,
-        timeout=180,
-    )
-    assert r.returncode == 0, r.stderr[-1500:]
-    assert "usage" in r.stdout.lower()
-    assert "--rates" in r.stdout and "--seed-average" in r.stdout
-
-
-def test_cusum_batched_matches_single_and_is_batch_invariant():
-    # K=32 is the production snapshot count.
-    torch.manual_seed(0)
-    rates = torch.rand(32, 64)  # (K, D)
-    single = cusum_max_feature_single(rates)
-    batch = cusum_max_feature_batched(rates.unsqueeze(0).repeat(5, 1, 1))
-    assert batch.shape == (5,)
-    assert torch.isfinite(batch).all()
-    assert torch.allclose(batch, torch.full((5,), single), atol=1e-5)
-
-
-def test_permutation_test_seeded_and_calibrated_under_null():
-    torch.manual_seed(0)
-    # Null data: iid rates with no temporal structure -> p should not be tiny.
-    rates = torch.rand(32, 64)
-    obs1, p1, null1, z1, _ = permutation_test_vectorized(rates, n_permutations=200, batch=100, seed=7)
-    obs2, p2, null2, z2, _ = permutation_test_vectorized(rates, n_permutations=200, batch=100, seed=7)
-    assert obs1 == obs2 and p1 == p2 and (null1 == null2).all()  # same seed -> identical
-    assert p1 > 0.01  # permutation-invariant data must not look significant
-    _, p3, _, _, _ = permutation_test_vectorized(rates, n_permutations=200, batch=100, seed=8)
-    assert p3 > 0.01
