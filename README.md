@@ -3,7 +3,7 @@
 [![NeurIPS 2026](https://img.shields.io/badge/NeurIPS-2026-4b44ce.svg)](#citation)
 [![arXiv](https://img.shields.io/badge/arXiv-2610.21025-b31b1b.svg)](https://arxiv.org/abs/2610.21025)
 [![Paper](https://img.shields.io/badge/Paper-OpenReview-8c1b13.svg)](https://openreview.net/forum?id=FlkhJrDVyI)
-[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-dictionaries%20%26%20checkpoints-yellow.svg)](https://huggingface.co/hematteo)
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-dictionaries%20%26%20checkpoints-yellow.svg)](#released-dictionaries-and-checkpoints)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![ci](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml/badge.svg)](https://github.com/hematteo/learning-to-read-out/actions/workflows/ci.yml)
 
